@@ -1,4 +1,4 @@
-#/r/roguelikedev Tutorial (2018)
+# /r/roguelikedev Tutorial (2018)
 
 This is my participation to the Roguelike Tutorial of [/r/roguelikedev](https://www.reddit.com/r/roguelikedev/) of summer 2018. 
 I chose to follow along using [Rust](https://www.rust-lang.org) as programming language, and utilizing the [tcod-rs](https://github.com/tomassedovic/tcod-rs) library.

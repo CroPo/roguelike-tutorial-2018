@@ -1,4 +1,4 @@
-#Part 1: 
+# Part 1: 
 ## Drawing the @ symbol and moving it around
 
 - [Tutorial Link](http://rogueliketutorials.com/libtcod/1)
@@ -51,7 +51,7 @@ One additional note: The flag I used, `tcod::input::KEY_PRESSED`, filters all th
 `Some( Key { code: KeyCode::Left, pressed: true, ..} )`
 
 
-###Responding to the player's input
+### Responding to the player's input
 
 Just as I had resolved the key handling issue, the Tutorial brought up another. The `handle_key` method returns stuff like `return {'fullscreen': True}`. I literally don't have a clue how this is even called, but it isn't possible in the same form in Rust (at least as far as I know). The nearest language construct may be a Tuple, but even this wouldn't have worked here, because the second value always has at least two different types in the tutorial.
 
