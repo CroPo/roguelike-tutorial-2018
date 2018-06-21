@@ -1,10 +1,10 @@
 # Part 1: 
-## Drawing the @ symbol and moving it around
+## Drawing the `@` symbol and moving it around
 
-- [Tutorial Link](http://rogueliketutorials.com/libtcod/1)
 - [Reddit Post on /r/roguelikedev](https://www.reddit.com/r/roguelikedev/comments/8s5x5n/roguelikedev_does_the_complete_roguelike_tutorial/)
+- [Direct Tutorial Link](http://rogueliketutorials.com/libtcod/1)
 
-Basically, I tried to follow the original tutorial step by step, except that I use Rust instead of Python. This worked pretty well for the biggest part. 
+Basically, I tried to follow the original tutorial step by step, except that I use Rust instead of Python. 
 
 ### Major issues
 
