@@ -1,6 +1,7 @@
 extern crate tcod;
 
 mod entity;
+mod render;
 
 use tcod::console::{Root, Console};
 use tcod::FontLayout;
@@ -44,15 +45,18 @@ fn main() {
 
     let mut root = Root::initializer()
         .size(screen_width, screen_height)
-        .title("/r/roguelikedev Tutorial Part1")
+        .title("/r/roguelikedev Tutorial Part2")
         .font("arial10x10.png", FontLayout::Tcod)
         .font_type(FontType::Greyscale)
         .init();
     root.set_default_foreground(colors::WHITE);
 
     while !root.window_closed() {
-        root.clear();
+
+        ::render::render_all(&entities, &mut root, screen_width, screen_height);
         root.flush();
+
+        ::render::clear_all(&entities, &mut root);
 
         let action = handle_keys(root.check_for_keypress(tcod::input::KEY_PRESSED));
         match action {

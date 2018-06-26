@@ -40,7 +40,7 @@ The method implementations are pretty much as expected. I won't go into more det
 
 #### Using the `Entity`
 
-One thing straigh forward: This part will differ from the tutorial, and I honestly do not know how to handle it correctly at that level. 
+One thing straight ahead: This part will differ from the tutorial, and I honestly do not know how to handle it correctly at that level. 
 
 Adding the player itself is not the problem. The problem starts when I have to put all entities (including the player) into one Collection for the sake of rendering them. Because, if I want to move the player around, I need to borrow a mutable reference to the `player` object whenever I call the `mv` method. And having a single mutable (means: writable) reference is exclusive to having any other kind of reference. Ownership and Borrwing are two core concepts which one needs to get used to when one wants to develop in Rust. Once you get it, you successfully took the first big hurdle (the first of many more, but by far the biggest, imo).
 
@@ -103,3 +103,55 @@ entities[player_entity_index].mv((move_x, move_y))
 
 As said, not absolutely happy here, but it compiles, and that's all I wanted for now.
 
+#### Enity rendering
+
+The Python tutorial suggests to move the rendering to a separate file, which I will follow. I won't create a dedicated rendering struct either, as this won't give me any advantage. Still, I want to try a different approach here (again). 
+
+As said before, I don't really want to expose my `Entity` struct's members. So I am going to use a trait here.
+
+```rust
+pub trait Render {
+    fn draw(&self, console: &mut Console);
+    fn clear(&self, console: &mut Console);
+}
+
+```
+
+All I need to do is implement this trait on each struct I want to render. The advantage is that the struct can decide by itself how it wants to get drawn. The render functions just need to know that an entity gets drawn onto the console. The second method is for removing a character. Of course, both need to be implemented.
+
+On the `Entity`, this looks like that (just the draw method):
+
+```rust
+impl ::render::Render for Entity {
+    fn draw(&self, console: &mut Console) {
+        console.set_default_foreground(self.color);
+        console.put_char(self.pos.0, self.pos.1, self.glyph, BackgroundFlag::None);
+    }
+    // ...
+}
+```
+
+The rest of the render methods, just for the sake of completeness:
+
+```rust
+pub fn render_all<T: Render>(objs: &Vec<T>, console: &mut Root, screen_width: i32, screen_height: i32) {
+
+    let mut offscreen = Box::new(Offscreen::new(screen_width, screen_height));
+
+    for obj in objs {
+        obj.draw(&mut offscreen);
+    }
+
+    console::blit(&offscreen,
+                  (0, 0),
+                  (screen_width, screen_height),
+                  console,
+                  (0, 0), 1.0, 1.0);
+}
+
+pub fn clear_all<T: Render>(objs: &Vec<T>,console: &mut Console) {
+    for obj in objs {
+        obj.clear(console);
+    }
+}
+```
