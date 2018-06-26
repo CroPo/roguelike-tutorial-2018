@@ -18,7 +18,7 @@ impl Entity {
         }
     }
 
-    pub fn mv(&self, d_pos: (i32, i32)) {
+    pub fn mv(&mut self, d_pos: (i32, i32)) {
         self.pos.0 += d_pos.0;
         self.pos.1 += d_pos.1;
     }
