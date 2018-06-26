@@ -25,3 +25,8 @@ The start was pretty easy to follow, by just expanding the `Rect` with some meth
 I got the room generation loot wrong at some point, so I worked around it on myself, and, somehow, it seems to work. 
 
 No further problems were encountered
+
+
+### Conclusion
+
+Yes, this part of the tutorial went pretty well for me. Nothing more to say here.
