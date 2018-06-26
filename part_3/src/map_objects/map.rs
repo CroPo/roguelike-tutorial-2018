@@ -1,3 +1,5 @@
+use std::cmp;
+
 use tcod::colors;
 use tcod::Console;
 use tcod::BackgroundFlag;
@@ -43,6 +45,7 @@ impl GameMap {
     pub fn make_map(&mut self) {
         self.create_room(&Rect::new(20,15,10,15));
         self.create_room(&Rect::new(35,15,10,15));
+        self.create_h_tunnel(25, 40, 23);
     }
 
     fn create_room(&mut self, room: &Rect) {
@@ -51,6 +54,20 @@ impl GameMap {
                 self.get_tile_mut(x as usize,y as usize).block_move = false;
                 self.get_tile_mut(x as usize,y as usize).block_sight = false;
             }
+        }
+    }
+
+    fn create_h_tunnel(&mut self, x_start : i32, x_end: i32, y : i32) {
+        for x in cmp::min(x_start,x_end)..cmp::max(x_start,x_end)+1 {
+            self.get_tile_mut(x as usize,y as usize).block_move = false;
+            self.get_tile_mut(x as usize,y as usize).block_sight = false;
+        }
+    }
+
+    fn create_v_tunnel(&mut self, y_start : i32, y_end: i32, x : i32) {
+        for y in cmp::min(y_start,y_end)..cmp::max(y_start,y_end)+1 {
+            self.get_tile_mut(x as usize,y as usize).block_move = false;
+            self.get_tile_mut(x as usize,y as usize).block_sight = false;
         }
     }
 }

@@ -12,3 +12,6 @@ The first instructions from the tutorial were pretty clear so far, so just a qui
 
 In addition to the instructions, I moved `GameMap` and `Tile` into the `map_objects` module/folder, same as the Python counterpart did right from the start. I kind of missed that part.
 
+### Tunnel Connection
+
+The next step connected both the created rooms with each other. Nothing much to say here atm.
