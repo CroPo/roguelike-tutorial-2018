@@ -61,5 +61,5 @@ impl Render for GameMap {
         }
     }
 
-    fn clear(&self, console: &mut Console) {}
+    fn clear(&self, _console: &mut Console) {}
 }

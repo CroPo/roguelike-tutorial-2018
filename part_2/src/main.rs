@@ -9,8 +9,6 @@ use tcod::console::{Root, Console};
 use tcod::FontLayout;
 use tcod::FontType;
 use tcod::colors;
-use tcod::BackgroundFlag;
-use tcod::input;
 use tcod::input::Key;
 use tcod::input::KeyCode;
 use entity::Entity;

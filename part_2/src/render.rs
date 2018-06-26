@@ -1,9 +1,5 @@
 use tcod::console::{Offscreen, Console, Root};
 use tcod::console;
-use tcod::FontLayout;
-use tcod::FontType;
-
-use std::borrow::BorrowMut;
 
 pub trait Render {
     fn draw(&self, console: &mut Console);
