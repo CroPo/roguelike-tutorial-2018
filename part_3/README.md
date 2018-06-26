@@ -15,3 +15,13 @@ In addition to the instructions, I moved `GameMap` and `Tile` into the `map_obje
 ### Tunnel Connection
 
 The next step connected both the created rooms with each other. Nothing much to say here atm.
+
+### Actual Generation
+
+With all the preparations made, it's finally time to create a randomized dungeon. 
+
+The start was pretty easy to follow, by just expanding the `Rect` with some methods to calculate the center and to check for intersections with another `Rect`. I didn't check both methods any further, I just trust the author of the Python tutorial here.
+
+I got the room generation loot wrong at some point, so I worked around it on myself, and, somehow, it seems to work. 
+
+No further problems were encountered

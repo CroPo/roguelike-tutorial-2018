@@ -1,4 +1,5 @@
 extern crate tcod;
+extern crate rand;
 
 mod entity;
 mod render;
@@ -37,6 +38,11 @@ fn main() {
     let map_width = 80;
     let map_height = 45;
 
+    let room_max_size = 10;
+    let room_min_size = 6;
+    let max_rooms = 30;
+
+
     let mut entities = vec![
         Entity::new(screen_width / 2, screen_height / 2, '@', colors::WHITE),
         Entity::new(screen_width / 2 - 5, screen_height / 2, '@', colors::YELLOW),
@@ -53,7 +59,7 @@ fn main() {
     root.set_default_foreground(colors::WHITE);
 
     let mut map = GameMap::new(map_width, map_height);
-    map.make_map();
+    map.make_map(max_rooms, room_min_size, room_max_size, &mut entities[player_entity_index]);
 
     while !root.window_closed() {
 

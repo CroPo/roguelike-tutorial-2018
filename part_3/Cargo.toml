@@ -5,3 +5,4 @@ authors = ["Crocodile Space Pope"]
 
 [dependencies]
 tcod = "0.12"
+rand = "0.5"
