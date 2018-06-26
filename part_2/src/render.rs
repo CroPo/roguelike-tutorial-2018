@@ -11,9 +11,11 @@ pub trait Render {
 }
 
 
-pub fn render_all<T: Render>(objs: &Vec<T>, console: &mut Root, screen_width: i32, screen_height: i32) {
+pub fn render_all<T: Render, U: Render>(objs: &Vec<T>, map: &U, console: &mut Root, screen_width: i32, screen_height: i32) {
 
     let mut offscreen = Box::new(Offscreen::new(screen_width, screen_height));
+
+    map.draw(&mut offscreen);
 
     for obj in objs {
         obj.draw(&mut offscreen);

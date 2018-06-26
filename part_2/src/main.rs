@@ -2,6 +2,8 @@ extern crate tcod;
 
 mod entity;
 mod render;
+mod tile;
+mod map;
 
 use tcod::console::{Root, Console};
 use tcod::FontLayout;
@@ -12,7 +14,7 @@ use tcod::input;
 use tcod::input::Key;
 use tcod::input::KeyCode;
 use entity::Entity;
-
+use map::GameMap;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -35,6 +37,8 @@ fn handle_keys(key: Option<Key>) -> Option<Action> {
 fn main() {
     let screen_width = 80;
     let screen_height = 50;
+    let map_width = 80;
+    let map_height = 45;
 
     let mut entities = vec![
         Entity::new(screen_width / 2, screen_height / 2, '@', colors::WHITE),
@@ -51,11 +55,12 @@ fn main() {
         .init();
     root.set_default_foreground(colors::WHITE);
 
+    let mut map = GameMap::new(map_width, map_height);
+
     while !root.window_closed() {
 
-        ::render::render_all(&entities, &mut root, screen_width, screen_height);
+        ::render::render_all(&entities, &map,&mut root, screen_width, screen_height);
         root.flush();
-
         ::render::clear_all(&entities, &mut root);
 
         let action = handle_keys(root.check_for_keypress(tcod::input::KEY_PRESSED));

@@ -155,3 +155,54 @@ pub fn clear_all<T: Render>(objs: &Vec<T>,console: &mut Console) {
     }
 }
 ```
+
+#### The Map and Tiles
+
+Back to moving alongside the tutorial. No problems occured during the creation of `Tile`.
+
+`GameMap`, however... The Python tutorial wants to use a two-dimensional array, where both indexes indicate a coordinate on the Map. 
+
+Creating a two dimensional vector is a bit of a chore in Rust. I need to create a vector of vectors, just like this:
+```rust
+let mut tiles = vec![vec![Tile::new(false, false);height ]; width];
+```
+Ugly, and it is not compatible with the function siganture of the `render_all` method. Which expects a single vector of structs which implement Render, not a vector of vectors. So, how do I get a single Vector here?
+
+Well..
+
+```rust
+let mut tiles = vec![Tile:new(false, false): width * height];
+```
+
+Obviously, getting the tile of a specific coordinate will be a bit harder, but at least I can use my `Render` trait on the `Tile` struct.
+ 
+It's not that hard, though:
+```rust
+let x = 5,
+let y = 10;
+
+let tile_on_x_y = tiles[y*x+x];
+```
+
+Means: For each Y Coordinate (height), I need to 'skip' a full row (one times x). Not really good in explaining this, so I won't go any further here.
+
+I made two helper methods in the `GameMap` struct
+
+```rust
+pub fn get_tile(&self, x: usize, y: usize) -> &Tile {
+    &self.tiles[y * x + x]
+}
+
+pub fn get_tile_mut(&mut self, x: usize, y: usize) -> &mut Tile {
+    &mut self.tiles[y * x + x]
+}
+```
+
+##### And a few steps back
+
+I this point, I actually found one flaw in my whole design. Even though `Tile` implements `Render`, I simply can't render a tile, because a tile isn't aware of it's position (means: has no coordinates). This makes the whole thing far more challenging.  While sitting here, I literally banged my head onto the desk. 
+
+But the answer is simple. Dirty, yet simple: `GameMap` will implement `Render`.   
+Now I just need to expand the `render_all` function to accept my map as an additional parameter, just like the Python tutorial suggests. 
+
+I personally wanted to do this a little bit different, and I failed. But I learned from it.
