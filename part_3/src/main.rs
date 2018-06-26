@@ -2,8 +2,7 @@ extern crate tcod;
 
 mod entity;
 mod render;
-mod tile;
-mod map;
+mod map_objects;
 
 use tcod::console::{Root, Console};
 use tcod::FontLayout;
@@ -12,7 +11,7 @@ use tcod::colors;
 use tcod::input::Key;
 use tcod::input::KeyCode;
 use entity::Entity;
-use map::GameMap;
+use map_objects::map::GameMap;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -54,6 +53,7 @@ fn main() {
     root.set_default_foreground(colors::WHITE);
 
     let mut map = GameMap::new(map_width, map_height);
+    map.make_map();
 
     while !root.window_closed() {
 

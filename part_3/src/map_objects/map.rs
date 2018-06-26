@@ -2,8 +2,9 @@ use tcod::colors;
 use tcod::Console;
 use tcod::BackgroundFlag;
 
-use tile::Tile;
+use map_objects::tile::Tile;
 use render::Render;
+use map_objects::rectangle::Rect;
 
 pub struct GameMap {
     dimensions: (i32, i32),
@@ -27,13 +28,7 @@ impl GameMap {
     }
 
     fn initialize_tiles(width: usize, height: usize) -> Vec<Tile> {
-        let mut tiles = vec![Tile::new(false, false); height * width];
-
-        tiles[width * 30 + 22] = Tile::new(true, true);
-        tiles[width * 31 + 22].block_move = true;
-        tiles[width * 31 + 22].block_sight = true;
-        tiles[width * 32 + 22].block_move = true;
-        tiles[width * 32 + 22].block_sight = true;
+        let mut tiles = vec![Tile::new(true, true); height * width];
 
         tiles
     }
@@ -43,6 +38,20 @@ impl GameMap {
             return true;
         }
         false
+    }
+
+    pub fn make_map(&mut self) {
+        self.create_room(&Rect::new(20,15,10,15));
+        self.create_room(&Rect::new(35,15,10,15));
+    }
+
+    fn create_room(&mut self, room: &Rect) {
+        for x in room.tl.0+1..room.lr.0 {
+            for y in  room.tl.1+1..room.lr.1 {
+                self.get_tile_mut(x as usize,y as usize).block_move = false;
+                self.get_tile_mut(x as usize,y as usize).block_sight = false;
+            }
+        }
     }
 }
 
