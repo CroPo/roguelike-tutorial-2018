@@ -38,4 +38,68 @@ If you look close, you may see that I didn't grant public access for any of the 
 
 The method implementations are pretty much as expected. I won't go into more detail here. 
 
+#### Using the `Entity`
+
+One thing straigh forward: This part will differ from the tutorial, and I honestly do not know how to handle it correctly at that level. 
+
+Adding the player itself is not the problem. The problem starts when I have to put all entities (including the player) into one Collection for the sake of rendering them. Because, if I want to move the player around, I need to borrow a mutable reference to the `player` object whenever I call the `mv` method. And having a single mutable (means: writable) reference is exclusive to having any other kind of reference. Ownership and Borrwing are two core concepts which one needs to get used to when one wants to develop in Rust. Once you get it, you successfully took the first big hurdle (the first of many more, but by far the biggest, imo).
+
+```rust
+let mut entities = vec![npc, player];
+```
+
+Here, the ownership of both `npc` and `player` is passed to the `entities` vector. Which means I can't use both of them anymore - the compiler will throw an error and refuse to compile here. A pretty helpful error, but still an error:
+
+```
+   |
+44 |     let mut entities = vec![npc, player];
+   |                                  ------ value moved here
+...
+65 |             Some(Action::MovePlayer(move_x, move_y)) => player.mv((move_x, move_y)),
+   |                                                         ^^^^^^ value used here after move
+   |
+   = note: move occurs because `player` has type `entity::Entity`, which does not implement the `Copy` trait
+```
+
+Regarding the note, just to mention it: I don't want to copy any of these entities here. Entities should only exist once.
+
+So, the second attempt would be to either pass a borrow, or even a mutable borrow to the vector.
+
+In both cases, I can't use the `player` (and the `npc`) variable any more.   
+- To move the player, i need mutable access:  
+```rust
+// The player needs to be mutable, because we change it's value
+player.mv((move_x, move_y)
+``` 
+- If I add non-mutable borrows to the vector, I can't use any mutable access to the `Entity`
+- If I add mutable borrows to the vector, I can only use exactly this mutable borrow, and not a second one.
+
+Without using more advanced Rust components (like shared pointers and stuff like that - which I won't use here because I simply haven't reached the chapter in my Rust book which covers those), I decided for the following solution. I'm not _that_ happy with it, so please suggest a better one - I'll appreciate it!
+
+##### The solution
+
+I move the ownership over to the vector (in fact, I don't. I just initialze the vector with both entities):
+
+```rust
+let mut entities = vec![
+    Entity::new(screen_width / 2, screen_height / 2, '@', colors::WHITE),
+    Entity::new(screen_width / 2 - 5, screen_height / 2, '@', colors::YELLOW),
+];
+```
+
+... and then, I create a variable which indicates the player entity position in the vector:
+
+```rust
+let player_entity_index : usize = 0;
+```
+
+Of course, the player entity always needs to stay on position 0 in the vector. This way.
+
+Whenever I need mutable access, I can simply access the vector:
+
+```rust
+entities[player_entity_index].mv((move_x, move_y))
+```
+
+As said, not absolutely happy here, but it compiles, and that's all I wanted for now.
 
