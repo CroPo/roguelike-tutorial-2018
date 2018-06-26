@@ -1,5 +1,7 @@
 extern crate tcod;
 
+mod entity;
+
 use tcod::console::{Root, Console};
 use tcod::FontLayout;
 use tcod::FontType;
