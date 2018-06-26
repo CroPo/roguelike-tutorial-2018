@@ -9,5 +9,6 @@ Every part of the tutorial is a separate workspace member. You can run each part
 
 - [Part 1: Drawing the `@` symbol and moving it around](part_1/)
 - [Part 2: The generic Entity, the render functions, and the map](part_2/)
+- [Part 3: Generating a dungeon](part_3/)
 
 Feel free to comment any piece of code you see. I appreciate any kind of feedback here, especially if it helps to get a better understanding of Rust itself.
