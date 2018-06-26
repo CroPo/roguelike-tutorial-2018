@@ -210,3 +210,9 @@ I personally wanted to do this a little bit different, and I failed. But I learn
 ### Collision detection
 
 The final step of this part is the collision detection for the 'wall' `Tile`, which is identified by the boolean `block_move`. Finally an easy task - I expand the `GameMap` just as the tutorial suggests, with an `is_blocked` method.
+
+### Conclusion
+
+In this step, I really did many, many very dirty things, just to get that whole thing going. I wanted to bring some extra flavor into this interpretation of t he tutorial, and failed by not thinking and planning ahead. Of course, I could have followed the path where I implemneted the `Render` trait on a `Tile` further, but I would have diverged too much from the original, which I didn't want either. At least, I now have some foundation to build on
+
+For the next part (which I will start in a few minutes), I will try to stick more to the original tutorial again. Let's what Rust has to say about that plan.
