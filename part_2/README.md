@@ -206,3 +206,7 @@ But the answer is simple. Dirty, yet simple: `GameMap` will implement `Render`.
 Now I just need to expand the `render_all` function to accept my map as an additional parameter, just like the Python tutorial suggests. 
 
 I personally wanted to do this a little bit different, and I failed. But I learned from it.
+
+### Collision detection
+
+The final step of this part is the collision detection for the 'wall' `Tile`, which is identified by the boolean `block_move`. Finally an easy task - I expand the `GameMap` just as the tutorial suggests, with an `is_blocked` method.

@@ -70,7 +70,12 @@ fn main() {
                 let is_fullscreen = root.is_fullscreen();
                 root.set_fullscreen(!is_fullscreen)
             }
-            Some(Action::MovePlayer(move_x, move_y)) => entities[player_entity_index].mv((move_x, move_y)),
+            Some(Action::MovePlayer(move_x, move_y)) => {
+                let mut player = &mut entities[player_entity_index];
+                if !map.is_move_blocked(player.pos.0 + move_x, player.pos.1 + move_y) {
+                    player.mv((move_x, move_y))
+                }
+            }
             _ => ()
         }
     }

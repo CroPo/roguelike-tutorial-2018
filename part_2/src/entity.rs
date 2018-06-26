@@ -7,7 +7,7 @@ use render::Render;
 
 /// A generic representation of things like NPCs, Monsters, Items, ... and of course, of the player, in the game.
 pub struct Entity {
-    pos: (i32, i32),
+    pub pos: (i32, i32),
     glyph: char,
     color: colors::Color
 }

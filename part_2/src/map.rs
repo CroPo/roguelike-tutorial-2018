@@ -37,6 +37,13 @@ impl GameMap {
 
         tiles
     }
+
+    pub fn is_move_blocked(&self, x : i32, y:i32) -> bool {
+        if self.get_tile(x as usize, y as usize).block_move {
+            return true;
+        }
+        false
+    }
 }
 
 impl Render for GameMap {
