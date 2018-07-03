@@ -13,7 +13,7 @@ Just to mention it: I created a `Colors` enum (which has a matching method) and 
 
 Nothing special, so I rather just link it than paste all the code into this file:
 
-[color.rs](map_objects/color.rs)
+[color.rs](map_objects/src/color.rs)
 
 Usage is simple:
 
