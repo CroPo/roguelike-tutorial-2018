@@ -8,7 +8,7 @@ pub trait Render {
     fn clear(&self, console: &mut Console);
 }
 
-pub fn render_all<T: Render>(objs: &Vec<T>, map: &GameMap, fov_map: &Map, fov_recompute: bool, console: &mut Root) {
+pub fn render_all<T: Render>(objs: &Vec<T>, map: &mut GameMap, fov_map: &Map, fov_recompute: bool, console: &mut Root) {
 
     map.draw(console, fov_map, fov_recompute);
 

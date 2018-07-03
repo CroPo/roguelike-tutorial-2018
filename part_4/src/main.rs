@@ -79,7 +79,7 @@ fn main() {
             fov::recompute_fov(&mut fov_map, (player.pos.0, player.pos.1), fov_radius, fov_light_walls, fov_algorithm);
         }
 
-        ::render::render_all(&entities, &map, &fov_map, fov_recompute, &mut root);
+        ::render::render_all(&entities, &mut map, &fov_map, fov_recompute, &mut root);
         root.flush();
         ::render::clear_all(&entities, &mut root);
 

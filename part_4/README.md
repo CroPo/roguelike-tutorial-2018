@@ -57,4 +57,6 @@ the offscreen console I once created, which I did because I could not blit the r
 
 I also did some cleanup work, too. The whole thing should compile now with no errors.
 
+### Map Exploration
 
+The last section is simply making the map explorable. The `Tile` struct gets a new flag, and only explored tiles will be rendered.

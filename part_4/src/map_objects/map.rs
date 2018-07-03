@@ -100,7 +100,7 @@ impl GameMap {
         }
     }
 
-    pub fn draw(&self, console: &mut Console, fov_map: &Map, fov_recompute: bool) {
+    pub fn draw(&mut self, console: &mut Console, fov_map: &Map, fov_recompute: bool) {
 
         if !fov_recompute {
             return;
@@ -108,7 +108,7 @@ impl GameMap {
 
         for x in 0..self.dimensions.0 {
             for y in 0..self.dimensions.1 {
-                let tile = self.get_tile(x as usize, y as usize);
+                let tile = self.get_tile_mut(x as usize, y as usize);
 
                 let wall = tile.block_move;
                 let visible = fov_map.is_in_fov(x, y);
@@ -119,7 +119,9 @@ impl GameMap {
                     } else {
                         console.set_char_background(x, y, Color::LightFloor.value(), BackgroundFlag::Set)
                     }
-                } else {
+                    tile.explored = true;
+
+                } else if tile.explored {
                     if wall {
                         console.set_char_background(x, y, Color::DarkWall.value(), BackgroundFlag::Set)
                     } else {
