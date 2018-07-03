@@ -32,3 +32,12 @@ FOV Map needs these values.
 
 The rest here was pretty much as the tutorial says. Just create and initialize a `tcod::map::Map`.
 
+### Compute the FOV
+
+At this point of the tutorial, I can't really see why I need to wrap the `tcod::map::Map::compute_fov` method into a 
+function which doesn't really provide anything put that wrapper, because I can't make use of optional function parameters.
+
+But I will just follow along here, because that way I already have the function in an extra module, which helps me if I
+ever going to do further encapsulation of the fov stuff.
+
+Nothing much to do here, so I go on with the next section

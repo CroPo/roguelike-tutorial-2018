@@ -11,6 +11,8 @@ use tcod::FontType;
 use tcod::colors;
 use tcod::input::Key;
 use tcod::input::KeyCode;
+use tcod::map::FovAlgorithm;
+
 use entity::Entity;
 use map_objects::map::GameMap;
 use map_objects::fov;
@@ -43,7 +45,7 @@ fn main() {
     let room_min_size = 6;
     let max_rooms = 30;
 
-    let fov_algorithm = 0;
+    let fov_algorithm = FovAlgorithm::Basic;
     let fov_light_walls = true;
     let fov_radius = 10;
 
@@ -71,8 +73,12 @@ fn main() {
     let mut fov_map = fov::initialize_fov(&map);
 
     while !root.window_closed() {
+        if fov_recompute {
+            let player = &entities[player_entity_index];
+            fov::recompute_fov(&mut fov_map, (player.pos.0, player.pos.1), fov_radius, fov_light_walls, fov_algorithm);
+        }
 
-        ::render::render_all(&entities, &map,&mut root, screen_width, screen_height);
+        ::render::render_all(&entities, &map, &mut root, screen_width, screen_height);
         root.flush();
         ::render::clear_all(&entities, &mut root);
 
@@ -88,6 +94,7 @@ fn main() {
                 if !map.is_move_blocked(player.pos.0 + move_x, player.pos.1 + move_y) {
                     player.mv((move_x, move_y))
                 }
+                fov_recompute = true;
             }
             _ => ()
         }
