@@ -177,3 +177,20 @@ the message at this point, which is added easily.
 ### Game States
 
 Not really much to say here. Just did what had to be done.
+
+### Conclusion
+
+Once more, Rusts burrow and move functionality showed me that I need to think ahead when creating something. Of course, I
+solved all problems I had with mutability, but the way I solved it will lead to other problems in the future.
+
+Of course, I am following a tutorial, so I am used to just react to what I read. I don't know how long this is going to work
+from this point on. 
+
+But with every line I write, I feel more and more confident in Rust. A few weeks ago, it was mostly trial and error when
+I did write something (eh, just look at my first week's code here, 'nuff said). Now, especially when working with moves
+and borrows, I know that something probably won't work before I code it. Which is good.
+
+The overall code quality led me to one further conclusion:  If I have some spare time within the next week, 
+I will either refactor some parts to get a better consistency or I will completely re-write everything up to this point. Reason 
+is simple - I have learned so much within the last 3 weeks, and I want a good code base to be able to successfully continue
+the tutorial. 
