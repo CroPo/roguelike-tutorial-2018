@@ -112,9 +112,9 @@ impl GameMap {
 
             if !entities.iter().any(|ref e| e.pos.0 == x && e.pos.1 == y) {
                 let mut monster = if rng.gen_range(0, 100) < 80 {
-                    Entity::new(x, y, 'o', colors::DESATURATED_GREEN)
+                    Entity::new(x, y, 'o', colors::DESATURATED_GREEN, "Orc".to_string())
                 } else {
-                    Entity::new(x, y, 'T', colors::DARKER_GREEN)
+                    Entity::new(x, y, 'T', colors::DARKER_GREEN,"Troll".to_string())
                 };
 
                 entities.push(monster);

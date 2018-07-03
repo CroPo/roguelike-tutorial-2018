@@ -54,7 +54,7 @@ fn main() {
     let max_monsters_per_room = 3;
 
     let mut entities = vec![
-        Entity::new(0,0, '@', colors::WHITE),
+        Entity::new(0,0, '@', colors::WHITE, "Player".to_string()),
     ];
 
     let player_entity_index: usize = 0;
@@ -94,11 +94,29 @@ fn main() {
                 root.set_fullscreen(!is_fullscreen)
             }
             Some(Action::MovePlayer(move_x, move_y)) => {
-                let mut player = &mut entities[player_entity_index];
-                if !map.is_move_blocked(player.pos.0 + move_x, player.pos.1 + move_y) {
-                    fov_recompute = true;
-                    player.mv((move_x, move_y))
+
+                let mut destination = ( entities[player_entity_index].pos.0 + move_x, entities[player_entity_index].pos.1 + move_y );
+
+                if !map.is_move_blocked(destination.0, destination.1) {
+
+                    let bump_into =
+                    {
+                        let targets = entity::Entity::get_blocking_entities_at(&entities, destination.0, destination.1);
+
+                        for e in &targets {
+                            println!("You kick the {} in the shins, much to its annoyance!", e.name)
+                        }
+
+                        !targets.is_empty()
+                    };
+
+                    if !bump_into {
+                        fov_recompute = true;
+                        let mut player = &mut entities[player_entity_index];
+                        player.mv((move_x, move_y))
+                    }
                 }
+
             }
             _ => ()
         }
