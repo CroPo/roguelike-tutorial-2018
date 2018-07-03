@@ -11,5 +11,6 @@ Every part of the tutorial is a separate workspace member. You can run each part
 - [Part 2: The generic Entity, the render functions, and the map](part_2/)
 - [Part 3: Generating a dungeon](part_3/)
 - [Part 4: Field of View](part_4/)
+- [Placing Enemies and kicking them (harmlessly)](part_5/)
 
 Feel free to comment any piece of code you see. I appreciate any kind of feedback here, especially if it helps to get a better understanding of Rust itself.
