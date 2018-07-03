@@ -40,4 +40,21 @@ function which doesn't really provide anything put that wrapper, because I can't
 But I will just follow along here, because that way I already have the function in an extra module, which helps me if I
 ever going to do further encapsulation of the fov stuff.
 
-Nothing much to do here, so I go on with the next section
+Nothing much to do here, so I go on with the next section.
+
+### Extend the rendering
+
+Of course, the next logical step is to extend the render method, so I can actually make use of the calculated FOV
+
+And now comes the time where I _really_ start to hate myself for the decision to create a `Render` trait. The solution
+is quite simple: I will remove it entirely from the `GameMap` struct and will just have a `render` method there, which
+will support additional parameters.
+
+I pretty much have lost any form of consistent code, so I am not to unhappy about going that way.
+
+And, because I needed to do the `blit` a bit different, I had to change the render_all bit. I actually needed to remove 
+the offscreen console I once created, which I did because I could not blit the root console onto itself (because of mutability).
+
+I also did some cleanup work, too. The whole thing should compile now with no errors.
+
+

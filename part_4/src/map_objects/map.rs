@@ -2,15 +2,14 @@ use std::cmp;
 
 use rand::prelude::*;
 
-use tcod::colors;
 use tcod::Console;
 use tcod::BackgroundFlag;
+use tcod::Map;
 
 use map_objects::tile::Tile;
-use render::Render;
 use map_objects::rectangle::Rect;
-use map_objects::color::Colors;
 
+use map_objects::color::Color;
 use entity::Entity;
 
 pub struct GameMap {
@@ -35,9 +34,7 @@ impl GameMap {
     }
 
     fn initialize_tiles(width: usize, height: usize) -> Vec<Tile> {
-        let mut tiles = vec![Tile::new(true, true); height * width];
-
-        tiles
+        vec![Tile::new(true, true); height * width]
     }
 
     pub fn is_move_blocked(&self, x: i32, y: i32) -> bool {
@@ -103,28 +100,40 @@ impl GameMap {
         }
     }
 
+    pub fn draw(&self, console: &mut Console, fov_map: &Map, fov_recompute: bool) {
+
+        if !fov_recompute {
+            return;
+        }
+
+        for x in 0..self.dimensions.0 {
+            for y in 0..self.dimensions.1 {
+                let tile = self.get_tile(x as usize, y as usize);
+
+                let wall = tile.block_move;
+                let visible = fov_map.is_in_fov(x, y);
+
+                if visible {
+                    if wall {
+                        console.set_char_background(x, y, Color::LightWall.value(), BackgroundFlag::Set)
+                    } else {
+                        console.set_char_background(x, y, Color::LightFloor.value(), BackgroundFlag::Set)
+                    }
+                } else {
+                    if wall {
+                        console.set_char_background(x, y, Color::DarkWall.value(), BackgroundFlag::Set)
+                    } else {
+                        console.set_char_background(x, y, Color::DarkFloor.value(), BackgroundFlag::Set)
+                    }
+                }
+            }
+        }
+    }
+
     fn create_v_tunnel(&mut self, y_start: i32, y_end: i32, x: i32) {
         for y in cmp::min(y_start, y_end)..cmp::max(y_start, y_end) + 1 {
             self.get_tile_mut(x as usize, y as usize).block_move = false;
             self.get_tile_mut(x as usize, y as usize).block_sight = false;
         }
     }
-}
-
-impl Render for GameMap {
-    fn draw(&self, console: &mut Console) {
-        for x in 0..self.dimensions.0 {
-            for y in 0..self.dimensions.1 {
-                let tile = self.get_tile(x as usize, y as usize);
-
-                if tile.block_move {
-                    console.set_char_background(x, y, Colors::DarkWall.value(), BackgroundFlag::Set)
-                } else {
-                    console.set_char_background(x, y, Colors::DarkFloor.value(), BackgroundFlag::Set)
-                }
-            }
-        }
-    }
-
-    fn clear(&self, _console: &mut Console) {}
 }

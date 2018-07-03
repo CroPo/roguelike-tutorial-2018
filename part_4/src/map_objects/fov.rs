@@ -2,8 +2,6 @@ use map_objects::map::GameMap;
 use tcod::map::FovAlgorithm;
 use tcod::map::Map;
 
-use tcod;
-
 pub fn initialize_fov(game_map: &GameMap) -> Map {
     let mut fov_map = Map::new(game_map.dimensions.0, game_map.dimensions.1);
 

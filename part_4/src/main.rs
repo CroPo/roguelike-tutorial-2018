@@ -73,14 +73,17 @@ fn main() {
     let mut fov_map = fov::initialize_fov(&map);
 
     while !root.window_closed() {
+
         if fov_recompute {
             let player = &entities[player_entity_index];
             fov::recompute_fov(&mut fov_map, (player.pos.0, player.pos.1), fov_radius, fov_light_walls, fov_algorithm);
         }
 
-        ::render::render_all(&entities, &map, &mut root, screen_width, screen_height);
+        ::render::render_all(&entities, &map, &fov_map, fov_recompute, &mut root);
         root.flush();
         ::render::clear_all(&entities, &mut root);
+
+        fov_recompute = false;
 
         let action = handle_keys(root.check_for_keypress(tcod::input::KEY_PRESSED));
         match action {
@@ -92,9 +95,9 @@ fn main() {
             Some(Action::MovePlayer(move_x, move_y)) => {
                 let mut player = &mut entities[player_entity_index];
                 if !map.is_move_blocked(player.pos.0 + move_x, player.pos.1 + move_y) {
+                    fov_recompute = true;
                     player.mv((move_x, move_y))
                 }
-                fov_recompute = true;
             }
             _ => ()
         }
