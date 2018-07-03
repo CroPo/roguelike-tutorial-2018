@@ -13,6 +13,7 @@ use tcod::input::Key;
 use tcod::input::KeyCode;
 use entity::Entity;
 use map_objects::map::GameMap;
+use map_objects::fov;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -46,6 +47,8 @@ fn main() {
     let fov_light_walls = true;
     let fov_radius = 10;
 
+    let mut fov_recompute = true;
+
     let mut entities = vec![
         Entity::new(screen_width / 2, screen_height / 2, '@', colors::WHITE),
         Entity::new(screen_width / 2 - 5, screen_height / 2, '@', colors::YELLOW),
@@ -62,7 +65,10 @@ fn main() {
     root.set_default_foreground(colors::WHITE);
 
     let mut map = GameMap::new(map_width, map_height);
+
     map.make_map(max_rooms, room_min_size, room_max_size, &mut entities[player_entity_index]);
+
+    let mut fov_map = fov::initialize_fov(&map);
 
     while !root.window_closed() {
 

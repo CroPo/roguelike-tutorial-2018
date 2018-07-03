@@ -25,3 +25,10 @@ Colors::LightWall.value();
 
 The `value` method matches the enum to a `tcod::colors::Color` and returns that value.
 
+### Initialize the FOV
+
+The first thing I needed to do here was giving public access to the `dimensions` of the struct `GameMap`, because the 
+FOV Map needs these values.
+
+The rest here was pretty much as the tutorial says. Just create and initialize a `tcod::map::Map`.
+

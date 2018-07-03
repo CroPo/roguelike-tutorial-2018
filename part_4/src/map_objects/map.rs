@@ -14,7 +14,7 @@ use map_objects::color::Colors;
 use entity::Entity;
 
 pub struct GameMap {
-    dimensions: (i32, i32),
+    pub dimensions: (i32, i32),
     tiles: Vec<Tile>,
 }
 
@@ -68,8 +68,6 @@ impl GameMap {
 
             self.create_room(&new_room);
             let center = new_room.center();
-
-            println!("{}", rooms.len());
 
             if rooms.len() == 0 {
                 player.pos.0 = center.0;
