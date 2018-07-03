@@ -4,6 +4,7 @@ extern crate rand;
 mod entity;
 mod render;
 mod map_objects;
+mod game_states;
 
 use tcod::console::{Root, Console};
 use tcod::FontLayout;
@@ -16,6 +17,7 @@ use tcod::map::FovAlgorithm;
 use entity::Entity;
 use map_objects::map::GameMap;
 use map_objects::fov;
+use game_states::GameStates;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -54,7 +56,7 @@ fn main() {
     let max_monsters_per_room = 3;
 
     let mut entities = vec![
-        Entity::new(0,0, '@', colors::WHITE, "Player".to_string()),
+        Entity::new(0, 0, '@', colors::WHITE, "Player".to_string()),
     ];
 
     let player_entity_index: usize = 0;
@@ -69,12 +71,13 @@ fn main() {
 
     let mut map = GameMap::new(map_width, map_height);
 
-    map.make_map(max_rooms, room_min_size, room_max_size, &mut entities, player_entity_index, max_monsters_per_room,);
+    map.make_map(max_rooms, room_min_size, room_max_size, &mut entities, player_entity_index, max_monsters_per_room);
 
     let mut fov_map = fov::initialize_fov(&map);
 
-    while !root.window_closed() {
+    let mut game_state = GameStates::PlayersTurn;
 
+    while !root.window_closed() {
         if fov_recompute {
             let player = &entities[player_entity_index];
             fov::recompute_fov(&mut fov_map, (player.pos.0, player.pos.1), fov_radius, fov_light_walls, fov_algorithm);
@@ -93,22 +96,20 @@ fn main() {
                 let is_fullscreen = root.is_fullscreen();
                 root.set_fullscreen(!is_fullscreen)
             }
-            Some(Action::MovePlayer(move_x, move_y)) => {
-
-                let mut destination = ( entities[player_entity_index].pos.0 + move_x, entities[player_entity_index].pos.1 + move_y );
+            Some(Action::MovePlayer(move_x, move_y)) => if game_state == GameStates::PlayersTurn {
+                let mut destination = (entities[player_entity_index].pos.0 + move_x, entities[player_entity_index].pos.1 + move_y);
 
                 if !map.is_move_blocked(destination.0, destination.1) {
-
                     let bump_into =
-                    {
-                        let targets = entity::Entity::get_blocking_entities_at(&entities, destination.0, destination.1);
+                        {
+                            let targets = entity::Entity::get_blocking_entities_at(&entities, destination.0, destination.1);
 
-                        for e in &targets {
-                            println!("You kick the {} in the shins, much to its annoyance!", e.name)
-                        }
+                            for e in &targets {
+                                println!("You kick the {} in the shins, much to its annoyance!", e.name)
+                            }
 
-                        !targets.is_empty()
-                    };
+                            !targets.is_empty()
+                        };
 
                     if !bump_into {
                         fov_recompute = true;
@@ -117,8 +118,15 @@ fn main() {
                     }
                 }
 
+                game_state = GameStates::EnemyTurn;
             }
-            _ => ()
+            _ => if game_state == GameStates::EnemyTurn {
+
+                for e in entities.iter().skip(1) {
+                    println!("The {} ponders the meaning of its existence.", e.name);
+                }
+                game_state = GameStates::PlayersTurn;
+            }
         }
     }
 }

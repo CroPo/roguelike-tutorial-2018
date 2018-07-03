@@ -173,3 +173,7 @@ if !map.is_move_blocked(destination.0, destination.1) {
 
 This compiles fine, because `targets` lifetime ends when it goes out of scope (the closing bracket). I'm still missing
 the message at this point, which is added easily.
+
+### Game States
+
+Not really much to say here. Just did what had to be done.
