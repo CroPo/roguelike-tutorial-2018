@@ -5,6 +5,7 @@ use rand::prelude::*;
 use tcod::Console;
 use tcod::BackgroundFlag;
 use tcod::Map;
+use tcod::colors;
 
 use map_objects::tile::Tile;
 use map_objects::rectangle::Rect;
@@ -44,7 +45,12 @@ impl GameMap {
         false
     }
 
-    pub fn make_map(&mut self, max_rooms: i32, room_min_size: i32, room_max_size: i32, player: &mut Entity) {
+    pub fn make_map(&mut self,
+                    max_rooms: i32,
+                    room_min_size: i32, room_max_size: i32,
+                    entities: &mut Vec<Entity>,
+                    player_entity_index: usize,
+                    max_monsters_per_room: i32) {
         let mut rooms: Vec<Rect> = Vec::new();
         let mut rng = thread_rng();
 
@@ -67,6 +73,7 @@ impl GameMap {
             let center = new_room.center();
 
             if rooms.len() == 0 {
+                let player = &mut entities[player_entity_index];
                 player.pos.0 = center.0;
                 player.pos.1 = center.1;
             } else {
@@ -80,6 +87,7 @@ impl GameMap {
                     self.create_h_tunnel(prev_center.0, center.0, center.1);
                 }
             }
+            self.place_entities(&new_room, entities, max_monsters_per_room);
             rooms.push(new_room);
         }
     }
@@ -93,6 +101,27 @@ impl GameMap {
         }
     }
 
+    fn place_entities(&mut self, room: &Rect, entities: &mut Vec<Entity>, max_monsters_per_room: i32) {
+        let mut rng = thread_rng();
+
+        let monster_count = rng.gen_range(0, max_monsters_per_room);
+
+        for _i in 0..monster_count {
+            let x = rng.gen_range(room.tl.0 + 1, room.lr.0 - 1);
+            let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
+
+            if !entities.iter().any(|ref e| e.pos.0 == x && e.pos.1 == y) {
+                let mut monster = if rng.gen_range(0, 100) < 80 {
+                    Entity::new(x, y, 'o', colors::DESATURATED_GREEN)
+                } else {
+                    Entity::new(x, y, 'T', colors::DARKER_GREEN)
+                };
+
+                entities.push(monster);
+            }
+        }
+    }
+
     fn create_h_tunnel(&mut self, x_start: i32, x_end: i32, y: i32) {
         for x in cmp::min(x_start, x_end)..cmp::max(x_start, x_end) + 1 {
             self.get_tile_mut(x as usize, y as usize).block_move = false;
@@ -100,8 +129,14 @@ impl GameMap {
         }
     }
 
-    pub fn draw(&mut self, console: &mut Console, fov_map: &Map, fov_recompute: bool) {
+    fn create_v_tunnel(&mut self, y_start: i32, y_end: i32, x: i32) {
+        for y in cmp::min(y_start, y_end)..cmp::max(y_start, y_end) + 1 {
+            self.get_tile_mut(x as usize, y as usize).block_move = false;
+            self.get_tile_mut(x as usize, y as usize).block_sight = false;
+        }
+    }
 
+    pub fn draw(&mut self, console: &mut Console, fov_map: &Map, fov_recompute: bool) {
         if !fov_recompute {
             return;
         }
@@ -120,7 +155,6 @@ impl GameMap {
                         console.set_char_background(x, y, Color::LightFloor.value(), BackgroundFlag::Set)
                     }
                     tile.explored = true;
-
                 } else if tile.explored {
                     if wall {
                         console.set_char_background(x, y, Color::DarkWall.value(), BackgroundFlag::Set)
@@ -129,13 +163,6 @@ impl GameMap {
                     }
                 }
             }
-        }
-    }
-
-    fn create_v_tunnel(&mut self, y_start: i32, y_end: i32, x: i32) {
-        for y in cmp::min(y_start, y_end)..cmp::max(y_start, y_end) + 1 {
-            self.get_tile_mut(x as usize, y as usize).block_move = false;
-            self.get_tile_mut(x as usize, y as usize).block_sight = false;
         }
     }
 }

@@ -51,9 +51,10 @@ fn main() {
 
     let mut fov_recompute = true;
 
+    let max_monsters_per_room = 3;
+
     let mut entities = vec![
-        Entity::new(screen_width / 2, screen_height / 2, '@', colors::WHITE),
-        Entity::new(screen_width / 2 - 5, screen_height / 2, '@', colors::YELLOW),
+        Entity::new(0,0, '@', colors::WHITE),
     ];
 
     let player_entity_index: usize = 0;
@@ -68,7 +69,7 @@ fn main() {
 
     let mut map = GameMap::new(map_width, map_height);
 
-    map.make_map(max_rooms, room_min_size, room_max_size, &mut entities[player_entity_index]);
+    map.make_map(max_rooms, room_min_size, room_max_size, &mut entities, player_entity_index, max_monsters_per_room,);
 
     let mut fov_map = fov::initialize_fov(&map);
 
