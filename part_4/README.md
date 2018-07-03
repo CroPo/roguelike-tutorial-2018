@@ -60,3 +60,7 @@ I also did some cleanup work, too. The whole thing should compile now with no er
 ### Map Exploration
 
 The last section is simply making the map explorable. The `Tile` struct gets a new flag, and only explored tiles will be rendered.
+
+### Conclusion
+
+This step was done pretty fast, imo. No real problems encountered, just the ones I made by myself. 
