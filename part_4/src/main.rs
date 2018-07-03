@@ -42,6 +42,9 @@ fn main() {
     let room_min_size = 6;
     let max_rooms = 30;
 
+    let fov_algorithm = 0;
+    let fov_light_walls = true;
+    let fov_radius = 10;
 
     let mut entities = vec![
         Entity::new(screen_width / 2, screen_height / 2, '@', colors::WHITE),
@@ -52,7 +55,7 @@ fn main() {
 
     let mut root = Root::initializer()
         .size(screen_width, screen_height)
-        .title("/r/roguelikedev Tutorial Part3")
+        .title("/r/roguelikedev Tutorial Part4")
         .font("arial10x10.png", FontLayout::Tcod)
         .font_type(FontType::Greyscale)
         .init();

@@ -9,6 +9,7 @@ use tcod::BackgroundFlag;
 use map_objects::tile::Tile;
 use render::Render;
 use map_objects::rectangle::Rect;
+use map_objects::color::Colors;
 
 use entity::Entity;
 
@@ -119,9 +120,9 @@ impl Render for GameMap {
                 let tile = self.get_tile(x as usize, y as usize);
 
                 if tile.block_move {
-                    console.set_char_background(x, y, colors::Color { r: 0, g: 0, b: 100 }, BackgroundFlag::Set)
+                    console.set_char_background(x, y, Colors::DarkWall.value(), BackgroundFlag::Set)
                 } else {
-                    console.set_char_background(x, y, colors::Color { r: 50, g: 50, b: 150 }, BackgroundFlag::Set)
+                    console.set_char_background(x, y, Colors::DarkFloor.value(), BackgroundFlag::Set)
                 }
             }
         }
