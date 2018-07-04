@@ -6,7 +6,7 @@ mod render;
 mod map_objects;
 mod game_states;
 
-use tcod::console::{Root, Console};
+use tcod::console::{Root, Console, Offscreen};
 use tcod::FontLayout;
 use tcod::FontType;
 use tcod::colors;
@@ -67,10 +67,10 @@ fn main() {
         .font("arial10x10.png", FontLayout::Tcod)
         .font_type(FontType::Greyscale)
         .init();
-    root.set_default_foreground(colors::WHITE);
+
+    let mut con = Offscreen::new(screen_width, screen_height);
 
     let mut map = GameMap::new(map_width, map_height);
-
     map.make_map(max_rooms, room_min_size, room_max_size, &mut entities, player_entity_index, max_monsters_per_room);
 
     let mut fov_map = fov::initialize_fov(&map);
@@ -83,9 +83,9 @@ fn main() {
             fov::recompute_fov(&mut fov_map, (player.pos.0, player.pos.1), fov_radius, fov_light_walls, fov_algorithm);
         }
 
-        ::render::render_all(&entities, &mut map, &fov_map, fov_recompute, &mut root);
+        ::render::render_all(&entities, &mut map, &fov_map, fov_recompute, &mut con, &mut root);
         root.flush();
-        ::render::clear_all(&entities, &mut root);
+        ::render::clear_all(&entities, &mut con);
 
         fov_recompute = false;
 
