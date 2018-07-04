@@ -2,17 +2,18 @@ use tcod::console::{Console, Root};
 
 use map_objects::map::GameMap;
 use tcod::Map;
+use entity::Entity;
 
 pub trait Render {
     fn draw(&self, console: &mut Console);
     fn clear(&self, console: &mut Console);
 }
 
-pub fn render_all<T: Render>(objs: &Vec<T>, map: &mut GameMap, fov_map: &Map, fov_recompute: bool, console: &mut Root) {
+pub fn render_all(objs: &Vec<Entity>, map: &mut GameMap, fov_map: &Map, fov_recompute: bool, console: &mut Root) {
 
     map.draw(console, fov_map, fov_recompute);
 
-    for obj in objs {
+    for obj in objs.iter().filter(|e| fov_map.is_in_fov(e.pos.0, e.pos.1) ) {
         obj.draw(console);
     }
 }
