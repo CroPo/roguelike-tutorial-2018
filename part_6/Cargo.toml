@@ -1,6 +1,6 @@
 [package]
-name = "part_5"
-version = "0.5.0"
+name = "part_6"
+version = "0.6.0"
 authors = ["Crocodile Space Pope"]
 
 [dependencies]
