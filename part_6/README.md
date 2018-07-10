@@ -4,6 +4,8 @@
 - [Reddit Post on /r/roguelikedev](https://www.reddit.com/r/roguelikedev/comments/8xlo9k/roguelikedev_does_the_complete_roguelike_tutorial/)
 - [Direct Tutorial Link](http://rogueliketutorials.com/libtcod/6)
 
+1. [Fighters and AI](#Fighters-and-AI)
+
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
 
