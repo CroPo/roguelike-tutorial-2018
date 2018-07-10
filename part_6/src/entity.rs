@@ -3,6 +3,8 @@ use tcod::Console;
 use tcod::BackgroundFlag;
 
 use render::Render;
+use components::fighter::Fighter;
+use components::ai::Ai;
 
 
 /// A generic representation of things like NPCs, Monsters, Items, ... and of course, of the player, in the game.
@@ -12,16 +14,20 @@ pub struct Entity {
     color: colors::Color,
     pub name: String,
     blocks: bool,
+    pub fighter: Option<Fighter>,
+    pub ai: Option<Box<Ai>>
 }
 
 impl Entity {
-    pub fn new(x: i32, y: i32, glyph: char, color: colors::Color, name: String) -> Entity {
+    pub fn new(x: i32, y: i32, glyph: char, color: colors::Color, name: String, fighter : Option<Fighter>, ai: Option<Box<Ai>>) -> Entity {
         Entity {
             pos: (x, y),
             glyph,
             color,
             name,
             blocks: true,
+            fighter,
+            ai
         }
     }
 

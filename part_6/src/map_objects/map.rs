@@ -12,6 +12,8 @@ use map_objects::rectangle::Rect;
 
 use map_objects::color::Color;
 use entity::Entity;
+use components::fighter::Fighter;
+use components::ai::BasicMonster;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -112,9 +114,17 @@ impl GameMap {
 
             if !entities.iter().any(|ref e| e.pos.0 == x && e.pos.1 == y) {
                 let mut monster = if rng.gen_range(0, 100) < 80 {
-                    Entity::new(x, y, 'o', colors::DESATURATED_GREEN, "Orc".to_string())
+                    let fighter_component = Fighter::new(10, 0, 3);
+                    let ai_component = BasicMonster::new();
+
+                    Entity::new(x, y, 'o', colors::DESATURATED_GREEN, "Orc".to_string(),
+                                Some(fighter_component), Some(Box::new(ai_component)))
                 } else {
-                    Entity::new(x, y, 'T', colors::DARKER_GREEN,"Troll".to_string())
+                    let fighter_component = Fighter::new(16, 1, 4);
+                    let ai_component = BasicMonster::new();
+
+                    Entity::new(x, y, 'T', colors::DARKER_GREEN, "Troll".to_string(),
+                                Some(fighter_component), Some(Box::new(ai_component)))
                 };
 
                 entities.push(monster);

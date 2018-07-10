@@ -5,8 +5,9 @@ mod entity;
 mod render;
 mod map_objects;
 mod game_states;
+mod components;
 
-use tcod::console::{Root, Console, Offscreen};
+use tcod::console::{Root, Offscreen};
 use tcod::FontLayout;
 use tcod::FontType;
 use tcod::colors;
@@ -18,6 +19,7 @@ use entity::Entity;
 use map_objects::map::GameMap;
 use map_objects::fov;
 use game_states::GameStates;
+use components::fighter::Fighter;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -55,8 +57,10 @@ fn main() {
 
     let max_monsters_per_room = 3;
 
+    let fighter_component = Fighter::new(30, 2, 5);
+
     let mut entities = vec![
-        Entity::new(0, 0, '@', colors::WHITE, "Player".to_string()),
+        Entity::new(0, 0, '@', colors::WHITE, "Player".to_string(), Some(fighter_component), None),
     ];
 
     let player_entity_index: usize = 0;
@@ -121,9 +125,8 @@ fn main() {
                 game_state = GameStates::EnemyTurn;
             }
             _ => if game_state == GameStates::EnemyTurn {
-
-                for e in entities.iter().skip(1) {
-                    println!("The {} ponders the meaning of its existence.", e.name);
+                for e in entities.iter().filter(|e| e.ai.is_some()) {
+                    e.ai.as_ref().unwrap().take_turn();
                 }
                 game_state = GameStates::PlayersTurn;
             }
