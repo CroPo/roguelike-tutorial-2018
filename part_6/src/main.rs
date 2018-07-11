@@ -125,9 +125,6 @@ fn main() {
                 game_state = GameStates::EnemyTurn;
             }
             _ => if game_state == GameStates::EnemyTurn {
-                for e in entities.iter().filter(|e| e.ai.is_some()) {
-                    e.ai.as_ref().unwrap().take_turn();
-                }
                 game_state = GameStates::PlayersTurn;
             }
         }
