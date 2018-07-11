@@ -1,3 +1,5 @@
+pub mod id;
+
 use tcod::colors;
 use tcod::Console;
 use tcod::BackgroundFlag;
@@ -5,8 +7,25 @@ use tcod::BackgroundFlag;
 use render::Render;
 use components::fighter::Fighter;
 use components::ai::Ai;
+use entities::id::{IdGenerator, EntityId};
+use std::collections::HashMap;
 
-pub mod id;
+pub struct EntityManager {
+    id_generator : IdGenerator,
+    entities: HashMap<EntityId, Entity>,
+    player_id : EntityId,
+}
+
+impl EntityManager {
+    pub fn new() -> EntityManager {
+        EntityManager {
+            id_generator : IdGenerator::new(),
+            entities: HashMap::new(),
+            player_id: 0
+        }
+    }
+}
+
 
 /// A generic representation of things like NPCs, Monsters, Items, ... and of course, of the player, in the game.
 pub struct Entity {

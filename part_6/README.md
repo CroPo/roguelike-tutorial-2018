@@ -131,3 +131,23 @@ files.
 
 `mod.rs` holds both the `Entity` and the `EntityManager` (for now), and the `id.rs` contains everything related to the 
 `EntityId`
+
+This is, of course, just my personal preference. I like to split up things in small files. Maybe because I do Java
+for a living for some time now.
+
+Next thing will be implementing the `EntityManager` itself. For now, I think this will be sufficient:
+
+```rust
+pub struct EntityManager {
+    id_generator : IdGenerator,
+    entities: HashMap<EntityId, Entity>,
+    player_id : EntityId,   
+}
+```
+
+The `IdGenerator`, a map for all entities, indexed by an `EntityId`, and the `EntityId` which refers to the `Entity` which
+holds the player character information.
+
+The first step on a long path is done.
+
+

@@ -2,7 +2,7 @@ use tcod::console::{Console, Root, blit, Offscreen};
 
 use map_objects::map::GameMap;
 use tcod::Map;
-use entity::Entity;
+use entities::Entity;
 
 pub trait Render {
     fn draw(&self, console: &mut Console);

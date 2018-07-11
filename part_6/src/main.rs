@@ -1,7 +1,7 @@
 extern crate tcod;
 extern crate rand;
 
-mod entity;
+mod entities;
 mod render;
 mod map_objects;
 mod game_states;
@@ -15,7 +15,7 @@ use tcod::input::Key;
 use tcod::input::KeyCode;
 use tcod::map::FovAlgorithm;
 
-use entity::Entity;
+use entities::Entity;
 use map_objects::map::GameMap;
 use map_objects::fov;
 use game_states::GameStates;
@@ -106,7 +106,7 @@ fn main() {
                 if !map.is_move_blocked(destination.0, destination.1) {
                     let bump_into =
                         {
-                            let targets = entity::Entity::get_blocking_entities_at(&entities, destination.0, destination.1);
+                            let targets = Entity::get_blocking_entities_at(&entities, destination.0, destination.1);
 
                             for e in &targets {
                                 println!("You kick the {} in the shins, much to its annoyance!", e.name)

@@ -3,19 +3,19 @@
 pub type EntityId = u8;
 
 /// Generator for IDs which are used to identify an `Entity`
-struct IdGenerator {
+pub struct IdGenerator {
     id: EntityId
 }
 
 impl IdGenerator {
-    fn new() -> IdGenerator {
+    pub fn new() -> IdGenerator {
         IdGenerator {
             id: 0,
         }
     }
 
     /// Generate a new ID
-    fn get_next_id(&mut self) -> EntityId {
+    pub fn get_next_id(&mut self) -> EntityId {
         self.id+=1;
         self.id
     }

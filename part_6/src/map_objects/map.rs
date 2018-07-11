@@ -11,7 +11,7 @@ use map_objects::tile::Tile;
 use map_objects::rectangle::Rect;
 
 use map_objects::color::Color;
-use entity::Entity;
+use entities::Entity;
 use components::fighter::Fighter;
 use components::ai::BasicMonster;
 
