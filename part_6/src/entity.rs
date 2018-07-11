@@ -6,6 +6,27 @@ use render::Render;
 use components::fighter::Fighter;
 use components::ai::Ai;
 
+type EntityId = u8;
+/// Generator for IDs which are used to identify an `Entity`
+struct IdGenerator {
+    id: EntityId
+}
+
+impl IdGenerator {
+    fn new() -> IdGenerator {
+        IdGenerator {
+            id: 0,
+        }
+    }
+
+    /// Generate a new ID
+    fn get_next_id(&mut self) -> EntityId {
+        self.id+=1;
+        self.id
+    }
+}
+
+
 
 /// A generic representation of things like NPCs, Monsters, Items, ... and of course, of the player, in the game.
 pub struct Entity {
@@ -14,8 +35,6 @@ pub struct Entity {
     color: colors::Color,
     pub name: String,
     blocks: bool,
-    pub fighter: Option<Fighter>,
-    pub ai: Option<Box<Ai>>
 }
 
 impl Entity {
@@ -25,9 +44,7 @@ impl Entity {
             glyph,
             color,
             name,
-            blocks: true,
-            fighter,
-            ai
+            blocks: true
         }
     }
 

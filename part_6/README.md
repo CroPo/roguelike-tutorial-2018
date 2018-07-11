@@ -5,6 +5,8 @@
 - [Direct Tutorial Link](http://rogueliketutorials.com/libtcod/6)
 
 1. [Fighters and AI](#fighters-and-ai)
+2. [Managing the Entities](#managing-the-entities)
+    1. [The ID Generator](#the-id-generatpr)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -52,3 +54,63 @@ The thing is - the whole component structure is built on Python's features, whic
 composition like this in Rust, I will have to go a bit of a different way.
 
 I think I will conclude this section of part 6 here. 
+
+### Managing the Entities
+
+After a 3 hours straight session of trial and error, one thing seems very clear to me at this point: I need to rebuild
+how Entities are stored and accessed. Entirely. Too many problems have occured to this point, and even if I find a
+workaround for the most recent problems, it probably won't be long until I run into the next couple of blockers.
+
+So, I will redo the whole `Entity` handling. I don't want to diverge too much form the Tutorial itself, too.
+
+Summed up, I will build something like this:
+
+- A manager structure which holds the entities and provides some methods to access and alter those.
+- Splitting up an Entity's properties to multiple Lists if needed, so that I can iterate over one while having mutable 
+access to another one.
+- To achieve this, every Entity needs to get an unique ID. I first thought of using an UUID here, but that would 
+be a bet over-engineered for this use case. An internal counter which gets updated for every added Entity will pretty
+much do the same thing here. I don't use threading atm, so I don't have to take care of that too.
+
+#### The ID Generatpr
+
+A simple task, because I don't care what happens if there are multiple instances of the generator. Of course, from
+a technical POV, I _could_ create as many instances as I want, with each instance holding it's own internal counter, 
+so this could lead to ID collisions. But I simply know I will only use it in the entity manager struct, which I will
+only use once, too.
+
+The id will be a `u8`, because I really doubt I will ever get more than 256 entities at once during this 
+Tutorial.
+
+```rust
+type EntityId = u8;
+``` 
+
+Just to make sure I don't have to change half of the code again if I should run out of IDs, I simply declare a 
+type here
+
+So, if I ever feel like having over 65,000 entities at once (or, if I _really_ want to try out UUIDs) - 
+all I need to do is changing the actual type of the `EntityId`.
+
+```rust
+struct IdGenerator {
+    id: EntityId
+}
+
+impl IdGenerator {
+    fn new() -> IdGenerator {
+        IdGenerator {
+            id: 0,
+        }
+    }
+
+    /// Generate a new ID
+    fn get_next_id(&mut self) -> EntityId {
+        self.id+=1;
+        self.id
+    }
+}
+```
+
+A simple `struct` with a simple implementation. Using it this way, the first generated id will be 1, because `get_next_id` 
+increments the id by one before returning.
