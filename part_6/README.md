@@ -114,3 +114,20 @@ impl IdGenerator {
 
 A simple `struct` with a simple implementation. Using it this way, the first generated id will be 1, because `get_next_id` 
 increments the id by one before returning.
+
+#### Wrapping it up
+
+As I mentioned before, I want to wrap all the `Entity` related stuff into a struct to handle them. I decided to name it
+`EntityManager`, because that's what it actually does.
+
+To keep an overview of everything, I will move all entity related stuff to a new directory, and split it up into several 
+files. 
+
+```
+/src/entities
+    - mod.rs
+    - id.rs
+```
+
+`mod.rs` holds both the `Entity` and the `EntityManager` (for now), and the `id.rs` contains everything related to the 
+`EntityId`
