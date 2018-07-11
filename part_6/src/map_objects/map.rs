@@ -14,6 +14,7 @@ use map_objects::color::Color;
 use entities::Entity;
 use components::fighter::Fighter;
 use components::ai::BasicMonster;
+use entities::EntityManager;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -51,7 +52,7 @@ impl GameMap {
                     max_rooms: i32,
                     room_min_size: i32, room_max_size: i32,
                     entities: &mut Vec<Entity>,
-                    player_entity_index: usize,
+                    entity_manager: &mut EntityManager,
                     max_monsters_per_room: i32) {
         let mut rooms: Vec<Rect> = Vec::new();
         let mut rng = thread_rng();
@@ -75,7 +76,7 @@ impl GameMap {
             let center = new_room.center();
 
             if rooms.len() == 0 {
-                let player = &mut entities[player_entity_index];
+                let player = entity_manager.get_player_mut().unwrap();
                 player.pos.0 = center.0;
                 player.pos.1 = center.1;
             } else {

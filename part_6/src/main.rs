@@ -10,7 +10,6 @@ mod components;
 use tcod::console::{Root, Offscreen};
 use tcod::FontLayout;
 use tcod::FontType;
-use tcod::colors;
 use tcod::input::Key;
 use tcod::input::KeyCode;
 use tcod::map::FovAlgorithm;
@@ -20,6 +19,8 @@ use map_objects::map::GameMap;
 use map_objects::fov;
 use game_states::GameStates;
 use components::fighter::Fighter;
+use entities::EntityManager;
+use entities::creature::CreatureTemplate;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -59,11 +60,10 @@ fn main() {
 
     let fighter_component = Fighter::new(30, 2, 5);
 
-    let mut entities = vec![
-        Entity::new(0, 0, '@', colors::WHITE, "Player".to_string(), Some(fighter_component), None),
-    ];
+    let mut entities = vec![];
 
-    let player_entity_index: usize = 0;
+    let mut entity_manager = EntityManager::new();
+    entity_manager.add_creature(CreatureTemplate::Player, (0,0));
 
     let mut root = Root::initializer()
         .size(screen_width, screen_height)
@@ -75,7 +75,7 @@ fn main() {
     let mut con = Offscreen::new(screen_width, screen_height);
 
     let mut map = GameMap::new(map_width, map_height);
-    map.make_map(max_rooms, room_min_size, room_max_size, &mut entities, player_entity_index, max_monsters_per_room);
+    map.make_map(max_rooms, room_min_size, room_max_size, &mut entities, &mut entity_manager, max_monsters_per_room);
 
     let mut fov_map = fov::initialize_fov(&map);
 
@@ -83,7 +83,7 @@ fn main() {
 
     while !root.window_closed() {
         if fov_recompute {
-            let player = &entities[player_entity_index];
+            let player = entity_manager.get_player().unwrap();
             fov::recompute_fov(&mut fov_map, (player.pos.0, player.pos.1), fov_radius, fov_light_walls, fov_algorithm);
         }
 
@@ -101,7 +101,9 @@ fn main() {
                 root.set_fullscreen(!is_fullscreen)
             }
             Some(Action::MovePlayer(move_x, move_y)) => if game_state == GameStates::PlayersTurn {
-                let mut destination = (entities[player_entity_index].pos.0 + move_x, entities[player_entity_index].pos.1 + move_y);
+
+                let mut player_entity = entity_manager.get_player_mut().unwrap();
+                let mut destination = (player_entity.pos.0 + move_x, player_entity.pos.1 + move_y);
 
                 if !map.is_move_blocked(destination.0, destination.1) {
                     let bump_into =
@@ -117,8 +119,7 @@ fn main() {
 
                     if !bump_into {
                         fov_recompute = true;
-                        let mut player = &mut entities[player_entity_index];
-                        player.mv((move_x, move_y))
+                        player_entity.mv((move_x, move_y))
                     }
                 }
 

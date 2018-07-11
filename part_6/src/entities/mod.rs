@@ -1,4 +1,5 @@
 pub mod id;
+pub mod creature;
 
 use tcod::colors;
 use tcod::Console;
@@ -9,20 +10,54 @@ use components::fighter::Fighter;
 use components::ai::Ai;
 use entities::id::{IdGenerator, EntityId};
 use std::collections::HashMap;
+use entities::creature::CreatureTemplate;
 
+/// A struct for handling access to Entities and their Data
 pub struct EntityManager {
-    id_generator : IdGenerator,
+    id_generator: IdGenerator,
     entities: HashMap<EntityId, Entity>,
-    player_id : EntityId,
+    player_id: EntityId,
 }
 
 impl EntityManager {
     pub fn new() -> EntityManager {
         EntityManager {
-            id_generator : IdGenerator::new(),
+            id_generator: IdGenerator::new(),
             entities: HashMap::new(),
-            player_id: 0
+            player_id: 0,
         }
+    }
+
+    /// Add a creature from a template to a specific position
+    pub fn add_creature(&mut self, template: CreatureTemplate, position: (i32, i32)) {
+        if template.is_player() && self.player_id != 0 {
+            // Player Entity has already been created. Abort
+            return;
+        }
+
+        match template.create() {
+            Some(entity) => {
+                let id = self.id_generator.get_next_id();
+                self.entities.insert(id, entity);
+
+                self.entities.get_mut(&id).unwrap().pos = position;
+
+                if template.is_player() {
+                    self.player_id = id;
+                }
+            }
+            None => ()
+        }
+    }
+
+    /// Get a borrow to the player `Entity`
+    pub fn get_player(&self) -> Option<&Entity> {
+        self.entities.get(&self.player_id)
+    }
+
+    /// Get a mutable borrow to the player `Entity`
+    pub fn get_player_mut(&mut self) -> Option<&mut Entity> {
+        self.entities.get_mut(&self.player_id)
     }
 }
 
@@ -37,13 +72,13 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn new(x: i32, y: i32, glyph: char, color: colors::Color, name: String, fighter : Option<Fighter>, ai: Option<Box<Ai>>) -> Entity {
+    pub fn new(x: i32, y: i32, glyph: char, color: colors::Color, name: String, fighter: Option<Fighter>, ai: Option<Box<Ai>>) -> Entity {
         Entity {
             pos: (x, y),
             glyph,
             color,
             name,
-            blocks: true
+            blocks: true,
         }
     }
 

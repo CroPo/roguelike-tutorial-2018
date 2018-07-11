@@ -4,9 +4,14 @@
 - [Reddit Post on /r/roguelikedev](https://www.reddit.com/r/roguelikedev/comments/8xlo9k/roguelikedev_does_the_complete_roguelike_tutorial/)
 - [Direct Tutorial Link](http://rogueliketutorials.com/libtcod/6)
 
+Contents of this Writep:  
+_Hint: You can actually skip the first one. It's just me struggling with everything_
+
 1. [Fighters and AI](#fighters-and-ai)
 2. [Managing the Entities](#managing-the-entities)
     1. [The ID Generator](#the-id-generatpr)
+    2. [Wrapping it up](#wrapping-it-up)
+    3. [Re-implement ... everything!](#re-implementing-...-everything!)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -150,4 +155,44 @@ holds the player character information.
 
 The first step on a long path is done.
 
+#### Re-Implementing ... everything!
+##### (One Entity at a time, though)
 
+Yes. I need to re-implement all stuff which has anything to do with `Entities`, or, to be precise, everything that accesses 
+the `Vec<Entity>`.  
+Which is: `Entity` creation, player movement, rendering, ... Pretty much half of the game it is.
+
+First of all, I need a method to add a new Entity. I want to only tell the `EntityManager` which kind of creature I 
+want to create - right now, we can have a Player, and Orc or a Troll. The `EntityManager` itself then needs to take care
+of which character or color to use for drawing, what name it should get, and other stuff. All I want to tell the 
+`EntityManager` is _what_ creature should be placed _where_ on the Map.
+
+The 'problem' is that the `new` Method of a creature is already pretty big in terms of parameters. So I shorten that by
+only passing two parameters (type, and position), and let the manager select the correct values from a template. This
+could be utilized to read monsters from configuration files or from a database in the future. But right now, I will
+only use three predefined creature types from a `enum`:
+
+```rust
+pub enum CreatureTemplate {
+    Player,
+    Troll,
+    Orc
+}
+```
+
+The enum holds a public `create` method which creates an instance of the selected template. I won't paste the whole
+implementation details in here, but you can look them up in the [file](src/entities/creature.rs).
+
+Right now, only the player creature templates is implemented. Trying to create `Troll` or an `Orc` will result in `None`.
+
+I also added the `is_player` method, which will (obviously) return true if the value of the template is `Player`. This 
+method has 2 uses: First, I can tell which `EntityId` I need to save in`player_id`, and secondly, it helps me to prevent
+more than one player entity from being added.
+
+Back in the `EntityManager`, I added a method to create creatures from a template at a specific position, and two methods
+to get the player `Entity`, one immutable, the other one for mutab;e access. 
+
+Now is the time to actually put the `EntityManger` into use: I replace every player `Entity` access with it, which means
+I have to change the `GameMap.make_map`, too. Following this strategy, replacing any occurrence of `Vec<Entity>` at a time,
+while still maintaining compilability on the code,  I will slowly, bur steady, come to the point where I get rid of the
+`Vec<Entity>` 
