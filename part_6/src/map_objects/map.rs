@@ -15,6 +15,7 @@ use entities::Entity;
 use components::fighter::Fighter;
 use components::ai::BasicMonster;
 use entities::EntityManager;
+use entities::creature::CreatureTemplate;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -51,7 +52,6 @@ impl GameMap {
     pub fn make_map(&mut self,
                     max_rooms: i32,
                     room_min_size: i32, room_max_size: i32,
-                    entities: &mut Vec<Entity>,
                     entity_manager: &mut EntityManager,
                     max_monsters_per_room: i32) {
         let mut rooms: Vec<Rect> = Vec::new();
@@ -90,7 +90,7 @@ impl GameMap {
                     self.create_h_tunnel(prev_center.0, center.0, center.1);
                 }
             }
-            self.place_entities(&new_room, entities, max_monsters_per_room);
+            self.place_entities(&new_room, entity_manager, max_monsters_per_room);
             rooms.push(new_room);
         }
     }
@@ -104,7 +104,7 @@ impl GameMap {
         }
     }
 
-    fn place_entities(&mut self, room: &Rect, entities: &mut Vec<Entity>, max_monsters_per_room: i32) {
+    fn place_entities(&mut self, room: &Rect, entity_manager: &mut EntityManager, max_monsters_per_room: i32) {
         let mut rng = thread_rng();
 
         let monster_count = rng.gen_range(0, max_monsters_per_room);
@@ -113,22 +113,14 @@ impl GameMap {
             let x = rng.gen_range(room.tl.0 + 1, room.lr.0 - 1);
             let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
 
-            if !entities.iter().any(|ref e| e.pos.0 == x && e.pos.1 == y) {
+            if !entity_manager.entities.iter().any(|ref e| e.1.pos.0 == x && e.1.pos.1 == y) {
                 let mut monster = if rng.gen_range(0, 100) < 80 {
-                    let fighter_component = Fighter::new(10, 0, 3);
-                    let ai_component = BasicMonster::new();
-
-                    Entity::new(x, y, 'o', colors::DESATURATED_GREEN, "Orc".to_string(),
-                                Some(fighter_component), Some(Box::new(ai_component)))
+                    CreatureTemplate::Troll
                 } else {
-                    let fighter_component = Fighter::new(16, 1, 4);
-                    let ai_component = BasicMonster::new();
-
-                    Entity::new(x, y, 'T', colors::DARKER_GREEN, "Troll".to_string(),
-                                Some(fighter_component), Some(Box::new(ai_component)))
+                    CreatureTemplate::Orc
                 };
 
-                entities.push(monster);
+                entity_manager.add_creature(monster, (x, y) );
             }
         }
     }

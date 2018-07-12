@@ -15,7 +15,7 @@ use entities::creature::CreatureTemplate;
 /// A struct for handling access to Entities and their Data
 pub struct EntityManager {
     id_generator: IdGenerator,
-    entities: HashMap<EntityId, Entity>,
+    pub entities: HashMap<EntityId, Entity>,
     player_id: EntityId,
 }
 
@@ -87,8 +87,11 @@ impl Entity {
         self.pos.1 += d_pos.1;
     }
 
-    pub fn get_blocking_entities_at(entities: &Vec<Self>, x: i32, y: i32) -> Vec<&Entity> {
-        entities.iter().filter(|e| e.blocks && e.pos.0 == x && e.pos.1 == y).collect()
+    pub fn get_blocking_entities_at(entity_manager: &EntityManager, x: i32, y: i32) -> Vec<&Entity> {
+        entity_manager.entities.iter()
+            .filter(|e| e.1.blocks && e.1.pos.0 == x && e.1.pos.1 == y)
+            .map(|(_, entity)| entity)
+            .collect()
     }
 }
 

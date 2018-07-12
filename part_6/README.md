@@ -12,6 +12,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     1. [The ID Generator](#the-id-generatpr)
     2. [Wrapping it up](#wrapping-it-up)
     3. [Re-implement ... everything!](#re-implementing-...-everything!)
+    4. [Getting rid of `Vec<Entity>`](#getting-rid-of-vec<entity>)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -196,3 +197,17 @@ Now is the time to actually put the `EntityManger` into use: I replace every pla
 I have to change the `GameMap.make_map`, too. Following this strategy, replacing any occurrence of `Vec<Entity>` at a time,
 while still maintaining compilability on the code,  I will slowly, bur steady, come to the point where I get rid of the
 `Vec<Entity>` 
+
+#### Getting rid of Vec<Entity>
+
+Before I can actually improve anything on the `Entity` handling, I need to remove the `Vec<Entity>` entirely. Right now,
+it's still used for collision detection, creation, and, of course, rendering. 
+
+I won't change much of the procedure itself - All monsters will still be created when the map is generated, rendering will
+still happen in the `render_all` function. Means: I will change _how_ it's done, not _where_ it's done.
+
+As first step, I will change `make_map`, so that all creatures will be created with the `EntityManager` from a template. 
+Of course, I need to implement both the `Orc` and the `Troll` Template first.
+
+It took some time, but in the end I removed the old `Vec<Entity>`. Of course, at this point I didn't do any change or
+optimization at all, I just replaced old code with some new code. The whole optimization comes now. 
