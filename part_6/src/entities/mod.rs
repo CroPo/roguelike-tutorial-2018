@@ -89,8 +89,8 @@ impl Entity {
 
     pub fn get_blocking_entities_at(entity_manager: &EntityManager, x: i32, y: i32) -> Vec<&Entity> {
         entity_manager.entities.iter()
-            .filter(|e| e.1.blocks && e.1.pos.0 == x && e.1.pos.1 == y)
-            .map(|(_, entity)| entity)
+            .filter(|(_, e)| e.blocks && e.pos.0 == x && e.pos.1 == y)
+            .map(|(_, e)| e )
             .collect()
     }
 }

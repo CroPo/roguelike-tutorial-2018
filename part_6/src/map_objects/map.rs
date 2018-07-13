@@ -109,11 +109,11 @@ impl GameMap {
 
         let monster_count = rng.gen_range(0, max_monsters_per_room);
 
-        for _i in 0..monster_count {
+        for _ in 0..monster_count {
             let x = rng.gen_range(room.tl.0 + 1, room.lr.0 - 1);
             let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
 
-            if !entity_manager.entities.iter().any(|ref e| e.1.pos.0 == x && e.1.pos.1 == y) {
+            if !entity_manager.entities.iter().any(| (_, e)| e.pos.0 == x && e.pos.1 == y) {
                 let mut monster = if rng.gen_range(0, 100) < 80 {
                     CreatureTemplate::Troll
                 } else {
