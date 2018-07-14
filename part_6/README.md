@@ -1,5 +1,4 @@
-# Part 6: 
-## Doing (and taking) some damage
+# Part 6:  Doing (and taking) some damage
 
 - [Reddit Post on /r/roguelikedev](https://www.reddit.com/r/roguelikedev/comments/8xlo9k/roguelikedev_does_the_complete_roguelike_tutorial/)
 - [Direct Tutorial Link](http://rogueliketutorials.com/libtcod/6)
@@ -13,6 +12,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     2. [Wrapping it up](#wrapping-it-up)
     3. [Re-implement ... everything!](#re-implementing-...-everything!)
     4. [Getting rid of `Vec<Entity>`](#getting-rid-of-vec<entity>)
+    5. [Positioning](#positioning)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -26,7 +26,7 @@ so this was necessary.
 
 Finally, it's the day to introduce some action to the game. So let's do this.
 
-### Fighters and AI
+## Fighters and AI
 
 One big problem here: I don't know if it's technically possible to create a reference to a components owner in Rust, 
 because of the mutability rules. I will just continue without it and the we'll see how it goes.
@@ -61,7 +61,7 @@ composition like this in Rust, I will have to go a bit of a different way.
 
 I think I will conclude this section of part 6 here. 
 
-### Managing the Entities
+## Managing the Entities
 
 After a 3 hours straight session of trial and error, one thing seems very clear to me at this point: I need to rebuild
 how Entities are stored and accessed. Entirely. Too many problems have occured to this point, and even if I find a
@@ -78,7 +78,7 @@ access to another one.
 be a bet over-engineered for this use case. An internal counter which gets updated for every added Entity will pretty
 much do the same thing here. I don't use threading atm, so I don't have to take care of that too.
 
-#### The ID Generatpr
+### The ID Generatpr
 
 A simple task, because I don't care what happens if there are multiple instances of the generator. Of course, from
 a technical POV, I _could_ create as many instances as I want, with each instance holding it's own internal counter, 
@@ -121,7 +121,7 @@ impl IdGenerator {
 A simple `struct` with a simple implementation. Using it this way, the first generated id will be 1, because `get_next_id` 
 increments the id by one before returning.
 
-#### Wrapping it up
+### Wrapping it up
 
 As I mentioned before, I want to wrap all the `Entity` related stuff into a struct to handle them. I decided to name it
 `EntityManager`, because that's what it actually does.
@@ -156,8 +156,8 @@ holds the player character information.
 
 The first step on a long path is done.
 
-#### Re-Implementing ... everything!
-##### (One Entity at a time, though)
+### Re-Implementing ... everything!
+#### (One Entity at a time, though)
 
 Yes. I need to re-implement all stuff which has anything to do with `Entities`, or, to be precise, everything that accesses 
 the `Vec<Entity>`.  
@@ -182,7 +182,7 @@ pub enum CreatureTemplate {
 ```
 
 The enum holds a public `create` method which creates an instance of the selected template. I won't paste the whole
-implementation details in here, but you can look them up in the [file](src/entities/creature.rs).
+implementation details in here, but you can look them up in the [file](src/ecs/creature.rs).
 
 Right now, only the player creature templates is implemented. Trying to create `Troll` or an `Orc` will result in `None`.
 
@@ -191,14 +191,14 @@ method has 2 uses: First, I can tell which `EntityId` I need to save in`player_i
 more than one player entity from being added.
 
 Back in the `EntityManager`, I added a method to create creatures from a template at a specific position, and two methods
-to get the player `Entity`, one immutable, the other one for mutab;e access. 
+to get the player `Entity`, one immutable, the other one for mutable access. 
 
 Now is the time to actually put the `EntityManger` into use: I replace every player `Entity` access with it, which means
 I have to change the `GameMap.make_map`, too. Following this strategy, replacing any occurrence of `Vec<Entity>` at a time,
 while still maintaining compilability on the code,  I will slowly, bur steady, come to the point where I get rid of the
 `Vec<Entity>` 
 
-#### Getting rid of Vec<Entity>
+### Getting rid of Vec<Entity>
 
 Before I can actually improve anything on the `Entity` handling, I need to remove the `Vec<Entity>` entirely. Right now,
 it's still used for collision detection, creation, and, of course, rendering. 
@@ -211,3 +211,66 @@ Of course, I need to implement both the `Orc` and the `Troll` Template first.
 
 It took some time, but in the end I removed the old `Vec<Entity>`. Of course, at this point I didn't do any change or
 optimization at all, I just replaced old code with some new code. The whole optimization comes now. 
+
+### Dissecting the Entity
+
+Now it's time to dissect the `Entity` itself. Right now, the struct looks like this:
+
+```rust
+pub struct Entity {
+    pub pos: (i32, i32),
+    glyph: char,
+    color: colors::Color,
+    pub name: String,
+    blocks: bool,
+}
+```
+
+We have just all needed data scrambled into one `struct` right now. All of these values are needed by every `Entity` which
+is in the game right now. And naturally, I would put pretty much every possible value right which I ever going to need
+right into this struct, expanding it incrementally. Since the title of this part of the tutorial is 'Doing (and taking)
+some damage', the next few things added will surely be values for tracking the HP of a creature, and maybe some combat 
+stats. This is the point where I might run into problems with Rust.
+
+1. While doing a computer controlled `Entity`s move in a loop, I can't get access to modify another `Entity`s values.  
+Because I can't get mutable access to a Collections Element when already iterating over it in any form, being a `iter()`
+or `iter_mut()`.  
+Of course, this might be solved by a queueing up all actions which should be done, and afterwards looping over the queue
+to actually perform all this actions. But, especially when calculaitng an `Entity`'s movement, it could happen that some
+actions interfer with each other, so I would need to double and triple check everything. Which I won't do.
+
+2. Way more information than ever needed would be created (In technical terms: Allocate more memory than needed). This 
+may not sound that much of a problem at this point. We only have some creatures moving around, every value here is
+actually used. But the struct is called `Entity`, and not `Creature`. For example, a weapon. As long as it is lying on
+the floor, it shares all the values any `Entity` has now. But once picked up by another `Entity`, it doesn't need to
+have a position anymore, but an owner. I could go do far and set the position simply to `(-1, -1)`, and define this as
+_not on the map_, and create a `owner` value, which is a `Option<Entity>`, means it will be `None` for all creatures 
+per default. But I don't want to have a list of 10 `Option` values from which nine are always `None`. 
+
+So, we need a way of composing an `Entity` of several components. I won't go as far as calling th thing I intend to 
+creat an _entity component system_, but it will be some `Entity` which can be built with several `Component`s.
+
+Of course, this describes what is widely known as an ECS. So I am going to tinker together my own one.
+
+#### Storing the components away
+
+In order to achieve this, especially the separation of an `Entity` and it's values so I can access each independent of
+the other, I can't store these right in the `Entity` struct. I will instead add another `HashMap` to the `EntityManager`.
+Each `Entity`'s components will be just linked to the `Entity` with it's ID. 
+
+In best case, each `Component` would be able to interact with _any_ `Component` of _any_ `Entity` (including the owner
+Entity itself). For example, the tutorial mentions an `Ai` component, which controls all actions, including the movement, 
+of one `Entity`, and therefor needs to access the owner's position to change it. While this is not directly possible 
+from within the `Component`s method itself, I can utilize some kind of action queue in small scale.
+
+This means: On each `Entity`s turn, all actions are calculated first, and then executed right afterwards before the 
+next `Entity` is calculated. This is compliant with Rust's value acces.
+
+#### Creating the component storage
+
+The storage will be a simple `HashMap`, but storing (and, of course, accessing) the components will be a much more 
+challenging task which needs some Tinkering with Rust. Or, needed. In this case I already worked on solving this 
+tasks for a few hours. 
+
+First step was, of course, renaming all the stuff (once more). `entities::` became `ecs::`. `EntityManager` became
+`Ecs`.

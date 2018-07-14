@@ -1,4 +1,4 @@
-use entities::Entity;
+use ecs::Entity;
 use tcod::colors;
 
 /// Templates for common Creature types

@@ -1,7 +1,7 @@
 extern crate tcod;
 extern crate rand;
 
-mod entities;
+mod ecs;
 mod render;
 mod map_objects;
 mod game_states;
@@ -14,13 +14,13 @@ use tcod::input::Key;
 use tcod::input::KeyCode;
 use tcod::map::FovAlgorithm;
 
-use entities::Entity;
+use ecs::Entity;
 use map_objects::map::GameMap;
 use map_objects::fov;
 use game_states::GameStates;
 use components::fighter::Fighter;
-use entities::EntityManager;
-use entities::creature::CreatureTemplate;
+use ecs::Ecs;
+use ecs::creature::CreatureTemplate;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -60,8 +60,8 @@ fn main() {
 
     let fighter_component = Fighter::new(30, 2, 5);
 
-    let mut entity_manager = EntityManager::new();
-    entity_manager.add_creature(CreatureTemplate::Player, (0, 0));
+    let mut ecs = Ecs::new();
+    ecs.add_creature(CreatureTemplate::Player, (0, 0));
 
     let mut root = Root::initializer()
         .size(screen_width, screen_height)
@@ -73,7 +73,7 @@ fn main() {
     let mut con = Offscreen::new(screen_width, screen_height);
 
     let mut map = GameMap::new(map_width, map_height);
-    map.make_map(max_rooms, room_min_size, room_max_size, &mut entity_manager, max_monsters_per_room);
+    map.make_map(max_rooms, room_min_size, room_max_size, &mut ecs, max_monsters_per_room);
 
     let mut fov_map = fov::initialize_fov(&map);
 
@@ -81,13 +81,13 @@ fn main() {
 
     while !root.window_closed() {
         if fov_recompute {
-            let player = entity_manager.get_player().unwrap();
+            let player = ecs.get_player().unwrap();
             fov::recompute_fov(&mut fov_map, (player.pos.0, player.pos.1), fov_radius, fov_light_walls, fov_algorithm);
         }
 
-        ::render::render_all(&entity_manager, &mut map, &fov_map, fov_recompute, &mut con, &mut root);
+        ::render::render_all(&ecs, &mut map, &fov_map, fov_recompute, &mut con, &mut root);
         root.flush();
-        ::render::clear_all(&entity_manager, &mut con);
+        ::render::clear_all(&ecs, &mut con);
 
         fov_recompute = false;
 
@@ -101,14 +101,14 @@ fn main() {
             Some(Action::MovePlayer(move_x, move_y)) => if game_state == GameStates::PlayersTurn {
 
                 let mut destination = {
-                    let player_entity = entity_manager.get_player_mut().unwrap();
+                    let player_entity = ecs.get_player_mut().unwrap();
                     (player_entity.pos.0 + move_x, player_entity.pos.1 + move_y)
                 };
 
                 if !map.is_move_blocked(destination.0, destination.1) {
                     let bump_into =
                         {
-                            let targets = Entity::get_blocking_entities_at(&entity_manager, destination.0, destination.1);
+                            let targets = Entity::get_blocking_entities_at(&ecs, destination.0, destination.1);
 
                             for e in &targets {
                                 println!("You kick the {} in the shins, much to its annoyance!", e.name)
@@ -119,7 +119,7 @@ fn main() {
 
                     if !bump_into {
                         fov_recompute = true;
-                        let mut player_entity = entity_manager.get_player_mut().unwrap();
+                        let mut player_entity = ecs.get_player_mut().unwrap();
                         player_entity.mv((move_x, move_y))
                     }
                 }
