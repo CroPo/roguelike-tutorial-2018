@@ -4,18 +4,22 @@ use map_objects::map::GameMap;
 use tcod::Map;
 use ecs::Entity;
 use ecs::Ecs;
+use ecs::component::Position;
 
 pub trait Render {
-    fn draw(&self, console: &mut Console);
-    fn clear(&self, console: &mut Console);
+    fn draw(&self, console: &mut Console, ecs: &Ecs);
+    fn clear(&self, console: &mut Console, ecs: &Ecs);
 }
 
-pub fn render_all(entity_manager: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bool, console: &mut Offscreen, root_console: &mut Root) {
+pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bool, console: &mut Offscreen, root_console: &mut Root) {
     map.draw(console, fov_map, fov_recompute);
 
-    for entity in entity_manager.entities.iter().filter(|e| fov_map.is_in_fov(e.1.pos.0, e.1.pos.1) ) {
-        entity.1.draw(console);
-    }
+    ecs.get_all::<Position>().iter().filter(|(_, p)| {
+        fov_map.is_in_fov(p.position.0, p.position.1)
+    }).for_each(|(e, p)| {
+        println!("Draw {} (but nor really)", e);
+    });
+
 
     blit(console, (0, 0),
          (console.width(), console.height()),
@@ -24,7 +28,7 @@ pub fn render_all(entity_manager: &Ecs, map: &mut GameMap, fov_map: &Map, fov_re
 }
 
 pub fn clear_all(entity_manager: &Ecs, console: &mut Console) {
-    for entity in entity_manager.entities.iter() {
-        entity.1.clear(console);
-    }
+    //for entity in entity_manager.entities.iter() {
+    //    entity.1.clear(console);
+   // }
 }

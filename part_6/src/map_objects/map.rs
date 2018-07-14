@@ -12,10 +12,10 @@ use map_objects::rectangle::Rect;
 
 use map_objects::color::Color;
 use ecs::Entity;
-use components::fighter::Fighter;
-use components::ai::BasicMonster;
+
 use ecs::Ecs;
 use ecs::creature::CreatureTemplate;
+use ecs::component::Position;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -75,10 +75,11 @@ impl GameMap {
             self.create_room(&new_room);
             let center = new_room.center();
 
+            let id = ecs.player_entity_id;
+
             if rooms.len() == 0 {
-                let player = ecs.get_player_mut().unwrap();
-                player.pos.0 = center.0;
-                player.pos.1 = center.1;
+                let player_pos = ecs.get_component_mut::<Position>(id).unwrap();
+                player_pos.position = center;
             } else {
                 let prev_center = rooms[rooms.len() - 1].center();
 
@@ -113,14 +114,14 @@ impl GameMap {
             let x = rng.gen_range(room.tl.0 + 1, room.lr.0 - 1);
             let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
 
-            if !ecs.entities.iter().any(| (_, e)| e.pos.0 == x && e.pos.1 == y) {
+            if !ecs.get_all::<Position>().iter().any(|(_, p)| p.position.0 == x && p.position.1 == y) {
                 let mut monster = if rng.gen_range(0, 100) < 80 {
                     CreatureTemplate::Troll
                 } else {
                     CreatureTemplate::Orc
                 };
 
-                ecs.add_creature(monster, (x, y) );
+                ecs.add_creature(monster, (x, y));
             }
         }
     }

@@ -15,6 +15,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     5. [Dissecting the Entity](#dissecting-the-entity)
     6. [Storing the components away](#storing-the-components-away)
     7. [Creating the component storage](#creating-the-component-storage)
+    8. [The Position component](#the-position-component)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -334,3 +335,91 @@ impl Ecs {
     //..
 }
 ```
+
+#### The Position component
+
+Finally, the system is at a stage where I am able to remove values from the `Entity` and put them into a `Component`. The
+First one I will move are the `position`, and the `blocks` values. Both are only needed, when an `Entity` is placed 
+somewhere on the Map.
+
+First of all, the creature templates will need to be modified: The values which don't exist anymore will be removed, and
+the `Positon` component will be added directly in the `add_creature` method of `Ecs`. This will be temporarily,
+as I will change the way how the templates will be used later. 
+
+Since the `add_creature` method also allows to directly set a creatures position, I will need a method to access a specific 
+`Component` of any `Enity`. Because I used the `TypeId` to identify a `Component`, this is as simple as using `get` on 
+`storage`. But since this method cpould be used form outside the `Ecs`, too, I will wrap it into another method:
+
+```rust
+impl ComponentStorage {
+    //..
+    fn get<T>(&self) -> Option<&T>
+        where T: Component + Any {
+        self.data.get(&TypeId::of::<T>()).map(|e| e.downcast_ref()).unwrap()
+    }
+    //..
+}
+```
+Some explanaiton here: I use the `map` because every `Component` is stored in a `Box`. And the `downcast_ref` converts
+the `Component` type to the actual type of `T`.
+
+```rust
+impl Ecs {
+    //...
+    pub fn get_component<T>(&self, entity_id: EntityId) -> Option<&T>
+        where T: Component + Any {
+
+        self.storage.get(&entity_id).map(|storage| {
+            storage.get::<T>().unwrap()
+        })
+    }
+    //..
+}
+```
+In Both cases, the us of `unwrap` is potentially unsafe. Means: If the result of the get is `None`, this will cause 
+the game to panic (==crash). If needed, I will get to that again.
+
+Next, all methods which did access the `pos` value of an `Entity` need a way to access the same information again. To
+achieve this, I create the following method:
+
+```rust
+impl Ecs {
+    //...
+    pub fn get_all<T: Component + Any>(&self) -> HashMap<EntityId, &T> 
+    where T: Component {
+        let entity_ids = self.storage.keys().cloned();
+
+        let mut component_map = HashMap::new();
+
+        for entity_id in entity_ids.filter(|id| {
+            self.has_component::<T>(*id)
+        }) {
+            component_map.insert(entity_id, self.get_component::<T>(entity_id).unwrap());
+        }
+        component_map
+    }
+
+
+    pub fn has_component<T>(&self, entity_id: EntityId) -> bool 
+    where T: Component {
+        let is_registered = self.storage.get(&entity_id)
+            .map(|storage| storage.is_registered::<T>());
+
+        if is_registered.is_some() {
+            is_registered.unwrap()
+        }
+        false
+    }
+    //..
+}
+```
+
+The second methd just checks a spcific `Entity` for a component. The Method `is_registered` doesn't do enything besides
+executing `contains_key()` on the `HashMap` in `EcsStorage`.
+
+Now I can replace any access to an `Entity`s positon. Keep in mind that these replacements are mostlyu temporary now, 
+because I will move some methods, and access to the player entity will be changed at some point, too, so I just temporarily
+made the acccess to the `player_entity_id` public.
+
+With all these changes I made, everything compiles again. But it's far form what I actually had before. The next thing
+I need to do is changing the rendering, so that everything will be rendered again.

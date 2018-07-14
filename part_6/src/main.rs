@@ -5,7 +5,6 @@ mod ecs;
 mod render;
 mod map_objects;
 mod game_states;
-mod components;
 
 use tcod::console::{Root, Offscreen};
 use tcod::FontLayout;
@@ -18,9 +17,10 @@ use ecs::Entity;
 use map_objects::map::GameMap;
 use map_objects::fov;
 use game_states::GameStates;
-use components::fighter::Fighter;
+
 use ecs::Ecs;
 use ecs::creature::CreatureTemplate;
+use ecs::component::Position;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -58,8 +58,6 @@ fn main() {
 
     let max_monsters_per_room = 3;
 
-    let fighter_component = Fighter::new(30, 2, 5);
-
     let mut ecs = Ecs::initialize();
     ecs.add_creature(CreatureTemplate::Player, (0, 0));
 
@@ -81,8 +79,8 @@ fn main() {
 
     while !root.window_closed() {
         if fov_recompute {
-            let player = ecs.get_player().unwrap();
-            fov::recompute_fov(&mut fov_map, (player.pos.0, player.pos.1), fov_radius, fov_light_walls, fov_algorithm);
+            let player_pos = ecs.get_component::<Position>(ecs.player_entity_id).unwrap();
+            fov::recompute_fov(&mut fov_map, (player_pos.position.0, player_pos.position.1), fov_radius, fov_light_walls, fov_algorithm);
         }
 
         ::render::render_all(&ecs, &mut map, &fov_map, fov_recompute, &mut con, &mut root);
@@ -98,11 +96,13 @@ fn main() {
                 let is_fullscreen = root.is_fullscreen();
                 root.set_fullscreen(!is_fullscreen)
             }
-            Some(Action::MovePlayer(move_x, move_y)) => if game_state == GameStates::PlayersTurn {
+            Some(Action::MovePlayer(vel_x, vel_y)) => if game_state == GameStates::PlayersTurn {
+                let id = ecs.player_entity_id;
+
 
                 let mut destination = {
-                    let player_entity = ecs.get_player_mut().unwrap();
-                    (player_entity.pos.0 + move_x, player_entity.pos.1 + move_y)
+                    let player_pos = ecs.get_component::<Position>(id).unwrap();
+                    (player_pos.position.0 + vel_x, player_pos.position.1 + vel_y)
                 };
 
                 if !map.is_move_blocked(destination.0, destination.1) {
@@ -111,16 +111,15 @@ fn main() {
                             let targets = Entity::get_blocking_entities_at(&ecs, destination.0, destination.1);
 
                             for e in &targets {
-                                println!("You kick the {} in the shins, much to its annoyance!", e.name)
+                                println!("You kick a Monster in the shins, much to its annoyance!")
                             }
 
                             !targets.is_empty()
                         };
 
                     if !bump_into {
-                        fov_recompute = true;
-                        let mut player_entity = ecs.get_player_mut().unwrap();
-                        player_entity.mv((move_x, move_y))
+                        let player_pos = ecs.get_component_mut::<Position>(id).unwrap();
+                        player_pos.mv((vel_x, vel_y))
                     }
                 }
 
