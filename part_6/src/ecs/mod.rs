@@ -11,24 +11,58 @@ use components::ai::Ai;
 use ecs::id::{IdGenerator, EntityId};
 use std::collections::HashMap;
 use ecs::creature::CreatureTemplate;
+use std::any::TypeId;
+use std::any::Any;
+
+/// Used to indentify an Component
+trait Component {}
+
+struct C {
+
+}
+
+impl Component for C {}
+
+
+struct EcsStorage {
+    entity_id: EntityId,
+    data: HashMap<TypeId, Box<Component>>,
+}
+
+impl EcsStorage {
+    /// Register a component to the storage
+    ///
+    /// No special case handling if the component is already registered. The old component will be
+    /// replaced by the new one without further notice.
+    fn register<T>(&mut self, component: T) where T: Component + Any {
+        self.data.insert(TypeId::of::<T>(), Box::new(component));
+    }
+}
+
 
 /// Handling access to Entities and to their Components
 pub struct Ecs {
     id_generator: IdGenerator,
-    pub entities: HashMap<EntityId, Entity>,
+
+    /// Id of the Entity which represents the player
     player_entity_id: EntityId,
+
+    storage: HashMap<EntityId, EcsStorage>,
+
+    pub entities: HashMap<EntityId, Entity>,
 }
 
 impl Ecs {
-    pub fn new() -> Ecs {
+    pub fn initialize() -> Ecs {
         Ecs {
             id_generator: IdGenerator::new(),
-            entities: HashMap::new(),
             player_entity_id: 0,
+            storage: HashMap::new(),
+            entities: HashMap::new(),
         }
     }
 
-    /// Add a creature from a template to a specific position
+    /// Add an creature from a template to a specific position
     pub fn add_creature(&mut self, template: CreatureTemplate, position: (i32, i32)) {
         if template.is_player() && self.player_entity_id != 0 {
             // Player Entity has already been created. Abort
@@ -38,6 +72,8 @@ impl Ecs {
         match template.create() {
             Some(entity) => {
                 let id = self.id_generator.get_next_id();
+
+                self.storage.insert(id, EcsStorage { entity_id: id, data: HashMap::new() });
                 self.entities.insert(id, entity);
 
                 self.entities.get_mut(&id).unwrap().pos = position;
@@ -48,6 +84,16 @@ impl Ecs {
             }
             None => ()
         }
+    }
+
+    /// Register a component for a specific Entity.
+    ///
+    /// No Error handling if adding a Component to an Entity
+    /// which doesn't exist.
+    pub fn register_component<T>(&mut self, entity_id: EntityId, component: T)
+        where T: Component + Any {
+        self.storage.get_mut(&entity_id)
+            .map(|storage| storage.add(component));
     }
 
     /// Get a borrow to the player `Entity`
@@ -90,7 +136,7 @@ impl Entity {
     pub fn get_blocking_entities_at(ecs: &Ecs, x: i32, y: i32) -> Vec<&Entity> {
         ecs.entities.iter()
             .filter(|(_, e)| e.blocks && e.pos.0 == x && e.pos.1 == y)
-            .map(|(_, e)| e )
+            .map(|(_, e)| e)
             .collect()
     }
 }

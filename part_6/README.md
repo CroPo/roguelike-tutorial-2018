@@ -12,7 +12,9 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     2. [Wrapping it up](#wrapping-it-up)
     3. [Re-implement ... everything!](#re-implementing-...-everything!)
     4. [Getting rid of `Vec<Entity>`](#getting-rid-of-vec<entity>)
-    5. [Positioning](#positioning)
+    5. [Dissecting the Entity](#dissecting-the-entity)
+    6. [Storing the components away](#storing-the-components-away)
+    7. [Creating the component storage](#creating-the-component-storage)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -274,3 +276,61 @@ tasks for a few hours.
 
 First step was, of course, renaming all the stuff (once more). `entities::` became `ecs::`. `EntityManager` became
 `Ecs`.
+
+Now I need to expand the `Ecs` struct. For now, I will keep the `entities` with their current value, but I need another
+value which holds all components for each entity. This value needs to hold both the `EntityId`, and all the stored
+components with another identifier.
+
+My implementation looks like this:
+```rust
+trait Component {}
+
+struct EcsStorage {
+    entity_id: EntityId,
+    data: HashMap<TypeId, Box<Component>>
+}
+
+pub struct Ecs {
+    id_generator: IdGenerator,
+    player_entity_id: EntityId,
+    
+    storage: HashMap<EntityId, EcsStorage>,
+    
+    pub entities: HashMap<EntityId, Entity>,
+}
+```
+And, to be fully Honest upfront: Most of the knowledge here was gathered through several articles and tutorials I did
+read within the last week.
+
+The `EcsStorage` itself is the struct which will hold each component for one Entity. Just to make sure I do not regret
+not adding the `EntityId` afterwards, I will iclude it for now. Removing a unused value is way more easy than adding a 
+needed one.
+
+`TypeId` is a special type of Rust. It provides an unique identifier for a `struct` or `trait`. And we need to `Box`
+the `Component`, because at compile time, the size of `Component` is not defined, as it's a `trait`, which can have
+different sizes (more or less values of different length) for each `struct` implementing the `trait`.
+
+Of course, this way any `struct` which implements the `Any` trait will have `'static` lifetime, but I don't think it 
+will affect the game too much in a bad way. And this is pretty much the most simple way to do it.
+
+The next thing to do is change the initialization. And henever I create a new `Entity`, I need to allocate a storage
+entry for it, too.
+
+All that's left to do for this inital step is to add some methods to `Ecs` to register components for a specific `Entity`:
+```rust
+impl ComponentStorage {
+    fn register<T>(&mut self, component: T) where T: Component {
+        self.data.insert(TypeId::of::<T>(), Box::new(component));
+    }
+}
+
+impl Ecs {
+    //...
+    fn register_component<T>(&mut self, entity_id: EntityId, component: T)
+     where T: Component {
+     self.storage.get_mut(&entity_id)
+         .map(|storage| storage.add(component) );
+    }
+    //..
+}
+```
