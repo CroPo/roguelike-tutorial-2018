@@ -29,24 +29,24 @@ impl CreatureTemplate {
 
     fn create_player_from_template() -> Entity {
         Entity {
-            glyph: '@',
-            color: colors::WHITE,
+            //glyph: '@',
+            //color: colors::WHITE,
             name: "Player".to_string(),
         }
     }
 
     fn create_orc_from_template() -> Entity {
         Entity {
-            glyph: 'o',
-            color: colors::DESATURATED_GREEN,
+            //glyph: 'o',
+            //color: colors::DESATURATED_GREEN,
             name: "Orc".to_string(),
         }
     }
 
     fn create_troll_from_template() -> Entity {
         Entity {
-            glyph: 'T',
-            color: colors::DARKER_GREEN,
+            //glyph: 'T',
+            //color: colors::DARKER_GREEN,
             name: "Orc".to_string(),
         }
     }

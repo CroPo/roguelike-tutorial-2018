@@ -6,8 +6,6 @@ use tcod::colors;
 use tcod::Console;
 use tcod::BackgroundFlag;
 
-use render::Render;
-
 use ecs::id::{IdGenerator, EntityId};
 use std::collections::HashMap;
 use ecs::creature::CreatureTemplate;
@@ -15,6 +13,7 @@ use std::any::TypeId;
 use std::any::Any;
 use ecs::component::Component;
 use ecs::component::Position;
+use ecs::component::Render;
 
 
 struct EcsStorage {
@@ -88,6 +87,7 @@ impl Ecs {
                 self.storage.insert(id, EcsStorage { entity_id: id, data: HashMap::new() });
 
                 self.register_component(id, Position::new(true));
+                self.register_component(id, Render::new('X',colors::AZURE));
 
                 {
                     let pos_component = self.get_component_mut::<Position>(id);
@@ -167,33 +167,13 @@ impl Ecs {
 
 /// A generic representation of things like NPCs, Monsters, Items, ... and of course, of the player, in the game.
 pub struct Entity {
-    glyph: char,
-    color: colors::Color,
     pub name: String,
 }
 
 impl Entity {
-    pub fn new(glyph: char, color: colors::Color, name: String) -> Entity {
+    pub fn new(name: String) -> Entity {
         Entity {
-            glyph,
-            color,
             name,
         }
-    }
-
-    pub fn get_blocking_entities_at(ecs: &Ecs, x: i32, y: i32) -> Vec<&EntityId> {
-
-        vec![]
-    }
-}
-
-impl Render for Entity {
-    fn draw(&self, console: &mut Console, ecs: &Ecs) {
-        console.set_default_foreground(self.color);
-        //console.put_char(self.pos.0, self.pos.1, self.glyph, BackgroundFlag::None);
-    }
-
-    fn clear(&self, console: &mut Console, ecs: &Ecs) {
-        // console.put_char(self.pos.0, self.pos.1, ' ', BackgroundFlag::None);
     }
 }

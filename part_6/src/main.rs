@@ -87,7 +87,7 @@ fn main() {
         root.flush();
         ::render::clear_all(&ecs, &mut con);
 
-        fov_recompute = false;
+        fov_recompute = true;
 
         let action = handle_keys(root.check_for_keypress(tcod::input::KEY_PRESSED));
         match action {
@@ -108,7 +108,7 @@ fn main() {
                 if !map.is_move_blocked(destination.0, destination.1) {
                     let bump_into =
                         {
-                            let targets = Entity::get_blocking_entities_at(&ecs, destination.0, destination.1);
+                            let targets = Position::is_blocked_by(&ecs, destination);
 
                             for e in &targets {
                                 println!("You kick a Monster in the shins, much to its annoyance!")

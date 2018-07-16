@@ -16,6 +16,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     6. [Storing the components away](#storing-the-components-away)
     7. [Creating the component storage](#creating-the-component-storage)
     8. [The Position component](#the-position-component)
+    9. [Updating the rendering](#updating-the-rendering)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -423,3 +424,18 @@ made the acccess to the `player_entity_id` public.
 
 With all these changes I made, everything compiles again. But it's far form what I actually had before. The next thing
 I need to do is changing the rendering, so that everything will be rendered again.
+
+#### Updating the rendering
+
+Since I wrecked the rendering, I need to restore it. Theoretically, I could just take the `color` and `glyph` values
+from the Entity and move them to the `Position` component. This wouldn't feel right, though, because not everything
+which has a position needs to be rendered onto the map, and not everything which could be drawn needs a position. 
+So I'll move these to a new `Component`: `Render`. This new component holds both the glyph and color values, and a 
+method to render itself to a given `Position`. The `Render` component does not necessarily need to know about or use 
+the `Position` component, it basically just needs to know _where_ to put _what_ character in _which_ color.
+
+The problem is now: I can't create different `Render` components for each type of creature I have, because of
+the changes is made to `add_creature`. 
+
+For now, to conclude this step, I will actually change it so that every entity looks the same - because I want to test if
+everything works as intended.

@@ -5,19 +5,22 @@ use tcod::Map;
 use ecs::Entity;
 use ecs::Ecs;
 use ecs::component::Position;
+use ecs::component::Render;
 
-pub trait Render {
-    fn draw(&self, console: &mut Console, ecs: &Ecs);
-    fn clear(&self, console: &mut Console, ecs: &Ecs);
-}
-
+/// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
 pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bool, console: &mut Offscreen, root_console: &mut Root) {
     map.draw(console, fov_map, fov_recompute);
 
     ecs.get_all::<Position>().iter().filter(|(_, p)| {
         fov_map.is_in_fov(p.position.0, p.position.1)
     }).for_each(|(e, p)| {
-        println!("Draw {} (but nor really)", e);
+        let render_component = ecs.get_component::<Render>(*e);
+        match render_component {
+            Some(r) => {
+                r.draw(console, p.position)
+            },
+            None => ()
+        }
     });
 
 
@@ -27,8 +30,16 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bo
          1.0, 1.0)
 }
 
-pub fn clear_all(entity_manager: &Ecs, console: &mut Console) {
-    //for entity in entity_manager.entities.iter() {
-    //    entity.1.clear(console);
-   // }
+
+/// Clear all `Entity`s which got both the `Render` and the `Position` component assigned from the console
+pub fn clear_all(ecs: &Ecs, console: &mut Console) {
+    ecs.get_all::<Position>().iter().for_each(|(e, p)| {
+        let render_component = ecs.get_component::<Render>(*e);
+        match render_component {
+            Some(r) => {
+                r.clear(console, p.position)
+            },
+            None => ()
+        }
+    });
 }
