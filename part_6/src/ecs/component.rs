@@ -5,6 +5,7 @@ use ecs::Ecs;
 use tcod::colors::Color;
 use tcod::Console;
 use tcod::BackgroundFlag;
+use ecs::action::EntityAction;
 
 /// Used to indentify an Component
 pub trait Component: Any {}
@@ -74,3 +75,44 @@ pub struct Name {
 }
 
 impl Component for Name {}
+
+
+/// Basic stats for any creature
+pub struct Creature {
+    max_hp : i32,
+    hp: i32,
+    power: i32,
+    defense: i32
+}
+
+impl Creature {
+    pub fn new(max_hp: i32, power: i32, defense: i32) -> Creature {
+        Creature {
+            max_hp, hp: max_hp, power, defense
+        }
+    }
+}
+
+impl Component for Creature {}
+
+pub struct MonsterAi {
+    entity_id: EntityId
+}
+
+impl MonsterAi {
+    pub fn new(entity_id : EntityId) -> MonsterAi {
+        MonsterAi {entity_id}
+    }
+
+    pub fn calculate_turn(&self, ecs: &Ecs) -> EntityAction {
+        match ecs.get_component::<Name>(self.entity_id) {
+            Some(n) => {
+                println!("The {} can't wait to finally move", n.name)
+            }
+            _ => ()
+        }
+        EntityAction::Idle
+    }
+}
+
+impl Component for MonsterAi {}

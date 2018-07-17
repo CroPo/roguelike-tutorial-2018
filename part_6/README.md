@@ -18,7 +18,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     8. [The Position component](#the-position-component)
     9. [Updating the rendering](#updating-the-rendering)
     10. [Fixing the creature templates](#fixing-the-creature-templates)
-
+3. [Fighters and AI ... again](#fighters-and-ai-...-again.)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -462,3 +462,122 @@ reference to the `Ecs`, so I can actually ad stuff. Also, the `create` method do
 anymore - the `EntityId` is much more helpful so I can access the components and modify some values if needed.
  
 Finally, with these changes, I am ready to... begin with Part 6 of the Tutorial.
+
+## Fighters and AI ... again.
+
+So, back on track, more than a week late, I'm finally able to follow the tutorial again. But, let's be honest, beeing
+only one week late in software development is what we all dream of :-)
+
+Both the `Creature` (i don't like the name _fighter_ - this sounds more like a archetypical class name) and the `Ai` 
+components don't seem to be much of a problem now.
+
+```rust
+pub struct Creature {
+    max_hp : i32,
+    hp: i32,
+    power: i32,
+    defense: i32
+}
+```
+
+I am just going to use i32 for everything here. I mean, of course, an i16 (or even i8) might work, too.
+
+Since the `Ai` needs to interact with several other `Component`s, it needs to be aware of its own `EntityId`. Other 
+than that, I won't need any more values there. 
+
+```rust
+pub struct MonsterAi {
+    entity_id: EntityId
+}
+
+impl MonsterAi {
+    pub fn new(entity_id : EntityId) -> MonsterAi {
+        MonsterAi {entity_id}
+    }
+
+    pub fn take_turn(&self, ecs: &mut Ecs) {
+        match ecs.get_component::<Name>(self.entity_id) {
+            Some(n) => {
+                println!("The {} can't wait to finally move", n.name)
+            }
+            _ => ()
+        }
+    }
+}
+```
+
+To make the game actually use the Ai, I need to change a few things.
+
+```rust
+ecs.get_all::<MonsterAi>().iter_mut().for_each(|(entity_id, ai)| {
+                   ai.take_turn(&mut ecs);
+});
+```
+
+My first idea didn't work.
+
+```
+error[E0502]: cannot borrow `ecs` as mutable because it is also borrowed as immutable
+   --> part_6/src/main.rs:130:64
+    |
+130 |                 ecs.get_all::<MonsterAi>().iter_mut().for_each(|(entity_id, ai)| {
+    |                 --- immutable borrow occurs here               ^^^^^^^^^^^^^^^^^ mutable borrow occurs here
+131 |                    ai.take_turn(&mut ecs);
+    |                                      --- borrow occurs due to use of `ecs` in closure
+132 |                 });
+    |                  - immutable borrow ends here
+```
+
+... the usual Rust problems.
+
+So, a (all new) list of problems here:
+1. I need to iterate over all entities which have an `MonsterAi` component
+2. ... and still be able to access all other components of all other `Entities` (via the `Ecs`)
+3. ... and be able to get a mutable reference to _any_ `Component` while already having an active borrow to a specific `
+MonsterAi` component.
+
+I will solve one problem at a time. The first is easy: I don't need to iterate over the `Components` themselfes, I
+only need to iterate over each `EntityId` which owns a specific `Component` - this means a list of all `EntityId`s will
+do the job. In this case, I won't habe a borrow to the `Ecs`.
+
+```rust
+pub fn get_all_ids<T: Component + Any>(&self) -> Vec<EntityId>
+    where T: Component {
+    let entity_ids = self.storage.keys().cloned();
+
+    entity_ids.filter(|id| {
+        self.has_component::<T>(*id)
+    }).collect()
+}
+
+```
+I can now get mutable access to each of the matching components. Which is useful, but it doesn't solve all of the problems.
+Especially the third will be impossible with Rust if tried directly. So let's try to think about what the `MonsterAi`
+component actually does: _Calculating an `Entity`s actions, once per turn_. 
+
+This means: The `take_turn` method needs to return me an action. I define `Action` as some modification to any other 
+`Component`s values. These action needs to be processed right after it was calculated. The processing can't be handled
+by the `MonsterAi` component (or any other `Component`) directly, since I simply can't have mutable access from any 
+`Component` to any other `Component`. With some clever encapsulating, I could have mutable access to the `Ecs` after 
+an `MonsterAi` turn is calculated. So this will be where I will put the processing method. 
+
+Summed up:
+
+- I will introduce a new `enum`: `EntityAction`
+- `MonsterAi` will return a vector of `TurnAction`s
+- The `EntityAction` has a `execute` method (to execute the action, obviously). And this action needs mutable access
+to the `Ecs`, which should be easy to handle
+
+This means that I can have as many different Ai components as I want, they just all need to return a `EntityAction` which
+I can process by the same method.
+
+```rust
+pub enum EntityAction {
+    Move(EntityId, (i32, i32)),
+    Idle
+}
+```
+For now, only these two actions are needed. The idle is the default which gets returned when nothing happens, and will 
+cause an immediate end of `execute`
+
+Since all the calculations are done with immutable access to the `Components`, I don't expect any further problems here.

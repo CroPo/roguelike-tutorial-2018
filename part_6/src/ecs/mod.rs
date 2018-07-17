@@ -1,6 +1,7 @@
 pub mod id;
 pub mod creature;
 pub mod component;
+pub mod action;
 
 use tcod::colors;
 use tcod::Console;
@@ -14,6 +15,7 @@ use std::any::Any;
 use ecs::component::Component;
 use ecs::component::Position;
 use ecs::component::Render;
+use ecs::action::EntityAction;
 
 
 struct EcsStorage {
@@ -58,8 +60,9 @@ pub struct Ecs {
     pub player_entity_id: EntityId,
 
     storage: HashMap<EntityId, EcsStorage>,
+    entities: HashMap<EntityId, Entity>,
 
-    pub entities: HashMap<EntityId, Entity>,
+    action_queue: Vec<EntityAction>
 }
 
 impl Ecs {
@@ -69,6 +72,7 @@ impl Ecs {
             player_entity_id: 0,
             storage: HashMap::new(),
             entities: HashMap::new(),
+            action_queue: vec![]
         }
     }
 
@@ -111,6 +115,17 @@ impl Ecs {
             component_map.insert(entity_id, self.get_component::<T>(entity_id).unwrap());
         }
         component_map
+    }
+
+
+    /// Get a `Vector` of  all `EntitiyId`s which own a specific `Component`
+    pub fn get_all_ids<T: Component + Any>(&self) -> Vec<EntityId>
+        where T: Component {
+        let entity_ids = self.storage.keys().cloned();
+
+        entity_ids.filter(|id| {
+            self.has_component::<T>(*id)
+        }).collect()
     }
 
     /// Register a component for a specific Entity.

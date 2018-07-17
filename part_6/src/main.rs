@@ -21,6 +21,8 @@ use game_states::GameStates;
 use ecs::Ecs;
 use ecs::creature::CreatureTemplate;
 use ecs::component::Position;
+use ecs::component::MonsterAi;
+use ecs::action::EntityAction;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -125,6 +127,17 @@ fn main() {
                 game_state = GameStates::EnemyTurn;
             }
             _ => if game_state == GameStates::EnemyTurn {
+
+                let entity_ids = ecs.get_all_ids::<MonsterAi>();
+
+                entity_ids.iter().for_each(|entity_id| {
+                    let action = match ecs.get_component::<MonsterAi>(*entity_id) {
+                        Some(ai) => ai.calculate_turn(&ecs),
+                        _ => EntityAction::Idle
+                    };
+                    action.execute(&mut ecs)
+                });
+
                 game_state = GameStates::PlayersTurn;
             }
         }

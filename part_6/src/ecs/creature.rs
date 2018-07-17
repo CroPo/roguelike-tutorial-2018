@@ -5,6 +5,8 @@ use ecs::component::Position;
 use ecs::component::Render;
 use ecs::component::Name;
 use ecs::id::EntityId;
+use ecs::component::MonsterAi;
+use ecs::component::Creature;
 
 /// Templates for common Creature types
 pub enum CreatureTemplate {
@@ -44,6 +46,7 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(true));
         ecs.register_component(id, Render::new('@', colors::WHITE));
         ecs.register_component(id, Name { name: "Player".to_string(), description: String::new() });
+        ecs.register_component(id, Creature::new(30, 5, 2));
         Some(id)
     }
 
@@ -52,6 +55,8 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(true));
         ecs.register_component(id, Render::new('o', colors::DESATURATED_GREEN));
         ecs.register_component(id, Name { name: "Orc".to_string(), description: String::new() });
+        ecs.register_component(id, Creature::new(10, 3, 0));
+        ecs.register_component(id, MonsterAi::new(id));
         Some(id)
     }
 
@@ -60,6 +65,8 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(true));
         ecs.register_component(id, Render::new('T', colors::DARKER_GREEN));
         ecs.register_component(id, Name { name: "Troll".to_string(), description: String::new() });
+        ecs.register_component(id, Creature::new(16, 4, 1));
+        ecs.register_component(id, MonsterAi::new(id));
         Some(id)
     }
 }
