@@ -67,3 +67,10 @@ impl Render {
 
 impl Component for Render {}
 
+/// The name and other textual data refering to an entity
+pub struct Name {
+    pub name : String,
+    pub description: String
+}
+
+impl Component for Name {}

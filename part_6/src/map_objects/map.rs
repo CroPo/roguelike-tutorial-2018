@@ -75,11 +75,8 @@ impl GameMap {
             self.create_room(&new_room);
             let center = new_room.center();
 
-            let id = ecs.player_entity_id;
-
             if rooms.len() == 0 {
-                let player_pos = ecs.get_component_mut::<Position>(id).unwrap();
-                player_pos.position = center;
+                CreatureTemplate::Player.create_on_position(ecs, center);
             } else {
                 let prev_center = rooms[rooms.len() - 1].center();
 
@@ -121,7 +118,7 @@ impl GameMap {
                     CreatureTemplate::Orc
                 };
 
-                ecs.add_creature(monster, (x, y));
+                monster.create_on_position(ecs, (x, y));
             }
         }
     }

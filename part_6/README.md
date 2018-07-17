@@ -17,6 +17,8 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     7. [Creating the component storage](#creating-the-component-storage)
     8. [The Position component](#the-position-component)
     9. [Updating the rendering](#updating-the-rendering)
+    10. [Fixing the creature templates](#fixing-the-creature-templates)
+
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -439,3 +441,24 @@ the changes is made to `add_creature`.
 
 For now, to conclude this step, I will actually change it so that every entity looks the same - because I want to test if
 everything works as intended.
+
+#### Fixing the creature templates
+
+To fix the problem, all I need is a method to create a bare `Entity` in the `Ecs` which returns me the `EntityId` of the
+entity I created. Then I can add as many `Component`s as I want to it.
+
+##### ... but first!
+
+But before I do that, I will move the one remaining value of `Entity`, `name`, to a new `Component`. This makes the `Entity`
+struct completely empty, it will have neither a value nor a method, so I could theoretically remove it entirely. But I
+think I will keep it for now. It will take just a bit of memory, so it won't hurt the program itself. The `Name` component
+will have no methods either (for now), just the values `name` and `description`.
+
+##### Back to fixing
+
+Fixing doesn't take to long. In fact, I can even scrap the whole `add_creature` method, and just let the templates handle 
+everything here. Of course, I have to edit the templates a bit. First and maybe most important: I need to pass an mutable
+reference to the `Ecs`, so I can actually ad stuff. Also, the `create` method doesn't need to return `Option<Entity>` 
+anymore - the `EntityId` is much more helpful so I can access the components and modify some values if needed.
+ 
+Finally, with these changes, I am ready to... begin with Part 6 of the Tutorial.

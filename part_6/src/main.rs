@@ -59,7 +59,6 @@ fn main() {
     let max_monsters_per_room = 3;
 
     let mut ecs = Ecs::initialize();
-    ecs.add_creature(CreatureTemplate::Player, (0, 0));
 
     let mut root = Root::initializer()
         .size(screen_width, screen_height)

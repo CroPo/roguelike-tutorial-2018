@@ -72,37 +72,15 @@ impl Ecs {
         }
     }
 
-    /// Add an creature from a template to a specific position
-    pub fn add_creature(&mut self, template: CreatureTemplate, position: (i32, i32)) {
-        if template.is_player() && self.player_entity_id != 0 {
-            // Player Entity has already been created. Abort
-            return;
-        }
+    /// Create a new bare Entity and return its id.
+    pub fn create_entity(&mut self) -> EntityId {
+        let id = self.id_generator.get_next_id();
 
-        match template.create() {
-            Some(entity) => {
-                let id = self.id_generator.get_next_id();
-                self.entities.insert(id, entity);
+        self.entities.insert(id, Entity{});
+        self.storage.insert(id, EcsStorage { entity_id: id, data: HashMap::new() });
 
-                self.storage.insert(id, EcsStorage { entity_id: id, data: HashMap::new() });
-
-                self.register_component(id, Position::new(true));
-                self.register_component(id, Render::new('X',colors::AZURE));
-
-                {
-                    let pos_component = self.get_component_mut::<Position>(id);
-                    if pos_component.is_some() {
-                        pos_component.unwrap().position = position;
-                    }
-                }
-                if template.is_player() {
-                    self.player_entity_id = id;
-                }
-            }
-            None => ()
-        }
+        id
     }
-
 
     /// Get a reference to a `Component` of a specified entity
     pub fn get_component<T>(&self, entity_id: EntityId) -> Option<&T>
@@ -167,13 +145,4 @@ impl Ecs {
 
 /// A generic representation of things like NPCs, Monsters, Items, ... and of course, of the player, in the game.
 pub struct Entity {
-    pub name: String,
-}
-
-impl Entity {
-    pub fn new(name: String) -> Entity {
-        Entity {
-            name,
-        }
-    }
 }
