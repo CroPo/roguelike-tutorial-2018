@@ -120,7 +120,7 @@ fn main() {
 
                     if !bump_into {
                         let player_pos = ecs.get_component_mut::<Position>(id).unwrap();
-                        player_pos.mv((vel_x, vel_y))
+                        player_pos.move_relative((vel_x, vel_y))
                     }
                 }
 

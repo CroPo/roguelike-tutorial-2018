@@ -19,7 +19,8 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     9. [Updating the rendering](#updating-the-rendering)
     10. [Fixing the creature templates](#fixing-the-creature-templates)
 3. [Fighters and AI ... again](#fighters-and-ai-...-again.)
-4. [## Making the Monsters move around](#making-the-monsters-move-around)
+4. [Making the Monsters move around](#making-the-monsters-move-around)
+5. [Making the Monsters move around ... less stupid!](#making-the-monsters-move-around-...-less-stupid!)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -611,3 +612,49 @@ pub fn calculate_move_towards(&self, ecs: &Ecs, map: &GameMap, target: (i32, i32
     Some(vel)
 }
 ```
+
+## Making the Monsters move around ... less stupid!
+
+Right now, the monsters move in pretty stupid patterns. That's why the tutorial suggests to make use of the A* pathfinding
+algorithm here, which will help the creatures avoid obstacles.
+
+For the calculation, the `Position` needs to be aware of the own `EntityId`, so I added it to the values and the `new` method.
+
+And, since the A* algorithm doesn't provide me with a delta to the next position, but an absolute position for the next
+turn's move, I will switch to that in general. That means the `calculate_move_to` and the `mv` methods will be updated, too.
+
+```rust
+
+pub fn calculate_move_astar(&self, ecs: &Ecs, map: &GameMap, target_id: EntityId) -> Option<(i32, i32)> {
+    let target = match ecs.get_component::<Position>(target_id) {
+        Some(p) => p,
+        _ => return None
+    };
+
+    let mut fov = Map::new(map.dimensions.0, map.dimensions.1);
+
+    for x in 0..map.dimensions.0 {
+        for y in 0..map.dimensions.1 {
+            let tile = map.get_tile(x as usize, y as usize);
+            fov.set(x, y, !tile.block_sight, !tile.block_move);
+        }
+    }
+
+    ecs.get_all::<Position>().iter().filter(|(id, _)| {
+        **id != target_id && **id != self.entity_id
+    }).for_each(|(_, p)| {
+        fov.set(p.position.0, p.position.1, true, false);
+    });
+
+    let mut path = AStar::new_from_map(fov, 1.41);
+    path.find((self.position.0, self.position.1), (target.position.0, target.position.1));
+
+    return if !path.is_empty() && path.len() < 25 {
+        path.iter().next()
+    } else {
+        self.calculate_move_towards(ecs, map, (target.position.0, target.position.1))
+    };
+}
+```
+
+This is mostly a 1:1 copy of the Python method, again.

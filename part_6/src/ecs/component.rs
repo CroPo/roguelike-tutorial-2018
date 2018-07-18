@@ -5,6 +5,9 @@ use ecs::Ecs;
 use tcod::colors::Color;
 use tcod::Console;
 use tcod::BackgroundFlag;
+use tcod::map::Map;
+use tcod::pathfinding::AStar;
+
 use ecs::action::EntityAction;
 use map_objects::map::GameMap;
 
@@ -14,13 +17,15 @@ pub trait Component: Any {}
 /// A Component which contains informations of an `Entity`s position on the Map, and methods to
 /// interact with it
 pub struct Position {
+    entity_id: EntityId,
     pub position: (i32, i32),
     pub is_blocking: bool,
 }
 
 impl Position {
-    pub fn new(is_blocking: bool) -> Position {
+    pub fn new(entity_id: EntityId, is_blocking: bool) -> Position {
         Position {
+            entity_id,
             position: (0, 0),
             is_blocking,
         }
@@ -33,10 +38,15 @@ impl Position {
         }).map(|(i, _)| *i).collect()
     }
 
-    /// Change the Position of the Entity
-    pub fn mv(&mut self, vel: (i32, i32)) {
-        self.position.0 += vel.0;
-        self.position.1 += vel.1;
+    /// Change the Position of the Entity relative to its current position
+    pub fn move_relative(&mut self, delta: (i32, i32)) {
+        self.position.0 += delta.0;
+        self.position.1 += delta.1;
+    }
+
+    /// Change the Position of the Entity to a fixed point.
+    pub fn move_absolute(&mut self, pos: (i32, i32)) {
+        self.position = pos;
     }
 
     /// Calculate the distance to a specific point
@@ -60,10 +70,42 @@ impl Position {
         let vel = (dx as i32, dy as i32);
         let target = (self.position.0 + vel.0, self.position.1 + vel.1);
 
-        if map.is_move_blocked(target.0, target.1) || !Position::is_blocked_by(ecs, target).is_empty() {
-            return None
+        if map.is_move_blocked(target.0, target.1) || !Self::is_blocked_by(ecs, target).is_empty() {
+            return None;
         }
-        Some(vel)
+        Some(target)
+    }
+
+    /// Calculate the next movement step with A*
+    pub fn calculate_move_astar(&self, ecs: &Ecs, map: &GameMap, target_id: EntityId) -> Option<(i32, i32)> {
+        let target = match ecs.get_component::<Position>(target_id) {
+            Some(p) => p,
+            _ => return None
+        };
+
+        let mut fov = Map::new(map.dimensions.0, map.dimensions.1);
+
+        for x in 0..map.dimensions.0 {
+            for y in 0..map.dimensions.1 {
+                let tile = map.get_tile(x as usize, y as usize);
+                fov.set(x, y, !tile.block_sight, !tile.block_move);
+            }
+        }
+
+        ecs.get_all::<Position>().iter().filter(|(id, _)| {
+            **id != target_id && **id != self.entity_id
+        }).for_each(|(_, p)| {
+            fov.set(p.position.0, p.position.1, true, false);
+        });
+
+        let mut path = AStar::new_from_map(fov, 1.41);
+        path.find((self.position.0, self.position.1), (target.position.0, target.position.1));
+
+        return if !path.is_empty() && path.len() < 25 {
+            path.iter().next()
+        } else {
+            self.calculate_move_towards(ecs, map, (target.position.0, target.position.1))
+        };
     }
 }
 
@@ -147,14 +189,12 @@ impl MonsterAi {
     fn calculate_movement(&self, ecs: &Ecs, monster_position: &Position, map: &GameMap) -> EntityAction {
         match ecs.get_component::<Position>(ecs.player_entity_id) {
             Some(player_position) => {
-
                 let target = (player_position.position.0, player_position.position.1);
                 let distance = monster_position.distance_to(target);
 
                 if distance >= 2.0 {
-                    let vel = monster_position.calculate_move_towards(ecs, map, target);
-                    match vel {
-                        Some(vel) => return EntityAction::Move(self.entity_id, vel),
+                    match monster_position.calculate_move_astar(ecs, map, ecs.player_entity_id) {
+                        Some(pos) => return EntityAction::MoveTo(self.entity_id, pos),
                         _ => ()
                     }
                 }

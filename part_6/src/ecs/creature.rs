@@ -43,7 +43,7 @@ impl CreatureTemplate {
     fn create_player_from_template(ecs: &mut Ecs) -> Option<EntityId> {
         let id = ecs.create_entity();
         ecs.player_entity_id = id;
-        ecs.register_component(id, Position::new(true));
+        ecs.register_component(id, Position::new(id,true));
         ecs.register_component(id, Render::new('@', colors::WHITE));
         ecs.register_component(id, Name { name: "Player".to_string(), description: String::new() });
         ecs.register_component(id, Creature::new(30, 5, 2));
@@ -52,7 +52,7 @@ impl CreatureTemplate {
 
     fn create_orc_from_template(ecs: &mut Ecs) -> Option<EntityId> {
         let id = ecs.create_entity();
-        ecs.register_component(id, Position::new(true));
+        ecs.register_component(id, Position::new(id,true));
         ecs.register_component(id, Render::new('o', colors::DESATURATED_GREEN));
         ecs.register_component(id, Name { name: "Orc".to_string(), description: String::new() });
         ecs.register_component(id, Creature::new(10, 3, 0));
@@ -62,7 +62,7 @@ impl CreatureTemplate {
 
     fn create_troll_from_template(ecs: &mut Ecs) -> Option<EntityId> {
         let id = ecs.create_entity();
-        ecs.register_component(id, Position::new(true));
+        ecs.register_component(id, Position::new(id,true));
         ecs.register_component(id, Render::new('T', colors::DARKER_GREEN));
         ecs.register_component(id, Name { name: "Troll".to_string(), description: String::new() });
         ecs.register_component(id, Creature::new(16, 4, 1));
