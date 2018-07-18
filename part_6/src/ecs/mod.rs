@@ -33,6 +33,12 @@ impl EcsStorage {
         self.data.insert(TypeId::of::<T>(), Box::new(component));
     }
 
+    /// Remove a component from the storage
+    fn remove<T>(&mut self)
+        where T: Component + Any {
+        self.data.remove(&TypeId::of::<T>());
+    }
+
     /// Check if a component is registered
     fn is_registered<T>(&self) -> bool
         where T: Component + Any {
@@ -135,6 +141,19 @@ impl Ecs {
         match self.storage.get_mut(&entity_id) {
             Some(storage) => {
                 storage.register(component);
+            }
+            _ => {}
+        }
+
+    }
+
+    /// Remove a component for a specific Entity.
+    pub fn remove_component<T>(&mut self, entity_id: EntityId)
+        where T: Component {
+
+        match self.storage.get_mut(&entity_id) {
+            Some(storage) => {
+                storage.remove::<T>();
             }
             _ => {}
         }

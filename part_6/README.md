@@ -22,6 +22,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
 4. [Making the Monsters move around](#making-the-monsters-move-around)
 5. [Making the Monsters move around ... less stupid!](#making-the-monsters-move-around-...-less-stupid!)
 6. [Melee combat](#melee-combat)
+7. [Killing](#killing)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -717,3 +718,36 @@ because an empty `else` block would return `()`, which is of the wrong type.
 
 But, for sure, I need to bring a better structure into the `MonsterAi` component. But that will happen later. I just
 added the `calculate_attack` to a somewhat fitting place, and that's all for this section here.
+
+## Killing
+
+Until now, the `hp` value doesn't really do much besides decrease. But no `Entity` is able to really die. Let's change
+that before we do anything else.
+
+Of course, this is a rather tricky action to perform in this case, because it's not one of default `EntityAction`s, but
+more of a reaction to those. Theoretically, any action could have a reaction, and these could have reactions on them, too,
+and so on. In praxis, this would mean that `execute` of `EntityAction` would need to be recursive, which seems to not be
+that much of a bad idea, and it works. Of course, this will be limited to a small set of reactions, but for this scope
+it will be sufficient.
+
+The `Die` action is pretty simple, too:
+```rust
+ecs.register_component(entity_id, Render::new('%', colors::DARK_CRIMSON));
+ecs.remove_component::<MonsterAi>(entity_id);
+ecs.remove_component::<Creature>(entity_id);
+ecs.register_component(entity_id, Corpse{});
+match ecs.get_component_mut::<Position>(entity_id) {
+    Some(p) => p.is_blocking = false,
+    None => ()
+}
+```
+
+1. Override the old `Render` component with a new one representing a corpse.
+2. Remove the `MonsterAi` so no more turns will be calculated.
+3. Remove the `Creature` component so no attacks against it will be calcluated anymore.
+4. Add the (empty) `Corpse` component, which is my main indicator to determine if the player is dead after the creature
+turns.
+5. Set the entity to not blocking so it is possible to move right over it.
+
+... and that's where the next issue is found. Once I step onto a corpse, it continously renders both the player and the 
+corpse, resulting in a flickering tile. This leads right to the next section. 

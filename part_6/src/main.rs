@@ -23,6 +23,7 @@ use ecs::component::Position;
 use ecs::component::MonsterAi;
 use ecs::action::EntityAction;
 use ecs::component::Creature;
+use ecs::component::Corpse;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -140,7 +141,11 @@ fn main() {
                     action.execute(&mut ecs)
                 });
 
-                game_state = GameStates::PlayersTurn;
+                game_state = if ecs.has_component::<Corpse>(ecs.player_entity_id) {
+                    GameStates::PlayerDead
+                } else {
+                    GameStates::PlayersTurn
+                };
             }
         }
     }

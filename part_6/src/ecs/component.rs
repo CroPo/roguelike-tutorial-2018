@@ -34,7 +34,7 @@ impl Position {
     /// Checks if a position is already blocked by an `Entity` and returns the id of the blocker.
     pub fn is_blocked_by(ecs: &Ecs, position: (i32, i32)) -> Vec<EntityId> {
         ecs.get_all::<Self>().iter().filter(|(_, p)| {
-            p.position.0 == position.0 && p.position.1 == position.1
+            p.position.0 == position.0 && p.position.1 == position.1 && p.is_blocking
         }).map(|(i, _)| *i).collect()
     }
 
@@ -150,10 +150,10 @@ impl Component for Name {}
 /// Basic stats for any creature
 pub struct Creature {
     entity_id: EntityId,
-    max_hp: i32,
-    hp: i32,
-    power: i32,
-    defense: i32,
+    pub max_hp: i32,
+    pub hp: i32,
+    pub power: i32,
+    pub defense: i32,
 }
 
 impl Creature {
@@ -167,6 +167,7 @@ impl Creature {
         }
     }
 
+    /// Take a specific amount of damage.
     pub fn take_damage(&mut self, damage: i32) {
         self.hp -= damage;
     }
@@ -228,9 +229,8 @@ impl MonsterAi {
                         _ => ()
                     }
                 } else {
-                    self.calculate_attack(ecs);
+                    return self.calculate_attack(ecs)
                 }
-
 
                 EntityAction::Idle
             }
@@ -252,3 +252,6 @@ impl MonsterAi {
 }
 
 impl Component for MonsterAi {}
+
+pub struct Corpse {}
+impl Component for Corpse {}
