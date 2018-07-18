@@ -21,6 +21,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
 3. [Fighters and AI ... again](#fighters-and-ai-...-again.)
 4. [Making the Monsters move around](#making-the-monsters-move-around)
 5. [Making the Monsters move around ... less stupid!](#making-the-monsters-move-around-...-less-stupid!)
+6. [Melee combat](#melee-combat)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -658,3 +659,61 @@ pub fn calculate_move_astar(&self, ecs: &Ecs, map: &GameMap, target_id: EntityId
 ```
 
 This is mostly a 1:1 copy of the Python method, again.
+
+## Melee combat
+
+Until now, whenever I bump into an `Entity`, pretty much nothing really happens. Time to change that once and for all.
+
+... but first, I will have to do some stuff I forgot: Let the player move diagonlly, too. And, now that I see the code
+I really want to update the whole `handle_keys`. But today is not the day I will do this, as I really want to complete
+this part of the Tutorial.
+
+So I will just add the missing keys.
+
+After that, the `Creature` component needs to be updated, to be able to take damage, to cause damage and to die. Since 
+there is a bit of calculation going on, the `Creature` will get its own `EntityId` as value, too Also, the `MonsterAi` 
+needs some addition in order to make the Monsters attack. A new `EnitityAction` will be added, too.
+
+All of the new methods will pretty much be the same as their Python counterparts, so I won't show them here. But, as always
+you can look them up in the git diff. I still commit ever chapter of this writeup once, so you all can see what I changed.
+
+I cleaned up the player's turn block quite a bit, too, while doing all of this. Mostly because I used the `EntityAction`
+enums for all actions here, too. But see for yourself!
+
+```rust
+// ...
+Some(Action::MovePlayer(vel_x, vel_y)) => if game_state == GameStates::PlayersTurn {
+    let id = ecs.player_entity_id;
+
+    let destination = {
+        let p = ecs.get_component::<Position>(id).unwrap();
+        (p.position.0 + vel_x, p.position.1 + vel_y)
+    };
+    
+    let action = if !map.is_move_blocked(destination.0, destination.1) {
+        let targets = Position::is_blocked_by(&ecs, destination);
+    
+        if let Some(target_id) = targets.iter().next() {
+            let player_creature = ecs.get_component::<Creature>(id).unwrap();
+            match player_creature.calculate_attack(&ecs, target_id) {
+                Some(x) => EntityAction::TakeDamage(*target_id, x),
+                None => EntityAction::Idle
+            }
+        } else {
+            EntityAction::MoveRelative(id, (vel_x, vel_y))
+        }
+    } else {
+        EntityAction::Idle
+    };
+    
+    action.execute(&mut ecs);
+
+    game_state = GameStates::EnemyTurn;
+}
+//...
+```
+Much cleaner than before, and way more readable (imo). The `else` branch of the outer `if` can't be removed, though,
+because an empty `else` block would return `()`, which is of the wrong type.
+
+But, for sure, I need to bring a better structure into the `MonsterAi` component. But that will happen later. I just
+added the `calculate_attack` to a somewhat fitting place, and that's all for this section here.

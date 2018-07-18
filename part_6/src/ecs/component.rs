@@ -51,8 +51,8 @@ impl Position {
 
     /// Calculate the distance to a specific point
     pub fn distance_to(&self, target: (i32, i32)) -> f64 {
-        let mut dx = (target.0 - self.position.0) as f64;
-        let mut dy = (target.1 - self.position.1) as f64;
+        let dx = (target.0 - self.position.0) as f64;
+        let dy = (target.1 - self.position.1) as f64;
 
         (dx * dx + dy * dy).sqrt()
     }
@@ -149,6 +149,7 @@ impl Component for Name {}
 
 /// Basic stats for any creature
 pub struct Creature {
+    entity_id: EntityId,
     max_hp: i32,
     hp: i32,
     power: i32,
@@ -156,13 +157,42 @@ pub struct Creature {
 }
 
 impl Creature {
-    pub fn new(max_hp: i32, power: i32, defense: i32) -> Creature {
+    pub fn new(entity_id : EntityId, max_hp: i32, power: i32, defense: i32) -> Creature {
         Creature {
+            entity_id,
             max_hp,
             hp: max_hp,
             power,
             defense,
         }
+    }
+
+    pub fn take_damage(&mut self, damage: i32) {
+        self.hp -= damage;
+    }
+
+    /// Calculate the Attack and return the amount of damage which will be dealt
+    pub fn calculate_attack(&self, ecs: &Ecs, target_id: EntityId) -> Option<i32> {
+        if let Some(target) = ecs.get_component::<Creature>(target_id) {
+
+            let entity_name = match ecs.get_component::<Name>(self.entity_id) {
+                Some(n) => n.name.to_uppercase(),
+                None => "AN UNNAMED ENTITY".to_string()
+            };
+
+            let target_name = match ecs.get_component::<Name>(target_id) {
+                Some(n) => n.name.clone(),
+                None => "an unnamed entity".to_string()
+            };
+
+            let damage = self.power - target.defense;
+            if damage > 0 {
+                println!("{} attacks {} for {} hit points.", entity_name, target_name, damage);
+                return Some(damage)
+            }
+            println!("{} attacks {} but does no damage.", entity_name, target_name);
+        }
+        None
     }
 }
 
@@ -197,10 +227,26 @@ impl MonsterAi {
                         Some(pos) => return EntityAction::MoveTo(self.entity_id, pos),
                         _ => ()
                     }
+                } else {
+                    self.calculate_attack(ecs);
                 }
+
+
                 EntityAction::Idle
             }
             _ => EntityAction::Idle
+        }
+    }
+
+    fn calculate_attack(&self, ecs: &Ecs) -> EntityAction {
+        match ecs.get_component::<Creature>(self.entity_id) {
+            Some(c) => {
+                match c.calculate_attack(ecs, ecs.player_entity_id) {
+                    Some(damage) => EntityAction::TakeDamage(ecs.player_entity_id, damage),
+                    None => EntityAction::Idle
+                }
+            }
+            _  => EntityAction::Idle
         }
     }
 }

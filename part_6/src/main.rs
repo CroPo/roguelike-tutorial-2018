@@ -19,10 +19,10 @@ use map_objects::fov;
 use game_states::GameStates;
 
 use ecs::Ecs;
-use ecs::creature::CreatureTemplate;
 use ecs::component::Position;
 use ecs::component::MonsterAi;
 use ecs::action::EntityAction;
+use ecs::component::Creature;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -32,10 +32,14 @@ enum Action {
 
 fn handle_keys(key: Option<Key>) -> Option<Action> {
     match key {
-        Some(Key { code: KeyCode::Left, .. }) => Some(Action::MovePlayer(-1, 0)),
-        Some(Key { code: KeyCode::Right, .. }) => Some(Action::MovePlayer(1, 0)),
-        Some(Key { code: KeyCode::Up, .. }) => Some(Action::MovePlayer(0, -1)),
-        Some(Key { code: KeyCode::Down, .. }) => Some(Action::MovePlayer(0, 1)),
+        Some(Key { code: KeyCode::Left, .. }) | Some(Key { printable: 'h', .. }) => Some(Action::MovePlayer(-1, 0)),
+        Some(Key { code: KeyCode::Right, .. }) | Some(Key { printable: 'l', .. }) => Some(Action::MovePlayer(1, 0)),
+        Some(Key { code: KeyCode::Up, .. }) | Some(Key { printable: 'k', .. }) => Some(Action::MovePlayer(0, -1)),
+        Some(Key { code: KeyCode::Down, .. }) | Some(Key { printable: 'j', .. }) => Some(Action::MovePlayer(0, 1)),
+        Some(Key { printable: 'y', .. }) => Some(Action::MovePlayer(-1, -1)),
+        Some(Key { printable: 'u', .. }) => Some(Action::MovePlayer(1, -1)),
+        Some(Key { printable: 'b', .. }) => Some(Action::MovePlayer(-1, 1)),
+        Some(Key { printable: 'n', .. }) => Some(Action::MovePlayer(1, 1)),
         Some(Key { code: KeyCode::Escape, .. }) => Some(Action::Exit),
         Some(Key { code: KeyCode::Enter, alt: true, .. }) => Some(Action::Fullscreen),
         _ => None
@@ -100,34 +104,32 @@ fn main() {
             Some(Action::MovePlayer(vel_x, vel_y)) => if game_state == GameStates::PlayersTurn {
                 let id = ecs.player_entity_id;
 
-
-                let mut destination = {
-                    let player_pos = ecs.get_component::<Position>(id).unwrap();
-                    (player_pos.position.0 + vel_x, player_pos.position.1 + vel_y)
+                let destination = {
+                    let p = ecs.get_component::<Position>(id).unwrap();
+                    (p.position.0 + vel_x, p.position.1 + vel_y)
                 };
 
-                if !map.is_move_blocked(destination.0, destination.1) {
-                    let bump_into =
-                        {
-                            let targets = Position::is_blocked_by(&ecs, destination);
+                let action = if !map.is_move_blocked(destination.0, destination.1) {
+                    let targets = Position::is_blocked_by(&ecs, destination);
 
-                            for e in &targets {
-                                println!("You kick a Monster in the shins, much to its annoyance!")
-                            }
-
-                            !targets.is_empty()
-                        };
-
-                    if !bump_into {
-                        let player_pos = ecs.get_component_mut::<Position>(id).unwrap();
-                        player_pos.move_relative((vel_x, vel_y))
+                    if let Some(target_id) = targets.iter().next() {
+                        let player_creature = ecs.get_component::<Creature>(id).unwrap();
+                        match player_creature.calculate_attack(&ecs, *target_id) {
+                            Some(x) => EntityAction::TakeDamage(*target_id, x),
+                            None => EntityAction::Idle
+                        }
+                    } else {
+                        EntityAction::MoveRelative(id, (vel_x, vel_y))
                     }
-                }
+                } else {
+                    EntityAction::Idle
+                };
+
+                action.execute(&mut ecs);
 
                 game_state = GameStates::EnemyTurn;
             }
             _ => if game_state == GameStates::EnemyTurn {
-
                 let entity_ids = ecs.get_all_ids::<MonsterAi>();
 
                 entity_ids.iter().for_each(|entity_id| {
