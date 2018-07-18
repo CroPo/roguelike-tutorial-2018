@@ -61,8 +61,6 @@ pub struct Ecs {
 
     storage: HashMap<EntityId, EcsStorage>,
     entities: HashMap<EntityId, Entity>,
-
-    action_queue: Vec<EntityAction>
 }
 
 impl Ecs {
@@ -72,7 +70,6 @@ impl Ecs {
             player_entity_id: 0,
             storage: HashMap::new(),
             entities: HashMap::new(),
-            action_queue: vec![]
         }
     }
 

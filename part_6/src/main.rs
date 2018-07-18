@@ -132,7 +132,7 @@ fn main() {
 
                 entity_ids.iter().for_each(|entity_id| {
                     let action = match ecs.get_component::<MonsterAi>(*entity_id) {
-                        Some(ai) => ai.calculate_turn(&ecs),
+                        Some(ai) => ai.calculate_turn(&ecs, &map),
                         _ => EntityAction::Idle
                     };
                     action.execute(&mut ecs)

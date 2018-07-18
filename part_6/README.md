@@ -19,6 +19,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
     9. [Updating the rendering](#updating-the-rendering)
     10. [Fixing the creature templates](#fixing-the-creature-templates)
 3. [Fighters and AI ... again](#fighters-and-ai-...-again.)
+4. [## Making the Monsters move around](#making-the-monsters-move-around)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -581,3 +582,32 @@ For now, only these two actions are needed. The idle is the default which gets r
 cause an immediate end of `execute`
 
 Since all the calculations are done with immutable access to the `Components`, I don't expect any further problems here.
+
+## Making the Monsters move around
+
+Finally, it's time to implement the pathfinding. I will put the `move_towards` method into the `Position` component. The
+Ai should only call it, so I am able to calculate movement independent of the ai - if I ever want to include mouse 
+input for example.
+
+Of course, the `move_towards` method doesn't really change any value (This is why I will only call it 
+`calculate_move_towards`), but it returns a delta position. It's the ai's turn to wrap that up into an `EntityAction`. 
+
+```rust
+pub fn calculate_move_towards(&self, ecs: &Ecs, map: &GameMap, target: (i32, i32)) -> Option<(i32, i32)> {
+    let mut dx = (target.0 - self.position.0) as f64;
+    let mut dy = (target.1 - self.position.1) as f64;
+
+    let distance = (dx * dx + dy * dy).sqrt();
+
+    dx = (dx / distance).round();
+    dy = (dy / distance).round();
+
+    let vel = (dx as i32, dy as i32);
+    let target = (self.position.0 + vel.0, self.position.1 + vel.1);
+
+    if map.is_move_blocked(target.0, target.1) || !Position::is_blocked_by(ecs, target).is_empty() {
+        return None
+    }
+    Some(vel)
+}
+```
