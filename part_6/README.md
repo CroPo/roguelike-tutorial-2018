@@ -24,6 +24,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
 6. [Melee combat](#melee-combat)
 7. [Killing](#killing)
 8. [The rendering order](#the-rendering-order)
+9. [Conclusion](#conclusion)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -798,3 +799,11 @@ pub enum RenderOrder {
 ```
 
 Thankfully, Rust does implement the traits which I specify in `#[derive()]` automatically.
+
+## Conclusion
+
+Finally done! Well, not completely, because as you may notice, the messaging wasn't dealt with. But, due to the structure,
+of my code I will postpone this to the next part, and then I will directy integrate it into the Gui.
+
+Even though it took me an eternety, I learned very much and valuable lessons here. One thing for sure: I will _never_
+**ever** implement an own ECS again. Ever.
