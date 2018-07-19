@@ -6,6 +6,7 @@ use ecs::component::Render;
 use tcod::colors;
 use ecs::component::MonsterAi;
 use ecs::component::Corpse;
+use render::RenderOrder;
 
 /// All possible interactions between `Component`s
 #[derive(PartialEq)]
@@ -31,7 +32,6 @@ impl EntityAction {
         if reaction != EntityAction::Idle {
             reaction.execute(ecs);
         }
-
     }
 
     fn move_to_action(&self, ecs: &mut Ecs, entity_id: EntityId, pos: (i32, i32)) -> EntityAction {
@@ -53,20 +53,20 @@ impl EntityAction {
             e.take_damage(damage);
 
             if e.hp <= 0 {
-                return EntityAction::Die(entity_id)
+                return EntityAction::Die(entity_id);
             }
         }
         EntityAction::Idle
     }
 
-    fn die_action(&self, ecs : &mut Ecs, entity_id: EntityId) -> EntityAction {
+    fn die_action(&self, ecs: &mut Ecs, entity_id: EntityId) -> EntityAction {
         // Override the Rendering with the default corpse glyph
-        ecs.register_component(entity_id, Render::new('%', colors::DARK_CRIMSON));
+        ecs.register_component(entity_id, Render::new(entity_id,'%', colors::DARK_CRIMSON, RenderOrder::Corpse));
         // Remove the AI and the Creature components
         ecs.remove_component::<MonsterAi>(entity_id);
         ecs.remove_component::<Creature>(entity_id);
         // Add the Corpse component
-        ecs.register_component(entity_id, Corpse{});
+        ecs.register_component(entity_id, Corpse {});
         // Set non blocking
         match ecs.get_component_mut::<Position>(entity_id) {
             Some(p) => p.is_blocking = false,

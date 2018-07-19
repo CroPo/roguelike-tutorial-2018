@@ -10,6 +10,7 @@ use tcod::pathfinding::AStar;
 
 use ecs::action::EntityAction;
 use map_objects::map::GameMap;
+use render::RenderOrder;
 
 /// Used to indentify an Component
 pub trait Component: Any {}
@@ -114,25 +115,33 @@ impl Component for Position {}
 
 /// This component handles the rendering of an Entity onto the map
 pub struct Render {
+    pub entity_id: EntityId,
     glyph: char,
     color: Color,
+    pub order: RenderOrder,
 }
 
 impl Render {
-    pub fn new(glyph: char, color: Color) -> Render {
+    pub fn new(entity_id: EntityId, glyph: char, color: Color, order: RenderOrder) -> Render {
         Render {
+            entity_id,
             glyph,
             color,
+            order,
         }
     }
 
-    pub fn draw(&self, console: &mut Console, pos: (i32, i32)) {
-        console.set_default_foreground(self.color);
-        console.put_char(pos.0, pos.1, self.glyph, BackgroundFlag::None);
+    pub fn draw(&self, ecs: &Ecs, console: &mut Console) {
+        if let Some(p) = ecs.get_component::<Position>(self.entity_id) {
+            console.set_default_foreground(self.color);
+            console.put_char(p.position.0, p.position.1, self.glyph, BackgroundFlag::None);
+        }
     }
 
-    pub fn clear(&self, console: &mut Console, pos: (i32, i32)) {
-        console.put_char(pos.0, pos.1, ' ', BackgroundFlag::None);
+    pub fn clear(&self, ecs: &Ecs, console: &mut Console) {
+        if let Some(p) = ecs.get_component::<Position>(self.entity_id) {
+            console.put_char(p.position.0, p.position.1, ' ', BackgroundFlag::None);
+        }
     }
 }
 
@@ -157,7 +166,7 @@ pub struct Creature {
 }
 
 impl Creature {
-    pub fn new(entity_id : EntityId, max_hp: i32, power: i32, defense: i32) -> Creature {
+    pub fn new(entity_id: EntityId, max_hp: i32, power: i32, defense: i32) -> Creature {
         Creature {
             entity_id,
             max_hp,
@@ -175,7 +184,6 @@ impl Creature {
     /// Calculate the Attack and return the amount of damage which will be dealt
     pub fn calculate_attack(&self, ecs: &Ecs, target_id: EntityId) -> Option<i32> {
         if let Some(target) = ecs.get_component::<Creature>(target_id) {
-
             let entity_name = match ecs.get_component::<Name>(self.entity_id) {
                 Some(n) => n.name.to_uppercase(),
                 None => "AN UNNAMED ENTITY".to_string()
@@ -189,10 +197,10 @@ impl Creature {
             let damage = self.power - target.defense;
             if damage > 0 {
                 println!("{} attacks {} for {} hit points.", entity_name, target_name, damage);
-                return Some(damage)
+                return Some(damage);
             }
             println!("{} attacks {} but does no damage.", entity_name, target_name);
-        }
+        };
         None
     }
 }
@@ -229,7 +237,7 @@ impl MonsterAi {
                         _ => ()
                     }
                 } else {
-                    return self.calculate_attack(ecs)
+                    return self.calculate_attack(ecs);
                 }
 
                 EntityAction::Idle
@@ -246,7 +254,7 @@ impl MonsterAi {
                     None => EntityAction::Idle
                 }
             }
-            _  => EntityAction::Idle
+            _ => EntityAction::Idle
         }
     }
 }
@@ -254,4 +262,5 @@ impl MonsterAi {
 impl Component for MonsterAi {}
 
 pub struct Corpse {}
+
 impl Component for Corpse {}

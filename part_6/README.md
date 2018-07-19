@@ -23,6 +23,7 @@ _Hint: You can actually skip the first one. It's just me struggling with everyth
 5. [Making the Monsters move around ... less stupid!](#making-the-monsters-move-around-...-less-stupid!)
 6. [Melee combat](#melee-combat)
 7. [Killing](#killing)
+8. [The rendering order](#the-rendering-order)
 
 First things first: I wanted to do some optimizations between last week and this week. But, exactly as i feared, I didn't
 really have any spare minute, so I was only able to do two bugfixes:
@@ -751,3 +752,49 @@ turns.
 
 ... and that's where the next issue is found. Once I step onto a corpse, it continously renders both the player and the 
 corpse, resulting in a flickering tile. This leads right to the next section. 
+
+## The rendering order
+
+I already adressed the problem, so right towards the solution now. Basically, I will put an `RenderOrder` `enum` into
+the game and sort the `Render` list before drawing anything onto the map. 
+
+Sorting the entities, on the other hand, is a bit more tricky in Rust. Because I both need `Vector` with mutable access
+(to sort it) and access to some data from the `Collections`. 
+
+But, here it is:
+```rust
+let component_ids = ecs.get_all_ids::<Render>();
+    let mut ids_filtered: Vec<&EntityId> = component_ids.iter().filter(|id| {
+        if let Some(p) = ecs.get_component::<Position>(**id) {
+            fov_map.is_in_fov(p.position.0, p.position.1)
+        } else {
+            false
+        }
+    }).collect();
+    ids_filtered.sort_by(|id_a, id_b|{
+
+        let comp_a = ecs.get_component::<Render>(**id_a).unwrap();
+        let comp_b = ecs.get_component::<Render>(**id_b).unwrap();
+
+        comp_a.order.cmp(&comp_b.order)
+    });
+    ids_filtered.iter().for_each(|id| {
+        let c = ecs.get_component::<Render>(**id).unwrap();
+        c.draw(ecs, console)
+    });
+```
+
+I create a `Vec` of all (cloned) `EntityIds` which have the `Render` trait registered. (that's why I can safely `unwrap`)
+them. Then I filter out all which are not in the player's FOV, an then I sort them by their order.
+
+Of cours, I needed to implement a few traits for my enum:
+```rust
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub enum RenderOrder {
+    Corpse = 1,
+    Item = 2,
+    Actor = 3,
+} 
+```
+
+Thankfully, Rust does implement the traits which I specify in `#[derive()]` automatically.
