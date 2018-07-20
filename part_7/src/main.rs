@@ -22,7 +22,7 @@ use ecs::Ecs;
 use ecs::component::Position;
 use ecs::component::MonsterAi;
 use ecs::action::EntityAction;
-use ecs::component::Creature;
+use ecs::component::Actor;
 use ecs::component::Corpse;
 
 enum Action {
@@ -121,7 +121,7 @@ fn main() {
                     let targets = Position::is_blocked_by(&ecs, destination);
 
                     if let Some(target_id) = targets.iter().next() {
-                        let player_creature = ecs.get_component::<Creature>(id).unwrap();
+                        let player_creature = ecs.get_component::<Actor>(id).unwrap();
                         match player_creature.calculate_attack(&ecs, *target_id) {
                             Some(x) => EntityAction::TakeDamage(*target_id, x),
                             None => EntityAction::Idle

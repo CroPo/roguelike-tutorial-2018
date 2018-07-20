@@ -157,7 +157,7 @@ impl Component for Name {}
 
 
 /// Basic stats for any creature
-pub struct Creature {
+pub struct Actor {
     entity_id: EntityId,
     pub max_hp: i32,
     pub hp: i32,
@@ -165,9 +165,9 @@ pub struct Creature {
     pub defense: i32,
 }
 
-impl Creature {
-    pub fn new(entity_id: EntityId, max_hp: i32, power: i32, defense: i32) -> Creature {
-        Creature {
+impl Actor {
+    pub fn new(entity_id: EntityId, max_hp: i32, power: i32, defense: i32) -> Actor {
+        Actor {
             entity_id,
             max_hp,
             hp: max_hp,
@@ -183,7 +183,7 @@ impl Creature {
 
     /// Calculate the Attack and return the amount of damage which will be dealt
     pub fn calculate_attack(&self, ecs: &Ecs, target_id: EntityId) -> Option<i32> {
-        if let Some(target) = ecs.get_component::<Creature>(target_id) {
+        if let Some(target) = ecs.get_component::<Actor>(target_id) {
             let entity_name = match ecs.get_component::<Name>(self.entity_id) {
                 Some(n) => n.name.to_uppercase(),
                 None => "AN UNNAMED ENTITY".to_string()
@@ -205,7 +205,7 @@ impl Creature {
     }
 }
 
-impl Component for Creature {}
+impl Component for Actor {}
 
 pub struct MonsterAi {
     entity_id: EntityId
@@ -247,7 +247,7 @@ impl MonsterAi {
     }
 
     fn calculate_attack(&self, ecs: &Ecs) -> EntityAction {
-        match ecs.get_component::<Creature>(self.entity_id) {
+        match ecs.get_component::<Actor>(self.entity_id) {
             Some(c) => {
                 match c.calculate_attack(ecs, ecs.player_entity_id) {
                     Some(damage) => EntityAction::TakeDamage(ecs.player_entity_id, damage),

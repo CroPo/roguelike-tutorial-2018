@@ -48,12 +48,20 @@ impl EcsStorage {
     /// Get a specific component form the storage
     fn get<T>(&self) -> Option<&T>
         where T: Component + Any {
-        self.data.get(&TypeId::of::<T>()).map(|e| e.downcast_ref()).unwrap()
+        if let Some(r) = self.data.get(&TypeId::of::<T>()).map(|e| e.downcast_ref()) {
+            r
+        } else {
+            None
+        }
     }
     /// Get a specific component form the storage
     fn get_mut<T>(&mut self) -> Option<&mut T>
         where T: Component + Any {
-        self.data.get_mut(&TypeId::of::<T>()).map(|e| e.downcast_mut()).unwrap()
+        if let Some(r) = self.data.get_mut(&TypeId::of::<T>()).map(|e| e.downcast_mut()) {
+            r
+        } else {
+            None
+        }
     }
 }
 
@@ -83,7 +91,7 @@ impl Ecs {
     pub fn create_entity(&mut self) -> EntityId {
         let id = self.id_generator.get_next_id();
 
-        self.entities.insert(id, Entity{});
+        self.entities.insert(id, Entity {});
         self.storage.insert(id, EcsStorage { entity_id: id, data: HashMap::new() });
 
         id
@@ -92,17 +100,25 @@ impl Ecs {
     /// Get a reference to a `Component` of a specified entity
     pub fn get_component<T>(&self, entity_id: EntityId) -> Option<&T>
         where T: Component + Any {
-        self.storage.get(&entity_id).map(|storage| {
-            storage.get::<T>().unwrap()
-        })
+        if let Some(c) = self.storage.get(&entity_id).map(|storage| {
+            storage.get::<T>()
+        }) {
+            c
+        } else {
+            None
+        }
     }
 
     /// Get a mutable reference to a `Component` of a specified entity
     pub fn get_component_mut<T>(&mut self, entity_id: EntityId) -> Option<&mut T>
         where T: Component + Any {
-        self.storage.get_mut(&entity_id).map(|storage| {
-            storage.get_mut::<T>().unwrap()
-        })
+        if let Some(c) = self.storage.get_mut(&entity_id).map(|storage| {
+            storage.get_mut::<T>()
+        }) {
+            c
+        } else {
+            None
+        }
     }
 
     /// Get a `HashMap` of the specified `Component` indexed by the `EntitiyId`
@@ -137,27 +153,23 @@ impl Ecs {
     /// which doesn't exist.
     pub fn register_component<T>(&mut self, entity_id: EntityId, component: T)
         where T: Component {
-
         match self.storage.get_mut(&entity_id) {
             Some(storage) => {
                 storage.register(component);
             }
             _ => {}
         }
-
     }
 
     /// Remove a component for a specific Entity.
     pub fn remove_component<T>(&mut self, entity_id: EntityId)
         where T: Component {
-
         match self.storage.get_mut(&entity_id) {
             Some(storage) => {
                 storage.remove::<T>();
             }
             _ => {}
         }
-
     }
 
     /// Check if an Entity has a specific type
@@ -175,5 +187,4 @@ impl Ecs {
 
 
 /// A generic representation of things like NPCs, Monsters, Items, ... and of course, of the player, in the game.
-pub struct Entity {
-}
+pub struct Entity {}

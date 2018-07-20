@@ -11,7 +11,7 @@ use tcod::Color;
 use tcod::colors;
 use tcod::BackgroundFlag;
 use tcod::TextAlignment;
-use ecs::component::Creature;
+use ecs::component::Actor;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum RenderOrder {
@@ -53,7 +53,7 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bo
          1.0, 1.0);
 
 
-    if let Some(p) = ecs.get_component::<Creature>(ecs.player_entity_id) {
+    if let Some(p) = ecs.get_component::<Actor>(ecs.player_entity_id) {
         panel.set_default_background(colors::BLACK);
         panel.clear();
         render_bar(panel, (1, 1), bar_width, "HP", p.hp, p.max_hp, colors::RED, colors::DARK_RED);

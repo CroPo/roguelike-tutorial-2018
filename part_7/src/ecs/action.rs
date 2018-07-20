@@ -1,7 +1,7 @@
 use ecs::id::EntityId;
 use ecs::Ecs;
 use ecs::component::Position;
-use ecs::component::Creature;
+use ecs::component::Actor;
 use ecs::component::Render;
 use tcod::colors;
 use ecs::component::MonsterAi;
@@ -49,7 +49,7 @@ impl EntityAction {
     }
 
     fn take_damage_action(&self, ecs: &mut Ecs, entity_id: EntityId, damage: i32) -> EntityAction {
-        if let Some(e) = ecs.get_component_mut::<Creature>(entity_id) {
+        if let Some(e) = ecs.get_component_mut::<Actor>(entity_id) {
             e.take_damage(damage);
 
             if e.hp <= 0 {
@@ -64,7 +64,6 @@ impl EntityAction {
         ecs.register_component(entity_id, Render::new(entity_id,'%', colors::DARK_CRIMSON, RenderOrder::Corpse));
         // Remove the AI and the Creature components
         ecs.remove_component::<MonsterAi>(entity_id);
-        ecs.remove_component::<Creature>(entity_id);
         // Add the Corpse component
         ecs.register_component(entity_id, Corpse {});
         // Set non blocking

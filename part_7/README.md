@@ -6,6 +6,7 @@
 Contents of this Writep:  
 
 1. [The health bar](#the-health-bar)
+2. [In the meanwhile](#in-the-meanwhile)
 
 This part seems to be one of the shorter and easier ones. I am not _that_ diassapointed by that fact, because the last 
 one actually took me more than a week to finish. Not much more to say at that point, let's just get started!
@@ -34,3 +35,12 @@ pub fn render_bar(panel: &mut Offscreen, pos: (i32, i32), width: i32, name: &str
 ```
 
 Nothing more to say about that I guess.
+
+## In the meanwhile
+
+Before I start the next section, I did a few things:
+
+- Renamed the `Creature` to `Actor`, because its more fitting.
+- Adressed a bug which caused a panic (crash) of the game when trying to load a not registered `Component`.
+- In the `Die` action, the `Actor` component no longer gets removed. This is for showing health bars corectly even when 
+the actor is already dead. 
