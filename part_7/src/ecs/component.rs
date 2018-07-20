@@ -195,13 +195,11 @@ impl Actor {
             };
 
             let damage = self.power - target.defense;
-            if damage > 0 {
-                println!("{} attacks {} for {} hit points.", entity_name, target_name, damage);
-                return Some(damage);
-            }
-            println!("{} attacks {} but does no damage.", entity_name, target_name);
-        };
-        None
+            Some(damage)
+        }
+        else {
+            None
+        }
     }
 }
 
@@ -250,7 +248,7 @@ impl MonsterAi {
         match ecs.get_component::<Actor>(self.entity_id) {
             Some(c) => {
                 match c.calculate_attack(ecs, ecs.player_entity_id) {
-                    Some(damage) => EntityAction::TakeDamage(ecs.player_entity_id, damage),
+                    Some(damage) => EntityAction::TakeDamage(ecs.player_entity_id, damage, self.entity_id),
                     None => EntityAction::Idle
                 }
             }

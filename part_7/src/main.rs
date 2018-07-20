@@ -1,10 +1,12 @@
 extern crate tcod;
 extern crate rand;
+extern crate textwrap;
 
 mod ecs;
 mod render;
 mod map_objects;
 mod game_states;
+mod message;
 
 use tcod::console::{Root, Offscreen};
 use tcod::FontLayout;
@@ -24,6 +26,9 @@ use ecs::component::MonsterAi;
 use ecs::action::EntityAction;
 use ecs::component::Actor;
 use ecs::component::Corpse;
+use message::MessageLog;
+use render::MessagePanel;
+use std::rc::Rc;
 
 enum Action {
     MovePlayer(i32, i32),
@@ -54,7 +59,11 @@ fn main() {
     let bar_width = 20;
     let panel_height = 7;
 
+    let message_x = bar_width + 2;
+
     let panel_y = screen_height - panel_height;
+    let message_width = screen_width - bar_width - 2;
+    let message_height = panel_height - 1;
 
     let map_width = 80;
     let map_height = 43;
@@ -71,6 +80,7 @@ fn main() {
 
     let max_monsters_per_room = 3;
 
+    let mut log = Rc::new(MessageLog::new());
     let mut ecs = Ecs::initialize();
 
     let mut root = Root::initializer()
@@ -90,13 +100,17 @@ fn main() {
 
     let mut game_state = GameStates::PlayersTurn;
 
+    let log_panel = MessagePanel::new((message_x, 0), (message_width, message_height), Rc::clone(&log));
+
     while !root.window_closed() {
         if fov_recompute {
             let player_pos = ecs.get_component::<Position>(ecs.player_entity_id).unwrap();
             fov::recompute_fov(&mut fov_map, (player_pos.position.0, player_pos.position.1), fov_radius, fov_light_walls, fov_algorithm);
         }
 
-        ::render::render_all(&ecs, &mut map, &fov_map, fov_recompute, &mut con, &mut panel, &mut root, bar_width, panel_height, panel_y);
+        ::render::render_all(&ecs, &mut map, &fov_map, fov_recompute,
+                             &mut con, &mut panel, &mut root,
+                             bar_width, panel_height, panel_y, &log_panel);
         root.flush();
         ::render::clear_all(&ecs, &mut con);
 
@@ -123,7 +137,7 @@ fn main() {
                     if let Some(target_id) = targets.iter().next() {
                         let player_creature = ecs.get_component::<Actor>(id).unwrap();
                         match player_creature.calculate_attack(&ecs, *target_id) {
-                            Some(x) => EntityAction::TakeDamage(*target_id, x),
+                            Some(x) => EntityAction::TakeDamage(*target_id, x, id),
                             None => EntityAction::Idle
                         }
                     } else {
@@ -133,7 +147,7 @@ fn main() {
                     EntityAction::Idle
                 };
 
-                action.execute(&mut ecs);
+                action.execute(&mut ecs, Rc::clone(&log));
 
                 game_state = GameStates::EnemyTurn;
             }
@@ -145,7 +159,7 @@ fn main() {
                         Some(ai) => ai.calculate_turn(&ecs, &map),
                         _ => EntityAction::Idle
                     };
-                    action.execute(&mut ecs)
+                    action.execute(&mut ecs, Rc::clone(&log))
                 });
 
                 game_state = if ecs.has_component::<Corpse>(ecs.player_entity_id) {
