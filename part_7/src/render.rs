@@ -7,6 +7,11 @@ use ecs::Ecs;
 use ecs::component::Position;
 use ecs::component::Render;
 use ecs::id::EntityId;
+use tcod::Color;
+use tcod::colors;
+use tcod::BackgroundFlag;
+use tcod::TextAlignment;
+use ecs::component::Creature;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum RenderOrder {
@@ -16,7 +21,9 @@ pub enum RenderOrder {
 }
 
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
-pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bool, console: &mut Offscreen, root_console: &mut Root) {
+pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bool,
+                  console: &mut Offscreen, panel: &mut Offscreen, root_console: &mut Root,
+                  bar_width: i32, panel_height: i32, panel_y: i32) {
     map.draw(console, fov_map, fov_recompute);
 
 
@@ -28,8 +35,7 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bo
             false
         }
     }).collect();
-    ids_filtered.sort_by(|id_a, id_b|{
-
+    ids_filtered.sort_by(|id_a, id_b| {
         let comp_a = ecs.get_component::<Render>(**id_a).unwrap();
         let comp_b = ecs.get_component::<Render>(**id_b).unwrap();
 
@@ -44,7 +50,19 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bo
     blit(console, (0, 0),
          (console.width(), console.height()),
          root_console, (0, 0),
-         1.0, 1.0)
+         1.0, 1.0);
+
+
+    if let Some(p) = ecs.get_component::<Creature>(ecs.player_entity_id) {
+        panel.set_default_background(colors::BLACK);
+        panel.clear();
+        render_bar(panel, (1, 1), bar_width, "HP", p.hp, p.max_hp, colors::RED, colors::DARK_RED);
+    }
+
+    blit(panel, (0, 0),
+         (panel.width(), panel.height()),
+         root_console, (0, panel_y),
+         1.0, 1.0);
 }
 
 
@@ -59,4 +77,21 @@ pub fn clear_all(ecs: &Ecs, console: &mut Console) {
             None => ()
         }
     });
+}
+
+/// Render a bar to graphically represent a value
+pub fn render_bar(panel: &mut Offscreen, pos: (i32, i32), width: i32, name: &str, value: i32, max: i32, bar_color: Color, back_color: Color) {
+    let filled_width = (value as f64 / max as f64  * width as f64).round() as i32;
+
+    panel.set_default_background(back_color);
+    panel.rect(pos.0, pos.1, width, 1, false, BackgroundFlag::Screen);
+
+    if filled_width > 0 {
+        panel.set_default_background(bar_color);
+        panel.rect(pos.0, pos.1, filled_width, 1, false, BackgroundFlag::Screen)
+    }
+
+    panel.set_default_foreground(colors::WHITE);
+    panel.print_ex(pos.0 + width / 2, pos.1, BackgroundFlag::None,
+                   TextAlignment::Center, format!("{}: {}/{}", name, value, max));
 }

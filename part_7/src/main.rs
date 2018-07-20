@@ -50,8 +50,14 @@ fn handle_keys(key: Option<Key>) -> Option<Action> {
 fn main() {
     let screen_width = 80;
     let screen_height = 50;
+
+    let bar_width = 20;
+    let panel_height = 7;
+
+    let panel_y = screen_height - panel_height;
+
     let map_width = 80;
-    let map_height = 45;
+    let map_height = 43;
 
     let room_max_size = 10;
     let room_min_size = 6;
@@ -75,6 +81,7 @@ fn main() {
         .init();
 
     let mut con = Offscreen::new(screen_width, screen_height);
+    let mut panel = Offscreen::new(screen_width, panel_height);
 
     let mut map = GameMap::new(map_width, map_height);
     map.make_map(max_rooms, room_min_size, room_max_size, &mut ecs, max_monsters_per_room);
@@ -89,7 +96,7 @@ fn main() {
             fov::recompute_fov(&mut fov_map, (player_pos.position.0, player_pos.position.1), fov_radius, fov_light_walls, fov_algorithm);
         }
 
-        ::render::render_all(&ecs, &mut map, &fov_map, fov_recompute, &mut con, &mut root);
+        ::render::render_all(&ecs, &mut map, &fov_map, fov_recompute, &mut con, &mut panel, &mut root, bar_width, panel_height, panel_y);
         root.flush();
         ::render::clear_all(&ecs, &mut con);
 
