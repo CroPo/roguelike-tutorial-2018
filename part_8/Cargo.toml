@@ -1,0 +1,9 @@
+[package]
+name = "part_8"
+version = "0.8.0"
+authors = ["Crocodile Space Pope"]
+
+[dependencies]
+tcod = "0.12"
+rand = "0.5"
+textwrap = "0.10.0"
