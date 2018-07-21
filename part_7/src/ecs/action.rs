@@ -51,7 +51,7 @@ impl EntityAction {
         };
 
         if let Some(message) = result.message {
-            log.add_message(message);
+            log.add(message);
         }
 
         if let Some(reaction) = result.reaction {

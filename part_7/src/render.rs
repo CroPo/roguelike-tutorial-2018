@@ -16,6 +16,7 @@ use std::rc::Weak;
 use message::MessageLog;
 use std::rc::Rc;
 use textwrap::wrap;
+use ecs::component::Name;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum RenderOrder {
@@ -27,7 +28,7 @@ pub enum RenderOrder {
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
 pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bool,
                   console: &mut Offscreen, panel: &mut Offscreen, root_console: &mut Root,
-                  bar_width: i32, panel_height: i32, panel_y: i32, log_panel: &MessagePanel) {
+                  bar_width: i32, panel_height: i32, panel_y: i32, log_panel: &MessagePanel, mouse_pos: (i32, i32)) {
     map.draw(console, fov_map, fov_recompute);
 
 
@@ -57,9 +58,14 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bo
          1.0, 1.0);
 
 
+    panel.set_default_foreground(colors::LIGHT_GREY);
+    panel.set_default_background(colors::BLACK);
+    panel.clear();
+
+    panel.print_ex(1, 0, BackgroundFlag::None, TextAlignment::Left, get_names_under_mouse(ecs, fov_map, mouse_pos));
+
     if let Some(p) = ecs.get_component::<Actor>(ecs.player_entity_id) {
         panel.set_default_background(colors::BLACK);
-        panel.clear();
         render_bar(panel, (1, 1), bar_width, "HP", p.hp, p.max_hp, colors::RED, colors::DARK_RED);
     }
     log_panel.render(panel);
@@ -101,6 +107,21 @@ pub fn render_bar(panel: &mut Offscreen, pos: (i32, i32), width: i32, name: &str
                    TextAlignment::Center, format!("{}: {}/{}", name, value, max));
 }
 
+/// Get a Vec of the names of all Entities which are under the cursor.
+fn get_names_under_mouse(ecs: &Ecs, fov_map: &Map, mouse_pos: (i32, i32)) -> String {
+    let mut names = vec![];
+
+    ecs.get_all::<Position>().iter().filter(|(_, p)| {
+        p.position.0 == mouse_pos.0 && p.position.1 == mouse_pos.1 && fov_map.is_in_fov(mouse_pos.0, mouse_pos.1)
+    }).for_each(|(id, _)| {
+        if let Some(n) = ecs.get_component::<Name>(*id) {
+            names.push(n.name.clone());
+        }
+    });
+
+    names.join(",")
+}
+
 
 pub struct MessagePanel {
     pos: (i32, i32),
@@ -126,7 +147,7 @@ impl MessagePanel {
             panel.set_default_foreground(m.color);
 
             for l in lines {
-                panel.print_ex(self.pos.0, self.pos.1+total_lines, BackgroundFlag::None, TextAlignment::Left, l.to_string());
+                panel.print_ex(self.pos.0, self.pos.1 + total_lines, BackgroundFlag::None, TextAlignment::Left, l.to_string());
                 total_lines += 1;
                 if self.pos.1 + total_lines > self.dimensions.1 {
                     break 'l;

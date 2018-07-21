@@ -29,25 +29,50 @@ use ecs::component::Corpse;
 use message::MessageLog;
 use render::MessagePanel;
 use std::rc::Rc;
+use tcod::input;
+use tcod::input::{check_for_event, EventFlags};
+use tcod::input::Event;
+use tcod::input::Mouse;
 
 enum Action {
     MovePlayer(i32, i32),
+    MousePos(isize, isize),
     Fullscreen,
     Exit,
 }
 
-fn handle_keys(key: Option<Key>) -> Option<Action> {
+fn handle_input(event: Option<(EventFlags, Event)>) -> Option<Action> {
+    if let Some(e) = event {
+        match e {
+            ( tcod::input::KEY_PRESS, Event::Key(key)) => handle_keys(key),
+            ( _, Event::Mouse(mouse)) => handle_mouse(mouse),
+            _ => None
+        }
+    } else {
+        None
+    }
+}
+
+
+fn handle_mouse(mouse: Mouse) -> Option<Action> {
+    match mouse {
+        Mouse { .. } => Some(Action::MousePos(mouse.cx, mouse.cy)),
+        _ => None
+    }
+}
+
+fn handle_keys(key: Key) -> Option<Action> {
     match key {
-        Some(Key { code: KeyCode::Left, .. }) | Some(Key { printable: 'h', .. }) => Some(Action::MovePlayer(-1, 0)),
-        Some(Key { code: KeyCode::Right, .. }) | Some(Key { printable: 'l', .. }) => Some(Action::MovePlayer(1, 0)),
-        Some(Key { code: KeyCode::Up, .. }) | Some(Key { printable: 'k', .. }) => Some(Action::MovePlayer(0, -1)),
-        Some(Key { code: KeyCode::Down, .. }) | Some(Key { printable: 'j', .. }) => Some(Action::MovePlayer(0, 1)),
-        Some(Key { printable: 'y', .. }) => Some(Action::MovePlayer(-1, -1)),
-        Some(Key { printable: 'u', .. }) => Some(Action::MovePlayer(1, -1)),
-        Some(Key { printable: 'b', .. }) => Some(Action::MovePlayer(-1, 1)),
-        Some(Key { printable: 'n', .. }) => Some(Action::MovePlayer(1, 1)),
-        Some(Key { code: KeyCode::Escape, .. }) => Some(Action::Exit),
-        Some(Key { code: KeyCode::Enter, alt: true, .. }) => Some(Action::Fullscreen),
+        Key { code: KeyCode::Left, .. } | Key { printable: 'h', .. } => Some(Action::MovePlayer(-1, 0)),
+        Key { code: KeyCode::Right, .. } | Key { printable: 'l', .. } => Some(Action::MovePlayer(1, 0)),
+        Key { code: KeyCode::Up, .. } | Key { printable: 'k', .. } => Some(Action::MovePlayer(0, -1)),
+        Key { code: KeyCode::Down, .. } | Key { printable: 'j', .. } => Some(Action::MovePlayer(0, 1)),
+        Key { printable: 'y', .. } => Some(Action::MovePlayer(-1, -1)),
+        Key { printable: 'u', .. } => Some(Action::MovePlayer(1, -1)),
+        Key { printable: 'b', .. } => Some(Action::MovePlayer(-1, 1)),
+        Key { printable: 'n', .. } => Some(Action::MovePlayer(1, 1)),
+        Key { code: KeyCode::Escape, .. } => Some(Action::Exit),
+        Key { code: KeyCode::Enter, alt: true, .. } => Some(Action::Fullscreen),
         _ => None
     }
 }
@@ -77,6 +102,7 @@ fn main() {
     let fov_radius = 10;
 
     let mut fov_recompute = true;
+    let mut mouse_pos = (0,0);
 
     let max_monsters_per_room = 3;
 
@@ -110,15 +136,19 @@ fn main() {
 
         ::render::render_all(&ecs, &mut map, &fov_map, fov_recompute,
                              &mut con, &mut panel, &mut root,
-                             bar_width, panel_height, panel_y, &log_panel);
+                             bar_width, panel_height, panel_y, &log_panel, mouse_pos);
         root.flush();
         ::render::clear_all(&ecs, &mut con);
 
         fov_recompute = true;
 
-        let action = handle_keys(root.check_for_keypress(tcod::input::KEY_PRESSED));
+        let action = handle_input(check_for_event(EventFlags::all()));
         match action {
             Some(Action::Exit) => break,
+            Some(Action::MousePos(x, y)) => {
+                mouse_pos.0 = x as i32;
+                mouse_pos.1 = y as i32;
+            }
             Some(Action::Fullscreen) => {
                 let is_fullscreen = root.is_fullscreen();
                 root.set_fullscreen(!is_fullscreen)

@@ -8,6 +8,7 @@ Contents of this Writep:
 1. [The health bar](#the-health-bar)
 2. [In the meanwhile](#in-the-meanwhile)
 3. [Message display](#message-display)
+4. [Displaying monster names](#displaying-monster-names)
 
 This part seems to be one of the shorter and easier ones. I am not _that_ diassapointed by that fact, because the last 
 one actually took me more than a week to finish. Not much more to say at that point, let's just get started!
@@ -152,3 +153,45 @@ impl MessagePanel {
     }
 }
 ```
+
+## Displaying monster names
+
+To be able to utilize the moue cursor, I need to change my input event handling quite a bit. Right now, I only handle
+key input with `root.check_for_keypress(tcod::input::KEY_PRESSED)`. I instead will handle all input events now with
+`check_for_event(EventFlags::all())`. This, of couse, needs some changes with the key handling. 
+
+Because I already have a working key handler, I will keep that. I only need a handler for mouse events and some 
+function to bring them together
+
+```rust
+fn handle_input(event: Option<(EventFlags, Event)>) -> Option<Action> {
+    if let Some(e) = event {
+        match e {
+            ( tcod::input::KEY_PRESS, Event::Key(key)) => handle_keys(key),
+            ( _, Event::Mouse(mouse)) => handle_mouse(mouse),
+            _ => None
+        }
+    } else {
+        None
+    }
+}
+
+
+fn handle_mouse(mouse: Mouse) -> Option<Action> {
+    match mouse {
+        Mouse { .. } => Some(Action::MousePos(mouse.cx, mouse.cy)),
+        _ => None
+    }
+}
+
+fn handle_keys(key: Key) -> Option<Action> {
+    match key {
+        // ...
+    }
+}
+```
+
+Basically, I will update the mouse position if any mouse event happens. The `handler_keys` was cnaged so that the function
+doesn't take an `Option<Key>` anymore, because I already checked for that in `handle_input`.
+
+Everything else is pretty much like the Python Counterpart
