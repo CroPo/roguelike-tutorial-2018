@@ -5,13 +5,11 @@ use rand::prelude::*;
 use tcod::Console;
 use tcod::BackgroundFlag;
 use tcod::Map;
-use tcod::colors;
 
 use map_objects::tile::Tile;
 use map_objects::rectangle::Rect;
 
 use map_objects::color::Color;
-use ecs::Entity;
 
 use ecs::Ecs;
 use ecs::creature::CreatureTemplate;

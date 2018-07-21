@@ -1,4 +1,3 @@
-use ecs::Entity;
 use tcod::colors;
 use ecs::Ecs;
 use ecs::component::Position;
@@ -23,7 +22,6 @@ impl CreatureTemplate {
             CreatureTemplate::Player => CreatureTemplate::create_player_from_template(ecs),
             CreatureTemplate::Troll => CreatureTemplate::create_troll_from_template(ecs),
             CreatureTemplate::Orc => CreatureTemplate::create_orc_from_template(ecs),
-            _ => None
         }
     }
 

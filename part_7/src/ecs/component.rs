@@ -184,16 +184,6 @@ impl Actor {
     /// Calculate the Attack and return the amount of damage which will be dealt
     pub fn calculate_attack(&self, ecs: &Ecs, target_id: EntityId) -> Option<i32> {
         if let Some(target) = ecs.get_component::<Actor>(target_id) {
-            let entity_name = match ecs.get_component::<Name>(self.entity_id) {
-                Some(n) => n.name.to_uppercase(),
-                None => "AN UNNAMED ENTITY".to_string()
-            };
-
-            let target_name = match ecs.get_component::<Name>(target_id) {
-                Some(n) => n.name.clone(),
-                None => "an unnamed entity".to_string()
-            };
-
             let damage = self.power - target.defense;
             Some(damage)
         }

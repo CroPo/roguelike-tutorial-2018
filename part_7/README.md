@@ -9,6 +9,7 @@ Contents of this Writep:
 2. [In the meanwhile](#in-the-meanwhile)
 3. [Message display](#message-display)
 4. [Displaying monster names](#displaying-monster-names)
+5. [Conclusion](#conclusion)
 
 This part seems to be one of the shorter and easier ones. I am not _that_ diassapointed by that fact, because the last 
 one actually took me more than a week to finish. Not much more to say at that point, let's just get started!
@@ -195,3 +196,10 @@ Basically, I will update the mouse position if any mouse event happens. The `han
 doesn't take an `Option<Key>` anymore, because I already checked for that in `handle_input`.
 
 Everything else is pretty much like the Python Counterpart
+
+## Conclusion
+
+Not much to say this time. The `MessageLog` took me a bit longer than expected, because of some value lifetime issues, but
+changing the input handler so I can use the mouse, too, was done faster than I thought.
+
+I gathered a lot of compiler warnings, which I will reduce a bit now, too

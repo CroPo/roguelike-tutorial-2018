@@ -15,7 +15,6 @@ use tcod::input::Key;
 use tcod::input::KeyCode;
 use tcod::map::FovAlgorithm;
 
-use ecs::Entity;
 use map_objects::map::GameMap;
 use map_objects::fov;
 use game_states::GameStates;
@@ -29,7 +28,6 @@ use ecs::component::Corpse;
 use message::MessageLog;
 use render::MessagePanel;
 use std::rc::Rc;
-use tcod::input;
 use tcod::input::{check_for_event, EventFlags};
 use tcod::input::Event;
 use tcod::input::Mouse;
@@ -57,7 +55,6 @@ fn handle_input(event: Option<(EventFlags, Event)>) -> Option<Action> {
 fn handle_mouse(mouse: Mouse) -> Option<Action> {
     match mouse {
         Mouse { .. } => Some(Action::MousePos(mouse.cx, mouse.cy)),
-        _ => None
     }
 }
 
@@ -106,7 +103,7 @@ fn main() {
 
     let max_monsters_per_room = 3;
 
-    let mut log = Rc::new(MessageLog::new());
+    let log = Rc::new(MessageLog::new());
     let mut ecs = Ecs::initialize();
 
     let mut root = Root::initializer()
@@ -136,7 +133,7 @@ fn main() {
 
         ::render::render_all(&ecs, &mut map, &fov_map, fov_recompute,
                              &mut con, &mut panel, &mut root,
-                             bar_width, panel_height, panel_y, &log_panel, mouse_pos);
+                             bar_width, panel_y, &log_panel, mouse_pos);
         root.flush();
         ::render::clear_all(&ecs, &mut con);
 

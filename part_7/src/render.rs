@@ -2,7 +2,6 @@ use tcod::console::{Console, Root, blit, Offscreen};
 
 use map_objects::map::GameMap;
 use tcod::Map;
-use ecs::Entity;
 use ecs::Ecs;
 use ecs::component::Position;
 use ecs::component::Render;
@@ -12,7 +11,6 @@ use tcod::colors;
 use tcod::BackgroundFlag;
 use tcod::TextAlignment;
 use ecs::component::Actor;
-use std::rc::Weak;
 use message::MessageLog;
 use std::rc::Rc;
 use textwrap::wrap;
@@ -28,7 +26,7 @@ pub enum RenderOrder {
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
 pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bool,
                   console: &mut Offscreen, panel: &mut Offscreen, root_console: &mut Root,
-                  bar_width: i32, panel_height: i32, panel_y: i32, log_panel: &MessagePanel, mouse_pos: (i32, i32)) {
+                  bar_width: i32, panel_y: i32, log_panel: &MessagePanel, mouse_pos: (i32, i32)) {
     map.draw(console, fov_map, fov_recompute);
 
 
@@ -79,7 +77,7 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bo
 
 /// Clear all `Entity`s which got both the `Render` and the `Position` component assigned from the console
 pub fn clear_all(ecs: &Ecs, console: &mut Console) {
-    ecs.get_all::<Position>().iter().for_each(|(e, p)| {
+    ecs.get_all::<Position>().iter().for_each(|(e, _)| {
         let render_component = ecs.get_component::<Render>(*e);
         match render_component {
             Some(r) => {

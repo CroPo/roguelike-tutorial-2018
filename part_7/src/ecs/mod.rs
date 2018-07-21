@@ -3,19 +3,11 @@ pub mod creature;
 pub mod component;
 pub mod action;
 
-use tcod::colors;
-use tcod::Console;
-use tcod::BackgroundFlag;
-
 use ecs::id::{IdGenerator, EntityId};
 use std::collections::HashMap;
-use ecs::creature::CreatureTemplate;
 use std::any::TypeId;
 use std::any::Any;
 use ecs::component::Component;
-use ecs::component::Position;
-use ecs::component::Render;
-use ecs::action::EntityAction;
 
 
 struct EcsStorage {
