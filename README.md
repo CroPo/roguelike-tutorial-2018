@@ -13,5 +13,6 @@ Every part of the tutorial is a separate workspace member. You can run each part
 - [Part 4: Field of View](part_4/)
 - [Part 5: Placing Enemies and kicking them (harmlessly)](part_5/)
 - [Part 6: Doing (and taking) some damage](part_6/)
+- [Part 6:  Creating the interface](part_7/)
 
 Feel free to comment any piece of code you see. I appreciate any kind of feedback here, especially if it helps to get a better understanding of Rust itself.
