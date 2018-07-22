@@ -252,3 +252,34 @@ impl Component for MonsterAi {}
 pub struct Corpse {}
 
 impl Component for Corpse {}
+
+pub struct Item {}
+
+impl Item {
+    pub fn new() -> Item {
+        Item {
+        }
+    }
+}
+
+impl Component for Item {}
+
+pub struct Inventory {
+    pub items: Vec<EntityId>
+}
+
+impl Inventory {
+    pub fn new() -> Inventory {
+        Inventory {
+            items: vec![]
+        }
+    }
+
+    pub fn add_item(&mut self, item_id: EntityId) {
+        self.items.push(item_id);
+    }
+}
+
+
+impl Component for Inventory {
+}

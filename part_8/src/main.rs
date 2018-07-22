@@ -31,10 +31,13 @@ use std::rc::Rc;
 use tcod::input::{check_for_event, EventFlags};
 use tcod::input::Event;
 use tcod::input::Mouse;
+use ecs::id::EntityId;
+use ecs::component::Item;
 
 enum Action {
     MovePlayer(i32, i32),
     MousePos(isize, isize),
+    PickUp,
     Fullscreen,
     Exit,
 }
@@ -42,8 +45,8 @@ enum Action {
 fn handle_input(event: Option<(EventFlags, Event)>) -> Option<Action> {
     if let Some(e) = event {
         match e {
-            ( tcod::input::KEY_PRESS, Event::Key(key)) => handle_keys(key),
-            ( _, Event::Mouse(mouse)) => handle_mouse(mouse),
+            (tcod::input::KEY_PRESS, Event::Key(key)) => handle_keys(key),
+            (_, Event::Mouse(mouse)) => handle_mouse(mouse),
             _ => None
         }
     } else {
@@ -68,6 +71,7 @@ fn handle_keys(key: Key) -> Option<Action> {
         Key { printable: 'u', .. } => Some(Action::MovePlayer(1, -1)),
         Key { printable: 'b', .. } => Some(Action::MovePlayer(-1, 1)),
         Key { printable: 'n', .. } => Some(Action::MovePlayer(1, 1)),
+        Key { printable: 'g', .. } => Some(Action::PickUp),
         Key { code: KeyCode::Escape, .. } => Some(Action::Exit),
         Key { code: KeyCode::Enter, alt: true, .. } => Some(Action::Fullscreen),
         _ => None
@@ -99,7 +103,7 @@ fn main() {
     let fov_radius = 10;
 
     let mut fov_recompute = true;
-    let mut mouse_pos = (0,0);
+    let mut mouse_pos = (0, 0);
 
     let max_monsters_per_room = 3;
     let max_items_per_room = 2;
@@ -150,6 +154,30 @@ fn main() {
             Some(Action::Fullscreen) => {
                 let is_fullscreen = root.is_fullscreen();
                 root.set_fullscreen(!is_fullscreen)
+            }
+            Some(Action::PickUp) => if game_state == GameStates::PlayersTurn {
+                let id = ecs.player_entity_id;
+                let p = {
+                    let pos = ecs.get_component::<Position>(id).unwrap();
+                    (pos.position.0, pos.position.1)
+                };
+                let mut actions: Vec<EntityAction> = vec![];
+
+                ecs.get_all_ids::<Item>().iter().filter(|item_id| {
+
+                    if let Some(item_pos) = ecs.get_component::<Position>(**item_id) {
+                        p.0 == item_pos.position.0 && p.1 == item_pos.position.1
+                    } else {
+                        false
+                    }
+                }).for_each(|item_id| {
+                    actions.push(EntityAction::PickUpItem( id, *item_id))
+                });
+
+                for action in actions {
+                    action.execute(&mut ecs, Rc::clone(&log))
+                }
+                game_state = GameStates::EnemyTurn;
             }
             Some(Action::MovePlayer(vel_x, vel_y)) => if game_state == GameStates::PlayersTurn {
                 let id = ecs.player_entity_id;

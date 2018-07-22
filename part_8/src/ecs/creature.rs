@@ -7,6 +7,7 @@ use ecs::id::EntityId;
 use ecs::component::MonsterAi;
 use ecs::component::Actor;
 use render::RenderOrder;
+use ecs::component::Inventory;
 
 /// Templates for common Creature types
 pub enum CreatureTemplate {
@@ -42,6 +43,7 @@ impl CreatureTemplate {
     fn create_player_from_template(ecs: &mut Ecs) -> Option<EntityId> {
         let id = ecs.create_entity();
         ecs.player_entity_id = id;
+        ecs.register_component(id, Inventory::new());
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, '@', colors::WHITE, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Player".to_string(), description: String::new() });

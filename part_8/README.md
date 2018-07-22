@@ -9,7 +9,7 @@ so I thing it might be quite a challenge, yet doable in a reasonable time.
 Contents of this Writep:  
 
 1. [Placing Items](#placing-items)
-
+2. [Picking up Items](#picking-up-items)
 
 ## Placing Items 
 
@@ -32,3 +32,12 @@ to do this.
 
 I add the (non-blocking) `Position`, `Name` and, of course, the `Render` component. Since the `RenderOrder` for an item
 is already in the game I can use that too.
+
+## Picking up Items
+
+The next logical step is to pick up the items. To do this, I need to introdcue two new `Component`s: `Inventory` and `Item`.
+`Item` will be kept empty for now - it's just there to mark an `Entity` as item. And `Inventory` will holds a `Vec` of
+`EntityId`s, which reference the item entities, and a method to add an item.
+
+When picking up, the `Position` will be removed from the item (so it will be removed from the map), and the 
+`Item`'s `EntityId` will be stored in the `Inventory`.

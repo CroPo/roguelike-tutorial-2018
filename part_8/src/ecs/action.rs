@@ -10,6 +10,7 @@ use render::RenderOrder;
 use message::{Message, MessageLog};
 use ecs::component::Name;
 use std::rc::Rc;
+use ecs::component::Inventory;
 
 /// This struct defines the Result of one single action. A message can be created, and also
 /// a reaction can happen.
@@ -35,6 +36,8 @@ pub enum EntityAction {
     MoveTo(EntityId, (i32, i32)),
     MoveRelative(EntityId, (i32, i32)),
     Die(EntityId),
+    PickUpItem(EntityId, EntityId),
+    AddItemToInventory(EntityId, EntityId),
     Idle,
 }
 
@@ -47,6 +50,8 @@ impl EntityAction {
             EntityAction::TakeDamage(entity_id, damage, attacker_entity_id)
             => self.take_damage_action(ecs, entity_id, damage, attacker_entity_id),
             EntityAction::Die(entity_id) => self.die_action(ecs, entity_id),
+            EntityAction::PickUpItem(entity_id, item_id) => self.pick_up_item_action(ecs, entity_id, item_id),
+            EntityAction::AddItemToInventory(entity_id, item_id) => self.add_item_to_inventory_action(ecs, entity_id, item_id),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
 
@@ -74,7 +79,6 @@ impl EntityAction {
     }
 
     fn take_damage_action(&self, ecs: &mut Ecs, entity_id: EntityId, damage: i32, attacker_entity_id: EntityId) -> ActionResult {
-
         let entity_name = EntityAction::get_entity_name(ecs, entity_id);
         let attacker_name = EntityAction::get_entity_name(ecs, attacker_entity_id).to_uppercase();
 
@@ -97,13 +101,38 @@ impl EntityAction {
                     reaction: None,
                     message: Some(message),
                 }
-            }
+            };
         }
         ActionResult::none()
     }
 
-    fn die_action(&self, ecs: &mut Ecs, entity_id: EntityId) -> ActionResult {
+    fn pick_up_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId) -> ActionResult {
+        let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
+        let item_name = EntityAction::get_entity_name(ecs, item_id).to_uppercase();
 
+        if ecs.has_component::<Inventory>(entity_id) {
+            ecs.remove_component::<Position>(item_id);
+
+            let message = Message::new(format!("{} picked up {}", entity_name, item_name));
+
+            ActionResult {
+                reaction: Some(EntityAction::AddItemToInventory(entity_id, item_id)),
+                message: Some(message),
+            }
+        } else {
+            ActionResult::none()
+        }
+    }
+
+    fn add_item_to_inventory_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId) -> ActionResult {
+        if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
+            inventory.add_item(item_id);
+        }
+        ActionResult::none()
+    }
+
+
+    fn die_action(&self, ecs: &mut Ecs, entity_id: EntityId) -> ActionResult {
         let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
 
         let message = Message::new(if entity_id == ecs.player_entity_id {

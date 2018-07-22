@@ -7,6 +7,7 @@ use ecs::id::EntityId;
 use ecs::component::MonsterAi;
 use ecs::component::Actor;
 use render::RenderOrder;
+use ecs::component::Item;
 
 /// Templates for common Creature types
 pub enum ItemTemplate {
@@ -37,6 +38,7 @@ impl ItemTemplate {
 
     fn create_health_potion_from_template(ecs: &mut Ecs) -> Option<EntityId> {
         let id = ecs.create_entity();
+        ecs.register_component(id, Item::new());
         ecs.register_component(id, Position::new(id, false));
         ecs.register_component(id, Render::new(id, '!', colors::VIOLET, RenderOrder::Item));
         ecs.register_component(id, Name { name: "Healing Potion".to_string(), description: "Restores health when used".to_string() });
