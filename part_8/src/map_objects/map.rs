@@ -14,6 +14,7 @@ use map_objects::color::Color;
 use ecs::Ecs;
 use ecs::creature::CreatureTemplate;
 use ecs::component::Position;
+use ecs::item::ItemTemplate;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -51,7 +52,7 @@ impl GameMap {
                     max_rooms: i32,
                     room_min_size: i32, room_max_size: i32,
                     ecs: &mut Ecs,
-                    max_monsters_per_room: i32) {
+                    max_monsters_per_room: i32, max_items_per_room: i32) {
         let mut rooms: Vec<Rect> = Vec::new();
         let mut rng = thread_rng();
 
@@ -86,7 +87,7 @@ impl GameMap {
                     self.create_h_tunnel(prev_center.0, center.0, center.1);
                 }
             }
-            self.place_entities(&new_room, ecs, max_monsters_per_room);
+            self.place_entities(&new_room, ecs, max_monsters_per_room, max_items_per_room);
             rooms.push(new_room);
         }
     }
@@ -100,10 +101,11 @@ impl GameMap {
         }
     }
 
-    fn place_entities(&mut self, room: &Rect, ecs: &mut Ecs, max_monsters_per_room: i32) {
+    fn place_entities(&mut self, room: &Rect, ecs: &mut Ecs, max_monsters_per_room: i32, max_items_per_room :i32) {
         let mut rng = thread_rng();
 
         let monster_count = rng.gen_range(0, max_monsters_per_room);
+        let item_count = rng.gen_range(0, max_items_per_room);
 
         for _ in 0..monster_count {
             let x = rng.gen_range(room.tl.0 + 1, room.lr.0 - 1);
@@ -119,6 +121,17 @@ impl GameMap {
                 monster.create_on_position(ecs, (x, y));
             }
         }
+
+        for _ in 0..item_count {
+            let x = rng.gen_range(room.tl.0 + 1, room.lr.0 - 1);
+            let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
+
+            if !ecs.get_all::<Position>().iter().any(|(_, p)| p.position.0 == x && p.position.1 == y) {
+                let item = ItemTemplate::HealthPotion;
+                item.create_on_position(ecs, (x, y));
+            }
+        }
+
     }
 
     fn create_h_tunnel(&mut self, x_start: i32, x_end: i32, y: i32) {

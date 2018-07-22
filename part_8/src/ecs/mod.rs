@@ -2,6 +2,7 @@ pub mod id;
 pub mod creature;
 pub mod component;
 pub mod action;
+pub mod item;
 
 use ecs::id::{IdGenerator, EntityId};
 use std::collections::HashMap;

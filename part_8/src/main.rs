@@ -102,6 +102,7 @@ fn main() {
     let mut mouse_pos = (0,0);
 
     let max_monsters_per_room = 3;
+    let max_items_per_room = 2;
 
     let log = Rc::new(MessageLog::new());
     let mut ecs = Ecs::initialize();
@@ -117,7 +118,7 @@ fn main() {
     let mut panel = Offscreen::new(screen_width, panel_height);
 
     let mut map = GameMap::new(map_width, map_height);
-    map.make_map(max_rooms, room_min_size, room_max_size, &mut ecs, max_monsters_per_room);
+    map.make_map(max_rooms, room_min_size, room_max_size, &mut ecs, max_monsters_per_room, max_items_per_room);
 
     let mut fov_map = fov::initialize_fov(&map);
 
