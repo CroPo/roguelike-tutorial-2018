@@ -11,12 +11,13 @@ use message::{Message, MessageLog};
 use ecs::component::Name;
 use std::rc::Rc;
 use ecs::component::Inventory;
+use ecs::component::Item;
 
 /// This struct defines the Result of one single action. A message can be created, and also
 /// a reaction can happen.
 struct ActionResult {
     reaction: Option<EntityAction>,
-    message: Option<Message>,
+    message: Option<Vec<Message>>,
 }
 
 impl ActionResult {
@@ -37,6 +38,7 @@ pub enum EntityAction {
     MoveRelative(EntityId, (i32, i32)),
     Die(EntityId),
     PickUpItem(EntityId, EntityId),
+    UseItem(EntityId, u8),
     AddItemToInventory(EntityId, EntityId),
     Idle,
 }
@@ -52,11 +54,14 @@ impl EntityAction {
             EntityAction::Die(entity_id) => self.die_action(ecs, entity_id),
             EntityAction::PickUpItem(entity_id, item_id) => self.pick_up_item_action(ecs, entity_id, item_id),
             EntityAction::AddItemToInventory(entity_id, item_id) => self.add_item_to_inventory_action(ecs, entity_id, item_id),
+            EntityAction::UseItem(entity_id, item_number) => self.use_item_action(ecs, entity_id, item_number),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
 
-        if let Some(message) = result.message {
-            log.add(message);
+        if let Some(messages) = result.message {
+            for message in messages {
+                log.add(message);
+            }
         }
 
         if let Some(reaction) = result.reaction {
@@ -94,15 +99,61 @@ impl EntityAction {
             return if e.hp <= 0 {
                 ActionResult {
                     reaction: Some(EntityAction::Die(entity_id)),
-                    message: Some(message),
+                    message: Some(vec![message]),
                 }
             } else {
                 ActionResult {
                     reaction: None,
-                    message: Some(message),
+                    message: Some(vec![message]),
                 }
             };
         }
+        ActionResult::none()
+    }
+
+    fn use_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_number: u8) -> ActionResult {
+        let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
+
+        let mut item_name = "".to_string();
+        let mut item_id =0;
+
+        let spell = if let Some(inventory) = ecs.get_component::<Inventory>(entity_id) {
+            if inventory.items.len() > item_number as usize {
+                item_id = inventory.items[item_number as usize];
+                item_name = EntityAction::get_entity_name(ecs, item_id).to_uppercase();
+
+                if let Some(i) = ecs.get_component::<Item>(item_id) {
+                    i.use_item()
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if let Some(s) = spell {
+            let mut messages = vec![Message::new(format!("{} uses {}", entity_name, item_name))];
+            let id = ecs.player_entity_id;
+
+            if let Some(message) = s.execute(ecs, id) {
+                messages.push(message)
+            }
+
+            ecs.destroy_entity(&item_id);
+
+            if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
+                inventory.remove_item(item_number as usize);
+            }
+
+            return ActionResult {
+                message: Some(messages),
+                reaction: None
+            };
+        }
+
         ActionResult::none()
     }
 
@@ -117,7 +168,7 @@ impl EntityAction {
 
             ActionResult {
                 reaction: Some(EntityAction::AddItemToInventory(entity_id, item_id)),
-                message: Some(message),
+                message: Some(vec![message]),
             }
         } else {
             ActionResult::none()
@@ -155,7 +206,7 @@ impl EntityAction {
 
         ActionResult {
             reaction: None,
-            message: Some(message),
+            message: Some(vec![message]),
         }
     }
 

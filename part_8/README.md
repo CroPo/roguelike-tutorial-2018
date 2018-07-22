@@ -11,6 +11,7 @@ Contents of this Writep:
 1. [Placing Items](#placing-items)
 2. [Picking up Items](#picking-up-items)
 3. [The Inventory](#the-inventory)
+4. [Using Items](#using-items)
 
 ## Placing Items 
 
@@ -84,3 +85,15 @@ pub fn selection_menu(console: &mut Root, title: &str, options: Vec<String>, wid
 
 All seems to work fine, so I will just continue to the next section.
 
+## Using Items
+
+First of alle, in order to use an item, we need to define some kind of effect which gets triggered. These effects should
+behave pretty similar to an `EntityAction`: They modify some value of some component of an `Entity` and create a message. 
+Even though both are very similar, I won't keep them together in one `struct`, since item effect can increase in number
+rather quickly.
+
+To be able to determine which `Spell` will be triggered, I need to change the `Item` a bit - I need to add an effect 
+which is bound to the item.
+
+First of all, I implement the `UseItem` in `EntityAction`. It will create a `Message`, trigger the `Spell` and then it 
+will be remove from the `Ecs` and finally the `EntityId` which referenced the item will be removed from the Inventory, too.

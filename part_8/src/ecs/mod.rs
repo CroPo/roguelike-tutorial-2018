@@ -1,8 +1,10 @@
 pub mod id;
+
 pub mod creature;
 pub mod component;
 pub mod action;
 pub mod item;
+pub mod spell;
 
 use ecs::id::{IdGenerator, EntityId};
 use std::collections::HashMap;
@@ -88,6 +90,18 @@ impl Ecs {
         self.storage.insert(id, EcsStorage { entity_id: id, data: HashMap::new() });
 
         id
+    }
+
+    /// Remove an `Entity` from the game.
+    pub fn destroy_entity(&mut self, entity_id: &EntityId) {
+
+        if self.entities.contains_key(entity_id) {
+            self.entities.remove(entity_id);
+        }
+        if self.storage.contains_key(entity_id) {
+            self.storage.remove(entity_id);
+        }
+
     }
 
     /// Get a reference to a `Component` of a specified entity

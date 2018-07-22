@@ -103,29 +103,44 @@ pub enum GameState {
 
 impl GameState {
     pub fn run(&self, ecs: &mut Ecs, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
-
-        let input_action = handle_input(self,check_for_event(EventFlags::all()));
+        let input_action = handle_input(self, check_for_event(EventFlags::all()));
 
         match *self {
             GameState::PlayersTurn => self.player_turn(ecs, input_action, log, map),
             GameState::EnemyTurn => self.enemy_turn(ecs, input_action, log, map),
             GameState::PlayerDead => self.player_dead(input_action),
-            GameState::ShowInventory => self.show_inventory(input_action),
+            GameState::ShowInventory => self.show_inventory(ecs, input_action, log),
         }
     }
 
-    fn show_inventory(&self, action: Option<InputAction>) -> GameStateResult {
+    fn show_inventory(&self, ecs: &mut Ecs, action: Option<InputAction>, log: Rc<MessageLog>) -> GameStateResult {
         match action {
             Some(InputAction::Exit) => {
                 GameStateResult {
                     engine_action: None,
-                    next_state: GameState::PlayersTurn
+                    next_state: GameState::PlayersTurn,
+                }
+            }
+            Some(InputAction::SelectOption(item_key)) => {
+                if item_key as u8 >= 'a' as u8 {
+                    let item_number = item_key as u8 - 'a' as u8;
+                    EntityAction::UseItem(ecs.player_entity_id, item_number as u8).execute(ecs, log);
+
+                    GameStateResult {
+                        engine_action: None,
+                        next_state: GameState::EnemyTurn,
+                    }
+                } else {
+                    GameStateResult {
+                        engine_action: None,
+                        next_state: GameState::PlayersTurn,
+                    }
                 }
             }
             _ => {
                 GameStateResult {
                     engine_action: None,
-                    next_state: GameState::ShowInventory
+                    next_state: GameState::ShowInventory,
                 }
             }
         }

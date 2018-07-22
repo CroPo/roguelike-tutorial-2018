@@ -11,6 +11,7 @@ use tcod::pathfinding::AStar;
 use ecs::action::EntityAction;
 use map_objects::map::GameMap;
 use render::RenderOrder;
+use ecs::spell::Spell;
 
 /// Used to indentify an Component
 pub trait Component: Any {}
@@ -186,8 +187,7 @@ impl Actor {
         if let Some(target) = ecs.get_component::<Actor>(target_id) {
             let damage = self.power - target.defense;
             Some(damage)
-        }
-        else {
+        } else {
             None
         }
     }
@@ -253,12 +253,19 @@ pub struct Corpse {}
 
 impl Component for Corpse {}
 
-pub struct Item {}
+pub struct Item {
+    spell: Spell
+}
 
 impl Item {
-    pub fn new() -> Item {
+    pub fn new(spell: Spell) -> Item {
         Item {
+            spell
         }
+    }
+
+    pub fn use_item(&self) -> Option<Spell> {
+        Some(self.spell.clone())
     }
 }
 
@@ -278,8 +285,13 @@ impl Inventory {
     pub fn add_item(&mut self, item_id: EntityId) {
         self.items.push(item_id);
     }
+    pub fn remove_item(&mut self, item_number: usize) {
+
+        if self.items.len() > item_number {
+            self.items.remove(item_number);
+        }
+    }
 }
 
 
-impl Component for Inventory {
-}
+impl Component for Inventory {}
