@@ -1,6 +1,6 @@
 # Part 8: Items and Inverntory
 
-- [Reddit Post on /r/roguelikedev](https://www.reddit.com/r/roguelikedev/comments/8xlo9k/roguelikedev_does_the_complete_roguelike_tutorial/)
+- [Reddit Post on /r/roguelikedev](https://www.reddit.com/r/roguelikedev/comments/8zia4r/roguelikedev_does_the_complete_roguelike_tutorial/)
 - [Direct Tutorial Link](http://rogueliketutorials.com/libtcod/7)
 
 I am looking forward to a very interesting tutorial part. I already know roughly where the game is heading with this,
