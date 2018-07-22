@@ -18,8 +18,9 @@ pub trait Component: Any {}
 
 /// A Component which contains informations of an `Entity`s position on the Map, and methods to
 /// interact with it
+#[derive(Clone)]
 pub struct Position {
-    entity_id: EntityId,
+    pub entity_id: EntityId,
     pub position: (i32, i32),
     pub is_blocking: bool,
 }
@@ -272,18 +273,26 @@ impl Item {
 impl Component for Item {}
 
 pub struct Inventory {
+    max_items: usize,
     pub items: Vec<EntityId>
 }
 
 impl Inventory {
-    pub fn new() -> Inventory {
+    pub fn new(max_items: usize) -> Inventory {
         Inventory {
+            max_items,
             items: vec![]
         }
     }
 
+    pub fn free_space(&self) -> usize {
+        self.max_items - self.items.len()
+    }
+
     pub fn add_item(&mut self, item_id: EntityId) {
-        self.items.push(item_id);
+        if self.items.len() < self.max_items {
+            self.items.push(item_id);
+        }
     }
     pub fn remove_item(&mut self, item_number: usize) {
 

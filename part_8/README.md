@@ -12,6 +12,7 @@ Contents of this Writep:
 2. [Picking up Items](#picking-up-items)
 3. [The Inventory](#the-inventory)
 4. [Using Items](#using-items)
+5. [Dropping Items](#dropping-items)
 
 ## Placing Items 
 
@@ -97,3 +98,17 @@ which is bound to the item.
 
 First of all, I implement the `UseItem` in `EntityAction`. It will create a `Message`, trigger the `Spell` and then it 
 will be remove from the `Ecs` and finally the `EntityId` which referenced the item will be removed from the Inventory, too.
+
+## Dropping Items
+
+One final thing left to do in this tutorial Part: Remove an item from the inventory and drop it somewhere on the floor.
+First of all, I will implement a maximum inventory size, so this feature makes some sense, too. I will allow a maximum 
+of 26 items (as suggested in the Tutorial).
+
+After implementing this, all I need to do is to show the already known selection menu, but add a drop action after 
+selecting an item, and not a use action.
+
+Since I will drop an Item to the exact location of the player, I will implement the `Clone` trait for the `Position` 
+component. All I need to do then is set blocking to false, and add the `Component` to the item `Entity`.
+
+With just a few changes I can now fully utilize the inventory.

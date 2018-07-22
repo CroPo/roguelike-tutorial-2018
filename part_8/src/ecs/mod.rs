@@ -31,7 +31,9 @@ impl EcsStorage {
     /// Remove a component from the storage
     fn remove<T>(&mut self)
         where T: Component + Any {
-        self.data.remove(&TypeId::of::<T>());
+        if self.data.contains_key(&TypeId::of::<T>()) {
+            self.data.remove(&TypeId::of::<T>());
+        }
     }
 
     /// Check if a component is registered

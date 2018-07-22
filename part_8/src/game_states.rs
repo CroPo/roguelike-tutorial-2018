@@ -28,6 +28,7 @@ enum InputAction {
     SelectOption(char),
     PickUp,
     ShowInventory,
+    ShowInventoryDrop,
     Fullscreen,
     Exit,
 }
@@ -40,7 +41,7 @@ fn handle_input(state: &GameState, event: Option<(EventFlags, Event)>) -> Option
                 match state {
                     GameState::PlayersTurn => handle_keys_player_turn(key),
                     GameState::PlayerDead => handle_keys_dead(key),
-                    GameState::ShowInventory => handle_keys_selection_menu(key),
+                    GameState::ShowInventory | GameState::ShowInventoryDrop=> handle_keys_selection_menu(key),
                     GameState::EnemyTurn => None,
                     _ => None
                 }
@@ -71,6 +72,7 @@ fn handle_keys_player_turn(key: Key) -> Option<InputAction> {
         Key { printable: 'b', .. } => Some(InputAction::MovePlayer(-1, 1)),
         Key { printable: 'n', .. } => Some(InputAction::MovePlayer(1, 1)),
         Key { printable: 'i', .. } => Some(InputAction::ShowInventory),
+        Key { printable: 'd', .. } => Some(InputAction::ShowInventoryDrop),
         Key { printable: 'g', .. } => Some(InputAction::PickUp),
         Key { code: KeyCode::Escape, .. } => Some(InputAction::Exit),
         Key { code: KeyCode::Enter, alt: true, .. } => Some(InputAction::Fullscreen),
@@ -93,12 +95,13 @@ fn handle_keys_dead(key: Key) -> Option<InputAction> {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum GameState {
     PlayersTurn,
     EnemyTurn,
     PlayerDead,
     ShowInventory,
+    ShowInventoryDrop,
 }
 
 impl GameState {
@@ -109,7 +112,7 @@ impl GameState {
             GameState::PlayersTurn => self.player_turn(ecs, input_action, log, map),
             GameState::EnemyTurn => self.enemy_turn(ecs, input_action, log, map),
             GameState::PlayerDead => self.player_dead(input_action),
-            GameState::ShowInventory => self.show_inventory(ecs, input_action, log),
+            GameState::ShowInventory | GameState::ShowInventoryDrop => self.show_inventory(ecs, input_action, log)
         }
     }
 
@@ -124,7 +127,12 @@ impl GameState {
             Some(InputAction::SelectOption(item_key)) => {
                 if item_key as u8 >= 'a' as u8 {
                     let item_number = item_key as u8 - 'a' as u8;
-                    EntityAction::UseItem(ecs.player_entity_id, item_number as u8).execute(ecs, log);
+
+                    match *self {
+                        GameState::ShowInventoryDrop => EntityAction::DropItem(ecs.player_entity_id, item_number as u8),
+                        GameState::ShowInventory => EntityAction::UseItem(ecs.player_entity_id, item_number as u8),
+                        _ => EntityAction::Idle
+                    }.execute(ecs, log);
 
                     GameStateResult {
                         engine_action: None,
@@ -140,7 +148,7 @@ impl GameState {
             _ => {
                 GameStateResult {
                     engine_action: None,
-                    next_state: GameState::ShowInventory,
+                    next_state: *self,
                 }
             }
         }
@@ -186,6 +194,12 @@ impl GameState {
             Some(InputAction::ShowInventory) => {
                 GameStateResult {
                     next_state: GameState::ShowInventory,
+                    engine_action: None,
+                }
+            }
+            Some(InputAction::ShowInventoryDrop) => {
+                GameStateResult {
+                    next_state: GameState::ShowInventoryDrop,
                     engine_action: None,
                 }
             }

@@ -76,7 +76,7 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, game_state: &Game
          1.0, 1.0);
 
 
-    if *game_state == GameState::ShowInventory {
+    if *game_state == GameState::ShowInventory || *game_state == GameState::ShowInventoryDrop {
         inventory_menu(root_console, ecs, "Inventory", 50, console.width(), console.height());
     }
 

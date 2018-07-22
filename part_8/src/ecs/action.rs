@@ -38,6 +38,7 @@ pub enum EntityAction {
     MoveRelative(EntityId, (i32, i32)),
     Die(EntityId),
     PickUpItem(EntityId, EntityId),
+    DropItem(EntityId, u8),
     UseItem(EntityId, u8),
     AddItemToInventory(EntityId, EntityId),
     Idle,
@@ -53,6 +54,7 @@ impl EntityAction {
             => self.take_damage_action(ecs, entity_id, damage, attacker_entity_id),
             EntityAction::Die(entity_id) => self.die_action(ecs, entity_id),
             EntityAction::PickUpItem(entity_id, item_id) => self.pick_up_item_action(ecs, entity_id, item_id),
+            EntityAction::DropItem(entity_id, item_number) => self.drop_item_action(ecs, entity_id, item_number),
             EntityAction::AddItemToInventory(entity_id, item_id) => self.add_item_to_inventory_action(ecs, entity_id, item_id),
             EntityAction::UseItem(entity_id, item_number) => self.use_item_action(ecs, entity_id, item_number),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
@@ -115,7 +117,7 @@ impl EntityAction {
         let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
 
         let mut item_name = "".to_string();
-        let mut item_id =0;
+        let mut item_id = 0;
 
         let spell = if let Some(inventory) = ecs.get_component::<Inventory>(entity_id) {
             if inventory.items.len() > item_number as usize {
@@ -150,24 +152,48 @@ impl EntityAction {
 
             return ActionResult {
                 message: Some(messages),
-                reaction: None
+                reaction: None,
             };
         }
 
         ActionResult::none()
     }
 
-    fn pick_up_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId) -> ActionResult {
+    fn drop_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_number: u8) -> ActionResult {
         let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
-        let item_name = EntityAction::get_entity_name(ecs, item_id).to_uppercase();
+        let mut item_name = "".to_string();
+        let mut item_id = 0;
 
-        if ecs.has_component::<Inventory>(entity_id) {
-            ecs.remove_component::<Position>(item_id);
+        let item_position = if let Some(inventory) = ecs.get_component::<Inventory>(entity_id) {
+            if inventory.items.len() > item_number as usize {
+                item_id = inventory.items[item_number as usize];
+                item_name = EntityAction::get_entity_name(ecs, item_id).to_uppercase();
 
-            let message = Message::new(format!("{} picked up {}", entity_name, item_name));
+                if let Some(p) = ecs.get_component::<Position>(entity_id) {
+                    let mut item_position = Position::new(entity_id, false);
+                    item_position.position = p.position;
+                    Some(item_position)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        if let Some(p) = item_position {
+
+            let message = Message::new(format!("{} dropped {} on the floor", entity_name, item_name));
+
+            ecs.register_component(item_id, p);
+            if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
+                inventory.remove_item(item_number as usize);
+            }
 
             ActionResult {
-                reaction: Some(EntityAction::AddItemToInventory(entity_id, item_id)),
+                reaction: None,
                 message: Some(vec![message]),
             }
         } else {
@@ -175,7 +201,34 @@ impl EntityAction {
         }
     }
 
+    fn pick_up_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId) -> ActionResult {
+        let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
+        let item_name = EntityAction::get_entity_name(ecs, item_id).to_uppercase();
+
+        if let Some(inventory) = ecs.get_component::<Inventory>(entity_id) {
+            if inventory.free_space() > 0 {
+                let message = Message::new(format!("{} picked up {}", entity_name, item_name));
+
+                ActionResult {
+                    reaction: Some(EntityAction::AddItemToInventory(entity_id, item_id)),
+                    message: Some(vec![message]),
+                }
+            } else {
+                let message = Message::new(format!("{} can't pick up {}: Inventory is full.", entity_name, item_name));
+
+                ActionResult {
+                    reaction: None,
+                    message: Some(vec![message]),
+                }
+            }
+        } else {
+            ActionResult::none()
+        }
+    }
+
     fn add_item_to_inventory_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId) -> ActionResult {
+        ecs.remove_component::<Position>(item_id);
+
         if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
             inventory.add_item(item_id);
         }
