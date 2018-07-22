@@ -15,6 +15,8 @@ use message::MessageLog;
 use std::rc::Rc;
 use textwrap::wrap;
 use ecs::component::Name;
+use ecs::component::Inventory;
+use game_states::GameState;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum RenderOrder {
@@ -24,10 +26,10 @@ pub enum RenderOrder {
 }
 
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
-pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bool,
+pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, game_state: &GameState,
                   console: &mut Offscreen, panel: &mut Offscreen, root_console: &mut Root,
                   bar_width: i32, panel_y: i32, log_panel: &MessagePanel, mouse_pos: (i32, i32)) {
-    map.draw(console, fov_map, fov_recompute);
+    map.draw(console, fov_map);
 
 
     let component_ids = ecs.get_all_ids::<Render>();
@@ -72,6 +74,13 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, fov_recompute: bo
          (panel.width(), panel.height()),
          root_console, (0, panel_y),
          1.0, 1.0);
+
+
+    if *game_state == GameState::ShowInventory {
+        inventory_menu(root_console, ecs, "Inventory", 50, console.width(), console.height());
+    }
+
+    root_console.flush()
 }
 
 
@@ -118,6 +127,52 @@ fn get_names_under_mouse(ecs: &Ecs, fov_map: &Map, mouse_pos: (i32, i32)) -> Str
     });
 
     names.join(",")
+}
+
+/// Display a selection menu of various options
+pub fn selection_menu(console: &mut Root, title: &str, options: Vec<String>, width: i32, screen_width: i32, screen_height: i32) {
+    let header_height = console.get_height_rect(0, 0, width, screen_height, title);
+    let height = header_height + options.len() as i32;
+    let mut menu_panel = Offscreen::new(width, height);
+
+    menu_panel.set_default_foreground(colors::WHITE);
+    menu_panel.print_rect_ex(0, 0, width, height, BackgroundFlag::None, TextAlignment::Left, title);
+
+    let mut y = header_height;
+    let mut letter_index = 'a' as u8;
+
+    for option in options {
+        let text = format!("({}) {}", letter_index as char, option);
+        menu_panel.print_ex(0, y, BackgroundFlag::None, TextAlignment::Left, text);
+        y+=1;
+        letter_index+=1;
+    }
+
+    let x = screen_width / 2 - width / 2;
+    let y = screen_height / 2 - height / 2;
+
+    blit(&menu_panel, (0, 0),
+         (width, height),
+         console, (x, y),
+         1.0, 1.0);
+}
+
+pub fn inventory_menu(console: &mut Root, ecs: &Ecs, title: &str, width: i32, screen_width: i32, screen_height: i32) {
+
+    if let Some(inventory) = ecs.get_component::<Inventory>(ecs.player_entity_id) {
+
+        let items = if inventory.items.len() == 0 {
+            vec!["Inventory is empty".to_string()]
+        } else {
+            inventory.items.iter().filter(|item_id|{
+                ecs.has_component::<Name>(**item_id)
+            }).map(|item_id| {
+                ecs.get_component::<Name>(*item_id).unwrap().name.clone()
+            }).collect()
+        };
+
+        selection_menu(console, title, items, width, screen_width, screen_height);
+    }
 }
 
 

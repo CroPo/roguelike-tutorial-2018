@@ -148,11 +148,7 @@ impl GameMap {
         }
     }
 
-    pub fn draw(&mut self, console: &mut Console, fov_map: &Map, fov_recompute: bool) {
-        if !fov_recompute {
-            return;
-        }
-
+    pub fn draw(&mut self, console: &mut Console, fov_map: &Map) {
         for x in 0..self.dimensions.0 {
             for y in 0..self.dimensions.1 {
                 let tile = self.get_tile_mut(x as usize, y as usize);
