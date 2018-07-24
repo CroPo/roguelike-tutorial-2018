@@ -1,7 +1,7 @@
 # Part 8: Items and Inventory
 
 - [Reddit Post on /r/roguelikedev](https://www.reddit.com/r/roguelikedev/comments/8zia4r/roguelikedev_does_the_complete_roguelike_tutorial/)
-- [Direct Tutorial Link](http://rogueliketutorials.com/libtcod/7)
+- [Direct Tutorial Link](http://rogueliketutorials.com/libtcod/8)
 
 I am looking forward to a very interesting tutorial part. I already know roughly where the game is heading with this,
 so I thing it might be quite a challenge, yet doable in a reasonable time.
