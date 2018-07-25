@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use tcod;
+use tcod::colors;
 use tcod::input;
 use tcod::input::{check_for_event, EventFlags, Event, Mouse, Key, KeyCode};
 
@@ -15,6 +16,7 @@ use ecs::component::Actor;
 use message::MessageLog;
 use tcod::Map;
 use map_objects::map::GameMap;
+use message::Message;
 
 pub struct GameStateResult {
     pub next_state: GameState,
@@ -221,14 +223,22 @@ impl GameState {
                     actions.push(EntityAction::PickUpItem(id, *item_id))
                 });
 
-                for action in actions {
-                    action.execute(ecs, Rc::clone(&log))
-                }
+                let next_state = if actions.is_empty() {
+                    log.add(Message::new("Nothing to pick up here".to_string(), colors::YELLOW));
+                    GameState::PlayersTurn
+
+                } else {
+                    actions.iter().for_each(|a| {
+                        a.execute(ecs, Rc::clone(&log))
+                    });
+                    GameState::EnemyTurn
+                };
 
                 GameStateResult {
-                    next_state: GameState::EnemyTurn,
+                    next_state,
                     engine_action: None,
                 }
+
             }
             Some(InputAction::MovePlayer(vel_x, vel_y)) => {
                 let id = ecs.player_entity_id;

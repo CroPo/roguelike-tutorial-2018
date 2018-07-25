@@ -9,10 +9,10 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn new(text: String) -> Message {
+    pub fn new(text: String, color: Color) -> Message {
         Message {
             text,
-            color: colors::WHITE,
+            color,
         }
     }
 }

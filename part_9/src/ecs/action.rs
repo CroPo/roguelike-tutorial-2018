@@ -96,7 +96,7 @@ impl EntityAction {
                 format!("The {} attacks {} for {} hit points.", attacker_name, entity_name, damage)
             } else {
                 format!("The {} attacks {} but does no damage.", attacker_name, entity_name)
-            });
+            }, colors::WHITE);
 
             return if e.hp <= 0 {
                 ActionResult {
@@ -137,7 +137,7 @@ impl EntityAction {
         };
 
         if let Some(s) = spell {
-            let mut messages = vec![Message::new(format!("{} uses {}", entity_name, item_name))];
+            let mut messages = vec![Message::new(format!("{} uses {}", entity_name, item_name), colors::WHITE)];
             let id = ecs.player_entity_id;
 
             if let Some(message) = s.execute(ecs, id) {
@@ -184,8 +184,7 @@ impl EntityAction {
         };
 
         if let Some(p) = item_position {
-
-            let message = Message::new(format!("{} dropped {} on the floor", entity_name, item_name));
+            let message = Message::new(format!("{} dropped {} on the floor", entity_name, item_name), colors::YELLOW);
 
             ecs.register_component(item_id, p);
             if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
@@ -207,14 +206,16 @@ impl EntityAction {
 
         if let Some(inventory) = ecs.get_component::<Inventory>(entity_id) {
             if inventory.free_space() > 0 {
-                let message = Message::new(format!("{} picked up {}", entity_name, item_name));
+                let message = Message::new(format!("{} picked up the {}", entity_name, item_name),
+                                           colors::BLUE);
 
                 ActionResult {
                     reaction: Some(EntityAction::AddItemToInventory(entity_id, item_id)),
                     message: Some(vec![message]),
                 }
             } else {
-                let message = Message::new(format!("{} can't pick up {}: Inventory is full.", entity_name, item_name));
+                let message = Message::new(format!("You can't pick up {}: Inventory is full.",
+                                                   item_name), colors::YELLOW);
 
                 ActionResult {
                     reaction: None,
@@ -239,11 +240,11 @@ impl EntityAction {
     fn die_action(&self, ecs: &mut Ecs, entity_id: EntityId) -> ActionResult {
         let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
 
-        let message = Message::new(if entity_id == ecs.player_entity_id {
-            "YOU DIED".to_string()
+        let message = if entity_id == ecs.player_entity_id {
+            Message::new("YOU DIED".to_string(), colors::RED)
         } else {
-            format!("The {} died.", entity_name)
-        });
+            Message::new(format!("The {} died.", entity_name), colors::ORANGE)
+        };
 
         // Override the Rendering with the default corpse glyph
         ecs.register_component(entity_id, Render::new(entity_id, '%', colors::DARK_CRIMSON, RenderOrder::Corpse));

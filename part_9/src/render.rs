@@ -76,10 +76,13 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, game_state: &Game
          1.0, 1.0);
 
 
-    if *game_state == GameState::ShowInventory || *game_state == GameState::ShowInventoryDrop {
-        inventory_menu(root_console, ecs, "Inventory", 50, console.width(), console.height());
+    match *game_state {
+        GameState::ShowInventory => inventory_menu(root_console, ecs, "Press the key next to an item to use it, or Esc to cancel.",
+                                                    50, console.width(), console.height()),
+        GameState::ShowInventoryDrop => inventory_menu(root_console, ecs, "Press the key next to an item to drop it, or Esc to cancel.",
+                                                      50, console.width(), console.height()),
+        _ => ()
     }
-
     root_console.flush()
 }
 
@@ -200,7 +203,8 @@ impl MessagePanel {
             panel.set_default_foreground(m.color);
 
             for l in lines {
-                panel.print_ex(self.pos.0, self.pos.1 + total_lines, BackgroundFlag::None, TextAlignment::Left, l.to_string());
+                panel.print_ex(self.pos.0, self.pos.1 + total_lines,
+                               BackgroundFlag::None, TextAlignment::Left, l.to_string());
                 total_lines += 1;
                 if self.pos.1 + total_lines > self.dimensions.1 {
                     break 'l;
