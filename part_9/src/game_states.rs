@@ -43,7 +43,7 @@ fn handle_input(state: &GameState, event: Option<(EventFlags, Event)>) -> Option
                 match state {
                     GameState::PlayersTurn => handle_keys_player_turn(key),
                     GameState::PlayerDead => handle_keys_dead(key),
-                    GameState::ShowInventory | GameState::ShowInventoryDrop=> handle_keys_selection_menu(key),
+                    GameState::ShowInventoryUse | GameState::ShowInventoryDrop => handle_keys_selection_menu(key),
                     GameState::EnemyTurn => None,
                     _ => None
                 }
@@ -102,7 +102,7 @@ pub enum GameState {
     PlayersTurn,
     EnemyTurn,
     PlayerDead,
-    ShowInventory,
+    ShowInventoryUse,
     ShowInventoryDrop,
 }
 
@@ -114,7 +114,7 @@ impl GameState {
             GameState::PlayersTurn => self.player_turn(ecs, input_action, log, map),
             GameState::EnemyTurn => self.enemy_turn(ecs, input_action, log, map),
             GameState::PlayerDead => self.player_dead(input_action),
-            GameState::ShowInventory | GameState::ShowInventoryDrop => self.show_inventory(ecs, input_action, log)
+            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(ecs, input_action, log)
         }
     }
 
@@ -130,15 +130,19 @@ impl GameState {
                 if item_key as u8 >= 'a' as u8 {
                     let item_number = item_key as u8 - 'a' as u8;
 
-                    match *self {
+                    let next_state = if let Some(state) = match *self {
                         GameState::ShowInventoryDrop => EntityAction::DropItem(ecs.player_entity_id, item_number as u8),
-                        GameState::ShowInventory => EntityAction::UseItem(ecs.player_entity_id, item_number as u8),
+                        GameState::ShowInventoryUse => EntityAction::UseItem(ecs.player_entity_id, item_number as u8),
                         _ => EntityAction::Idle
-                    }.execute(ecs, log);
+                    }.execute(ecs, log) {
+                        state
+                    } else {
+                        GameState::EnemyTurn
+                    };
 
                     GameStateResult {
                         engine_action: None,
-                        next_state: GameState::EnemyTurn,
+                        next_state,
                     }
                 } else {
                     GameStateResult {
@@ -195,7 +199,7 @@ impl GameState {
             }
             Some(InputAction::ShowInventory) => {
                 GameStateResult {
-                    next_state: GameState::ShowInventory,
+                    next_state: GameState::ShowInventoryUse,
                     engine_action: None,
                 }
             }
@@ -226,10 +230,9 @@ impl GameState {
                 let next_state = if actions.is_empty() {
                     log.add(Message::new("Nothing to pick up here".to_string(), colors::YELLOW));
                     GameState::PlayersTurn
-
                 } else {
                     actions.iter().for_each(|a| {
-                        a.execute(ecs, Rc::clone(&log))
+                        a.execute(ecs, Rc::clone(&log));
                     });
                     GameState::EnemyTurn
                 };
@@ -238,7 +241,6 @@ impl GameState {
                     next_state,
                     engine_action: None,
                 }
-
             }
             Some(InputAction::MovePlayer(vel_x, vel_y)) => {
                 let id = ecs.player_entity_id;
@@ -288,7 +290,7 @@ impl GameState {
                 Some(ai) => ai.calculate_turn(&ecs, &map),
                 _ => EntityAction::Idle
             };
-            action.execute(ecs, Rc::clone(&log))
+            action.execute(ecs, Rc::clone(&log));
         });
 
         if ecs.has_component::<Corpse>(ecs.player_entity_id) {

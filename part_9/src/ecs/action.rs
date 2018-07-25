@@ -12,12 +12,16 @@ use ecs::component::Name;
 use std::rc::Rc;
 use ecs::component::Inventory;
 use ecs::component::Item;
+use game_states::GameState;
+use ecs::spell::SpellResult;
+use ecs::spell::SpellStatus;
 
 /// This struct defines the Result of one single action. A message can be created, and also
 /// a reaction can happen.
 struct ActionResult {
     reaction: Option<EntityAction>,
     message: Option<Vec<Message>>,
+    state: Option<GameState>,
 }
 
 impl ActionResult {
@@ -26,6 +30,7 @@ impl ActionResult {
         ActionResult {
             reaction: None,
             message: None,
+            state: None,
         }
     }
 }
@@ -46,7 +51,7 @@ pub enum EntityAction {
 
 impl EntityAction {
     /// Execute the action
-    pub fn execute(&self, ecs: &mut Ecs, log: Rc<MessageLog>) {
+    pub fn execute(&self, ecs: &mut Ecs, log: Rc<MessageLog>) -> Option<GameState> {
         let result = match *self {
             EntityAction::MoveTo(entity_id, pos) => self.move_to_action(ecs, entity_id, pos),
             EntityAction::MoveRelative(entity_id, delta) => self.move_relative_action(ecs, entity_id, delta),
@@ -66,8 +71,17 @@ impl EntityAction {
             }
         }
 
-        if let Some(reaction) = result.reaction {
-            reaction.execute(ecs, log);
+        let resulting_state = if let Some(reaction) = result.reaction {
+            reaction.execute(ecs, log)
+        } else {
+            None
+        };
+
+        match result.state {
+            None => {
+                resulting_state
+            }
+            _ => result.state
         }
     }
 
@@ -102,11 +116,13 @@ impl EntityAction {
                 ActionResult {
                     reaction: Some(EntityAction::Die(entity_id)),
                     message: Some(vec![message]),
+                    state: None,
                 }
             } else {
                 ActionResult {
                     reaction: None,
                     message: Some(vec![message]),
+                    state: None,
                 }
             };
         }
@@ -140,23 +156,44 @@ impl EntityAction {
             let mut messages = vec![Message::new(format!("{} uses {}", entity_name, item_name), colors::WHITE)];
             let id = ecs.player_entity_id;
 
-            if let Some(message) = s.execute(ecs, id) {
-                messages.push(message)
-            }
+            let cast_result = s.cast(ecs, id);
 
-            ecs.destroy_entity(&item_id);
+            let state = match cast_result {
+                SpellResult { status: SpellStatus::Success, .. } => {
+                    self.use_item_success(ecs, entity_id, item_id, item_number)
+                },
+                SpellResult { status: SpellStatus::Fail, .. } => {
+                    Some(GameState::ShowInventoryUse)
+                },
+            };
 
-            if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
-                inventory.remove_item(item_number as usize);
+            match cast_result {
+                SpellResult { message: Some(message), .. } => messages.push(message),
+                _ => ()
             }
 
             return ActionResult {
                 message: Some(messages),
                 reaction: None,
-            };
+                state,
+            }
+        } else {
+            ActionResult {
+                message: None,
+                reaction: None,
+                state: Some(GameState::ShowInventoryUse),
+            }
+        }
+    }
+
+    fn use_item_success(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId, item_number: u8) -> Option<GameState> {
+        ecs.destroy_entity(&item_id);
+
+        if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
+            inventory.remove_item(item_number as usize);
         }
 
-        ActionResult::none()
+        None
     }
 
     fn drop_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_number: u8) -> ActionResult {
@@ -194,9 +231,14 @@ impl EntityAction {
             ActionResult {
                 reaction: None,
                 message: Some(vec![message]),
+                state: None,
             }
         } else {
-            ActionResult::none()
+            ActionResult {
+                message: None,
+                reaction: None,
+                state: Some(GameState::ShowInventoryDrop),
+            }
         }
     }
 
@@ -212,6 +254,7 @@ impl EntityAction {
                 ActionResult {
                     reaction: Some(EntityAction::AddItemToInventory(entity_id, item_id)),
                     message: Some(vec![message]),
+                    state: None,
                 }
             } else {
                 let message = Message::new(format!("You can't pick up {}: Inventory is full.",
@@ -220,6 +263,7 @@ impl EntityAction {
                 ActionResult {
                     reaction: None,
                     message: Some(vec![message]),
+                    state: None,
                 }
             }
         } else {
@@ -261,6 +305,7 @@ impl EntityAction {
         ActionResult {
             reaction: None,
             message: Some(vec![message]),
+            state: None,
         }
     }
 

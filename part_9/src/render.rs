@@ -77,8 +77,8 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, game_state: &Game
 
 
     match *game_state {
-        GameState::ShowInventory => inventory_menu(root_console, ecs, "Press the key next to an item to use it, or Esc to cancel.",
-                                                    50, console.width(), console.height()),
+        GameState::ShowInventoryUse => inventory_menu(root_console, ecs, "Press the key next to an item to use it, or Esc to cancel.",
+                                                      50, console.width(), console.height()),
         GameState::ShowInventoryDrop => inventory_menu(root_console, ecs, "Press the key next to an item to drop it, or Esc to cancel.",
                                                       50, console.width(), console.height()),
         _ => ()
