@@ -14,6 +14,7 @@ Contents of this Writeup:
 3. [The Lightning Spell](#the-lightning-spell)
 4. [The Fireball Spell](#the-fireball-spell)
 5. [The Confusion Spell](#the-confusion-spell)
+6. [Conclusion](#conclusiom)
 
 ## Colored Messages
 
@@ -161,3 +162,9 @@ a bigger game, the AI might do much more than A* and hit (hopefully).
 
 Creating the `Spell` and placing scrolls on the map is all I need to do now. Since I already have all parts I need, 
 this won't be to much of a task at this point.
+
+## Conclusiom
+
+This part was quite fun. I really enjoyed creating these Spells. Practically, I could implement a magic system which lets
+the player cast spells for MP, and not only from scrolls without too much changes. And I am really curious about the 
+next parts - especially 11 looks very interesting. 
