@@ -161,14 +161,14 @@ impl Component for Name {}
 /// Basic stats for any creature
 pub struct Actor {
     entity_id: EntityId,
-    pub max_hp: i32,
-    pub hp: i32,
+    pub max_hp: u32,
+    pub hp: u32,
     pub power: i32,
     pub defense: i32,
 }
 
 impl Actor {
-    pub fn new(entity_id: EntityId, max_hp: i32, power: i32, defense: i32) -> Actor {
+    pub fn new(entity_id: EntityId, max_hp: u32, power: i32, defense: i32) -> Actor {
         Actor {
             entity_id,
             max_hp,
@@ -179,15 +179,23 @@ impl Actor {
     }
 
     /// Take a specific amount of damage.
-    pub fn take_damage(&mut self, damage: i32) {
-        self.hp -= damage;
+    pub fn take_damage(&mut self, damage: u32) {
+        if self.hp < damage {
+            self.hp = 0;
+        } else {
+            self.hp -= damage;
+        }
     }
 
     /// Calculate the Attack and return the amount of damage which will be dealt
-    pub fn calculate_attack(&self, ecs: &Ecs, target_id: EntityId) -> Option<i32> {
+    pub fn calculate_attack(&self, ecs: &Ecs, target_id: EntityId) -> Option<u32> {
         if let Some(target) = ecs.get_component::<Actor>(target_id) {
-            let damage = self.power - target.defense;
-            Some(damage)
+            let mut damage = self.power - target.defense;
+            if damage < 0 {
+                damage = 0;
+            }
+            Some(damage as u32)
+
         } else {
             None
         }
@@ -226,22 +234,10 @@ impl MonsterAi {
                         _ => ()
                     }
                 } else {
-                    return self.calculate_attack(ecs);
+                    return EntityAction::MeleeAttack(self.entity_id, ecs.player_entity_id)
                 }
 
                 EntityAction::Idle
-            }
-            _ => EntityAction::Idle
-        }
-    }
-
-    fn calculate_attack(&self, ecs: &Ecs) -> EntityAction {
-        match ecs.get_component::<Actor>(self.entity_id) {
-            Some(c) => {
-                match c.calculate_attack(ecs, ecs.player_entity_id) {
-                    Some(damage) => EntityAction::TakeDamage(ecs.player_entity_id, damage, self.entity_id),
-                    None => EntityAction::Idle
-                }
             }
             _ => EntityAction::Idle
         }

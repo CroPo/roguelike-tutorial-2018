@@ -107,18 +107,18 @@ pub enum GameState {
 }
 
 impl GameState {
-    pub fn run(&self, ecs: &mut Ecs, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
+    pub fn run(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
         let input_action = handle_input(self, check_for_event(EventFlags::all()));
 
         match *self {
-            GameState::PlayersTurn => self.player_turn(ecs, input_action, log, map),
-            GameState::EnemyTurn => self.enemy_turn(ecs, input_action, log, map),
+            GameState::PlayersTurn => self.player_turn(ecs, fov_map, input_action, log, map),
+            GameState::EnemyTurn => self.enemy_turn(ecs, fov_map, input_action, log, map),
             GameState::PlayerDead => self.player_dead(input_action),
-            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(ecs, input_action, log)
+            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(ecs, fov_map, input_action, log)
         }
     }
 
-    fn show_inventory(&self, ecs: &mut Ecs, action: Option<InputAction>, log: Rc<MessageLog>) -> GameStateResult {
+    fn show_inventory(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>) -> GameStateResult {
         match action {
             Some(InputAction::Exit) => {
                 GameStateResult {
@@ -134,7 +134,7 @@ impl GameState {
                         GameState::ShowInventoryDrop => EntityAction::DropItem(ecs.player_entity_id, item_number as u8),
                         GameState::ShowInventoryUse => EntityAction::UseItem(ecs.player_entity_id, item_number as u8),
                         _ => EntityAction::Idle
-                    }.execute(ecs, log) {
+                    }.execute(ecs, fov_map, log) {
                         state
                     } else {
                         GameState::EnemyTurn
@@ -177,7 +177,7 @@ impl GameState {
         }
     }
 
-    fn player_turn(&self, ecs: &mut Ecs, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
+    fn player_turn(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
         match action {
             Some(InputAction::Exit) => {
                 GameStateResult {
@@ -232,7 +232,7 @@ impl GameState {
                     GameState::PlayersTurn
                 } else {
                     actions.iter().for_each(|a| {
-                        a.execute(ecs, Rc::clone(&log));
+                        a.execute(ecs, fov_map,Rc::clone(&log));
                     });
                     GameState::EnemyTurn
                 };
@@ -256,7 +256,7 @@ impl GameState {
                     if let Some(target_id) = targets.iter().next() {
                         let player_creature = ecs.get_component::<Actor>(id).unwrap();
                         match player_creature.calculate_attack(&ecs, *target_id) {
-                            Some(x) => EntityAction::TakeDamage(*target_id, x, id),
+                            Some(x) => EntityAction::MeleeAttack(id, *target_id),
                             None => EntityAction::Idle
                         }
                     } else {
@@ -266,7 +266,7 @@ impl GameState {
                     EntityAction::Idle
                 };
 
-                action.execute(ecs, Rc::clone(&log));
+                action.execute(ecs, fov_map, Rc::clone(&log));
 
                 GameStateResult {
                     next_state: GameState::EnemyTurn,
@@ -282,7 +282,7 @@ impl GameState {
         }
     }
 
-    fn enemy_turn(&self, ecs: &mut Ecs, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
+    fn enemy_turn(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
         let entity_ids = ecs.get_all_ids::<MonsterAi>();
 
         entity_ids.iter().for_each(|entity_id| {
@@ -290,7 +290,7 @@ impl GameState {
                 Some(ai) => ai.calculate_turn(&ecs, &map),
                 _ => EntityAction::Idle
             };
-            action.execute(ecs, Rc::clone(&log));
+            action.execute(ecs, fov_map, Rc::clone(&log));
         });
 
         if ecs.has_component::<Corpse>(ecs.player_entity_id) {

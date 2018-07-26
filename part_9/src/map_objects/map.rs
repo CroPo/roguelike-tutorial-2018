@@ -101,7 +101,7 @@ impl GameMap {
         }
     }
 
-    fn place_entities(&mut self, room: &Rect, ecs: &mut Ecs, max_monsters_per_room: i32, max_items_per_room :i32) {
+    fn place_entities(&mut self, room: &Rect, ecs: &mut Ecs, max_monsters_per_room: i32, max_items_per_room: i32) {
         let mut rng = thread_rng();
 
         let monster_count = rng.gen_range(0, max_monsters_per_room);
@@ -113,9 +113,9 @@ impl GameMap {
 
             if !ecs.get_all::<Position>().iter().any(|(_, p)| p.position.0 == x && p.position.1 == y) {
                 let mut monster = if rng.gen_range(0, 100) < 80 {
-                    CreatureTemplate::Troll
-                } else {
                     CreatureTemplate::Orc
+                } else {
+                    CreatureTemplate::Troll
                 };
 
                 monster.create_on_position(ecs, (x, y));
@@ -127,11 +127,14 @@ impl GameMap {
             let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
 
             if !ecs.get_all::<Position>().iter().any(|(_, p)| p.position.0 == x && p.position.1 == y) {
-                let item = ItemTemplate::HealthPotion;
+                let item = if rng.gen_range(0, 100) < 70  {
+                    ItemTemplate::HealthPotion
+                } else {
+                    ItemTemplate::LightningScroll(5, 20)
+                };
                 item.create_on_position(ecs, (x, y));
             }
         }
-
     }
 
     fn create_h_tunnel(&mut self, x_start: i32, x_end: i32, y: i32) {

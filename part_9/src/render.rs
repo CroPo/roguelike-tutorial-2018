@@ -101,7 +101,7 @@ pub fn clear_all(ecs: &Ecs, console: &mut Console) {
 }
 
 /// Render a bar to graphically represent a value
-pub fn render_bar(panel: &mut Offscreen, pos: (i32, i32), width: i32, name: &str, value: i32, max: i32, bar_color: Color, back_color: Color) {
+pub fn render_bar(panel: &mut Offscreen, pos: (i32, i32), width: i32, name: &str, value: u32, max: u32, bar_color: Color, back_color: Color) {
     let filled_width = (value as f64 / max as f64 * width as f64).round() as i32;
 
     panel.set_default_background(back_color);

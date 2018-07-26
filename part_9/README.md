@@ -11,7 +11,7 @@ Contents of this Writeup:
 
 1. [Colored Messages](#colored-messages)
 2. [Extending the Items and the Inventory](#extending-the-items-and-the-inventory)
-
+3. [The Lightning Spell](#the-lightning-spell)
 
 ## Colored Messages
 
@@ -67,3 +67,52 @@ a `bool` too, of course, but I am 100% sure that the upcoming spells _will_ need
 
 I simply will add a `SpellResult` struct here, which can contain a `message` (to preserve funcitonality), and a 
 `SpellStatus`, which I just created, featuring the two already names statuses.
+
+
+## The Lightning Spell
+
+With all the prequisites done, I can now (finally) start to implement the new spells, and the scrolls.
+
+The first one is practically not much different to the `Item` we already have. Instead of healing the player, it only
+needs to automatically target the nearest enemy and damage it. Should not be _that_ much of a struggle.
+
+Passing both the fov and the maximum spell range to be used in that layer might be a bit tough. Practically, I can define
+the range of the lightning spell when creating the lightning scroll, which means I need to add a parameter to 
+`Spell::Lightning`. But getting the fov all the way down... could be rather challenging, but I really don't want
+to hit enemies with it which aren't in my fov, so I need to find a solution. Even though I only need it with one `EntityAction`
+at the moment, I won't add it as addintional parameter to the `UseItem` value, because this would force me to include
+a way to complicated lifetime parameter at this point, because I would need to store a borrowed reference within a enum value.
+So I will just add it to the `EntityAction::execute`, which will it pass all the way to the `Spell::cast` method.
+
+I also changed the `TakeDamage` action, so I can use it for all kinds of damage. To re-create the previous behaviour, I 
+created a `MeleeAttack`action.
+
+Implementing the `Spell` itself is rather easy then. Just get all targets which are in FOV and check which one is the
+nearest one and in range.
+
+```rust
+fn find_target(&self, ecs: &Ecs, fov_map: &Map, caster: &Position) -> Option<(EntityId, u8)> {
+        let mut distances: Vec<(u8, u8)> = ecs.get_all::<Position>().iter().filter(|(id, p)| {
+            **id != caster.entity_id
+                && fov_map.is_in_fov(p.position.0, p.position.1)
+                && ecs.has_component::<Actor>(**id)
+        }).map(|(id, p)| {
+            (*id, caster.distance_to(p.position) as u8)
+        }).collect();
+
+        distances.sort_by(|a, b| {
+            a.1.cmp(&b.1)
+        });
+
+        if let Some(d) = distances.first() {
+            Some(d.clone())
+        } else {
+            None
+        }
+    }
+```
+
+First I filter for all valid targets (not the caster, in fov and `Actors`), then I sort them by distance and then I
+return the nearest one.
+
+What's now left to do is randomly placing some scrolls on the map.

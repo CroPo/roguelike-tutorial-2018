@@ -75,7 +75,7 @@ fn main() {
 
     let mut root = Root::initializer()
         .size(screen_width, screen_height)
-        .title("/r/roguelikedev Tutorial Part 8: Items and Inverntory")
+        .title("/r/roguelikedev Tutorial Part 9: Ranged Scrolls and Targeting")
         .font("arial10x10.png", FontLayout::Tcod)
         .font_type(FontType::Greyscale)
         .init();
@@ -105,7 +105,7 @@ fn main() {
         clear_all(&ecs, &mut con);
 
 
-        let result = game_state.run(&mut ecs, Rc::clone(&log), &map);
+        let result = game_state.run(&mut ecs, &fov_map, Rc::clone(&log), &map);
 
         if let Some(engine_action) = result.engine_action {
             match engine_action {

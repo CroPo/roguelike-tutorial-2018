@@ -15,6 +15,7 @@ use ecs::component::Item;
 use game_states::GameState;
 use ecs::spell::SpellResult;
 use ecs::spell::SpellStatus;
+use tcod::Map;
 
 /// This struct defines the Result of one single action. A message can be created, and also
 /// a reaction can happen.
@@ -38,7 +39,8 @@ impl ActionResult {
 /// All possible interactions between `Component`s
 #[derive(PartialEq)]
 pub enum EntityAction {
-    TakeDamage(EntityId, i32, EntityId),
+    MeleeAttack(EntityId, EntityId),
+    TakeDamage(EntityId, u32),
     MoveTo(EntityId, (i32, i32)),
     MoveRelative(EntityId, (i32, i32)),
     Die(EntityId),
@@ -51,17 +53,17 @@ pub enum EntityAction {
 
 impl EntityAction {
     /// Execute the action
-    pub fn execute(&self, ecs: &mut Ecs, log: Rc<MessageLog>) -> Option<GameState> {
+    pub fn execute(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>) -> Option<GameState> {
         let result = match *self {
             EntityAction::MoveTo(entity_id, pos) => self.move_to_action(ecs, entity_id, pos),
             EntityAction::MoveRelative(entity_id, delta) => self.move_relative_action(ecs, entity_id, delta),
-            EntityAction::TakeDamage(entity_id, damage, attacker_entity_id)
-            => self.take_damage_action(ecs, entity_id, damage, attacker_entity_id),
+            EntityAction::MeleeAttack(attacker_id, target_id) => self.melee_attack_action(ecs, attacker_id, target_id),
+            EntityAction::TakeDamage(entity_id, damage)  => self.take_damage_action(ecs, entity_id, damage),
             EntityAction::Die(entity_id) => self.die_action(ecs, entity_id),
             EntityAction::PickUpItem(entity_id, item_id) => self.pick_up_item_action(ecs, entity_id, item_id),
             EntityAction::DropItem(entity_id, item_number) => self.drop_item_action(ecs, entity_id, item_number),
             EntityAction::AddItemToInventory(entity_id, item_id) => self.add_item_to_inventory_action(ecs, entity_id, item_id),
-            EntityAction::UseItem(entity_id, item_number) => self.use_item_action(ecs, entity_id, item_number),
+            EntityAction::UseItem(entity_id, item_number) => self.use_item_action(ecs, fov_map, entity_id, item_number),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
 
@@ -72,7 +74,7 @@ impl EntityAction {
         }
 
         let resulting_state = if let Some(reaction) = result.reaction {
-            reaction.execute(ecs, log)
+            reaction.execute(ecs, fov_map, log)
         } else {
             None
         };
@@ -82,6 +84,28 @@ impl EntityAction {
                 resulting_state
             }
             _ => result.state
+        }
+    }
+
+    fn melee_attack_action(&self, ecs: &mut Ecs, attacker_id: EntityId, target_id: EntityId) -> ActionResult {
+
+        let attacker_name = EntityAction::get_entity_name(ecs, attacker_id).to_uppercase();
+        let target_name = EntityAction::get_entity_name(ecs, target_id);
+
+        match ecs.get_component::<Actor>(attacker_id) {
+            Some(actor) => {
+                match actor.calculate_attack(ecs, target_id) {
+                    Some(damage) => {
+                        ActionResult {
+                            message: Some(vec![Message::new(format!("The {} attacks the {} .", attacker_name, target_name), colors::WHITE)]),
+                            reaction: Some(EntityAction::TakeDamage(target_id, damage)),
+                            state: None,
+                        }
+                    },
+                    None => ActionResult::none()
+                }
+            },
+            None => ActionResult::none()
         }
     }
 
@@ -99,17 +123,15 @@ impl EntityAction {
         ActionResult::none()
     }
 
-    fn take_damage_action(&self, ecs: &mut Ecs, entity_id: EntityId, damage: i32, attacker_entity_id: EntityId) -> ActionResult {
-        let entity_name = EntityAction::get_entity_name(ecs, entity_id);
-        let attacker_name = EntityAction::get_entity_name(ecs, attacker_entity_id).to_uppercase();
-
+    fn take_damage_action(&self, ecs: &mut Ecs, entity_id: EntityId, damage: u32) -> ActionResult {
+        let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
         if let Some(e) = ecs.get_component_mut::<Actor>(entity_id) {
             e.take_damage(damage);
 
             let message = Message::new(if damage > 0 {
-                format!("The {} attacks {} for {} hit points.", attacker_name, entity_name, damage)
+                format!("The {} takes {}  damage.", entity_name, damage)
             } else {
-                format!("The {} attacks {} but does no damage.", attacker_name, entity_name)
+                format!("The {} takes no damage.", entity_name)
             }, colors::WHITE);
 
             return if e.hp <= 0 {
@@ -129,7 +151,7 @@ impl EntityAction {
         ActionResult::none()
     }
 
-    fn use_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_number: u8) -> ActionResult {
+    fn use_item_action(&self, ecs: &mut Ecs, fov_map: &Map, entity_id: EntityId, item_number: u8) -> ActionResult {
         let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
 
         let mut item_name = "".to_string();
@@ -156,7 +178,7 @@ impl EntityAction {
             let mut messages = vec![Message::new(format!("{} uses {}", entity_name, item_name), colors::WHITE)];
             let id = ecs.player_entity_id;
 
-            let cast_result = s.cast(ecs, id);
+            let cast_result = s.cast(ecs, fov_map, id);
 
             let state = match cast_result {
                 SpellResult { status: SpellStatus::Success, .. } => {
@@ -172,9 +194,10 @@ impl EntityAction {
                 _ => ()
             }
 
+
             return ActionResult {
                 message: Some(messages),
-                reaction: None,
+                reaction: cast_result.reaction,
                 state,
             }
         } else {
@@ -312,7 +335,7 @@ impl EntityAction {
     fn get_entity_name(ecs: &Ecs, id: EntityId) -> String {
         match ecs.get_component::<Name>(id) {
             Some(n) => n.name.clone(),
-            None => format!("a nameless entity (#{})", id)
+            None => format!("nameless entity (#{})", id)
         }
     }
 }
