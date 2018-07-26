@@ -158,7 +158,7 @@ impl GameState {
                     }
 
                     for action in spell_result.reactions {
-                        action.execute(ecs, fov_map, log.clone());
+                        action.execute(ecs, fov_map, Rc::clone(&log));
                     }
 
                     GameStateResult {
@@ -347,7 +347,23 @@ impl GameState {
         }
     }
 
+    fn update_enemy_ai_target(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>) {
+        let player_id = ecs.player_entity_id;
+
+        let actions :Vec<EntityAction> = ecs.get_all::<MonsterAi>().iter().filter(|(_, ai)|{
+            ai.has_no_target()
+        }).map(|(id, _)| {
+            EntityAction::SetAiTarget(*id, player_id)
+        }).collect();
+
+        actions.iter().for_each(|action| {
+            action.execute(ecs, fov_map, Rc::clone(&log));
+        });
+    }
+
     fn enemy_turn(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
+        self.update_enemy_ai_target(ecs, fov_map, Rc::clone(&log));
+
         let entity_ids = ecs.get_all_ids::<MonsterAi>();
 
         entity_ids.iter().for_each(|entity_id| {

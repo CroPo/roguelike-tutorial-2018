@@ -63,6 +63,7 @@ pub enum Spell {
     Heal(EntityId),
     Lightning(EntityId, u8, u32),
     Fireball(EntityId, u8, u32),
+    Confusion(EntityId),
 }
 
 impl Spell {
@@ -70,13 +71,14 @@ impl Spell {
         match *self {
             Spell::Heal(item_id) => self.heal(ecs, caster_id, item_id),
             Spell::Lightning(item_id, range, damage) => self.lightning(ecs, fov_map, caster_id, item_id, range, damage),
-            Spell::Fireball(item_id, radius, damage) => self.fireball(ecs, caster_id)
+            Spell::Fireball(..) | Spell::Confusion(..) => SpellResult::targeting(*self, caster_id),
         }
     }
 
     pub fn cast_on_target(&self, ecs: &mut Ecs, target_id: EntityId, caster_id: EntityId) -> SpellResult {
         match *self {
             Spell::Fireball(item_id, radius, damage) => self.fireball_on_target(ecs, target_id, caster_id, item_id, radius, damage),
+            Spell::Confusion(item_id) => self.confusion_on_target(ecs, target_id, caster_id, item_id),
             _ => SpellResult::fail(None)
         }
     }
@@ -123,15 +125,40 @@ impl Spell {
         spell_result
     }
 
-    fn fireball(&self, ecs: &mut Ecs, caster_id: EntityId) -> SpellResult {
-        SpellResult::targeting(*self, caster_id)
+    fn confusion_on_target(&self, ecs: &mut Ecs, target_id: EntityId, caster_id: EntityId, item_id: EntityId) -> SpellResult {
+        let target_name = Self::get_entity_name(ecs, target_id).to_uppercase();
+
+        let new_ai_target = if let Some(target) = ecs.get_component::<Position>(target_id) {
+            match self.find_target(ecs, None, &target) {
+                Some((entity_id, distance)) => {
+                    Some(entity_id)
+                }
+                None => None
+            }
+        } else { None };
+
+        match new_ai_target {
+            Some(new_target_id) => {
+                let message = Message::new(
+                    format!("The eyes of the {0} look vacant, as he starts to blindly attack the nearest monster!", target_name), colors::PINK,
+                );
+                let reaction = EntityAction::SetAiTarget(target_id, new_target_id);
+                SpellResult::success(caster_id, item_id, Some(message), Some(reaction))
+            }
+            None => {
+                let message = Message::new(
+                    format!("The eyes of the {0} look vacant, but he finds no other monster to attack", target_name), colors::PINK,
+                );
+                SpellResult::fail(Some(message))
+            }
+        }
     }
 
     fn lightning(&self, ecs: &mut Ecs, fov_map: &Map, caster_id: EntityId, item_id: EntityId, range: u8, damage: u32) -> SpellResult {
         let entity_name = Self::get_entity_name(ecs, caster_id);
 
         let target = if let Some(caster_position) = ecs.get_component::<Position>(caster_id) {
-            match self.find_target(ecs, fov_map, &caster_position) {
+            match self.find_target(ecs, Some(fov_map), &caster_position) {
                 Some((entity_id, distance)) => {
                     if distance <= range {
                         Some(entity_id)
@@ -157,11 +184,17 @@ impl Spell {
         }
     }
 
-    fn find_target(&self, ecs: &Ecs, fov_map: &Map, caster: &Position) -> Option<(EntityId, u8)> {
+    fn find_target(&self, ecs: &Ecs, fov_map: Option<&Map>, caster: &Position) -> Option<(EntityId, u8)> {
         let mut distances: Vec<(EntityId, u8)> = ecs.get_all::<Position>().iter().filter(|(id, p)| {
-            **id != caster.entity_id
-                && fov_map.is_in_fov(p.position.0, p.position.1)
-                && ecs.has_component::<Actor>(**id)
+            if let Some(fov) = fov_map {
+                **id != caster.entity_id
+                    && fov.is_in_fov(p.position.0, p.position.1)
+                    && ecs.has_component::<Actor>(**id)
+            } else {
+                **id != caster.entity_id
+                    && ecs.has_component::<Actor>(**id)
+            }
+
         }).map(|(id, p)| {
             (*id, caster.distance_to(p.position) as u8)
         }).collect();

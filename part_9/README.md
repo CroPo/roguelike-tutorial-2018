@@ -13,6 +13,7 @@ Contents of this Writeup:
 2. [Extending the Items and the Inventory](#extending-the-items-and-the-inventory)
 3. [The Lightning Spell](#the-lightning-spell)
 4. [The Fireball Spell](#the-fireball-spell)
+5. [The Confusion Spell](#the-confusion-spell)
 
 ## Colored Messages
 
@@ -145,3 +146,18 @@ a `Spell` and an `EntityAction` can now trigger multiple reactions.
 
 Casting the `Spell` works now. But the item stays in the player's pocket. So that's the next I will need to take care of.
 To achieve that, I add a new value to the `Fireball` which is the `EntityId` of the used scroll.
+
+## The Confusion Spell
+
+This one is always funny. My implementation will be that the `Confusion` spell will change the `MonsterAi`s target to
+the nearest other ai-controlled `Actor`. First of all, I need to change how the `MonsterAi` selects the target. Right
+now, the player's `EntityId` is hardcoded. So I need to add some value here. Since I can't be sure that do have already
+created a player instance, I add a `Option<EntityId>`. Since I already  need an `EntityAction` to switch the target for the `Spell`,
+I will just use that here, too. Before every `EnemyTurn` I will update every `MonsterAi` which has no target.
+
+I might find a cleaner solution for that at some point, but for now it will be sufficient (I know, I say this
+often). Since the _AI_ here is rather dumb, I don't need to switch targets that often, so I'm fine with this solution. In
+a bigger game, the AI might do much more than A* and hit (hopefully).
+
+Creating the `Spell` and placing scrolls on the map is all I need to do now. Since I already have all parts I need, 
+this won't be to much of a task at this point.

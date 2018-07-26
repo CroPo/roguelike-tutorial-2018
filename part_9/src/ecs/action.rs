@@ -49,6 +49,7 @@ pub enum EntityAction {
     UseItem(EntityId, u8),
     AddItemToInventory(EntityId, EntityId),
     RemoveItemFromInventory(EntityId, EntityId),
+    SetAiTarget(EntityId, EntityId),
     Idle,
 }
 
@@ -66,6 +67,7 @@ impl EntityAction {
             EntityAction::AddItemToInventory(entity_id, item_id) => self.add_item_to_inventory_action(ecs, entity_id, item_id),
             EntityAction::RemoveItemFromInventory(entity_id, item_id) => self.remove_item_from_inventory_action(ecs, entity_id, item_id),
             EntityAction::UseItem(entity_id, item_number) => self.use_item_action(ecs, fov_map, entity_id, item_number),
+            EntityAction::SetAiTarget(entity_id, target_id) => self.set_ai_target_action(ecs, entity_id, target_id),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
 
@@ -78,7 +80,7 @@ impl EntityAction {
 
         let mut resulting_state = None;
         for reaction in result.reactions {
-            resulting_state = if let Some(state) = reaction.execute(ecs, fov_map, log.clone()) {
+            resulting_state = if let Some(state) = reaction.execute(ecs, fov_map, Rc::clone(&log)) {
                 Some(state)
             } else {
                 resulting_state
@@ -339,6 +341,19 @@ impl EntityAction {
         ActionResult {
             reactions: vec![],
             message: Some(vec![message]),
+            state: None,
+        }
+    }
+
+    fn set_ai_target_action(&self, ecs: &mut Ecs, entity_id: EntityId, target_id: EntityId) -> ActionResult {
+
+        if let Some(ai) = ecs.get_component_mut::<MonsterAi>(entity_id) {
+            ai.set_target(target_id);
+        }
+
+        ActionResult {
+            reactions: vec![],
+            message: None,
             state: None,
         }
     }

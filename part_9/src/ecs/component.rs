@@ -205,36 +205,50 @@ impl Actor {
 impl Component for Actor {}
 
 pub struct MonsterAi {
-    entity_id: EntityId
+    entity_id: EntityId,
+    target_id: Option<EntityId>
 }
 
 impl MonsterAi {
     pub fn new(entity_id: EntityId) -> MonsterAi {
-        MonsterAi { entity_id }
+        MonsterAi { entity_id, target_id:None }
+    }
+
+    pub fn set_target(&mut self, target_id: EntityId) {
+        self.target_id = Some(target_id)
+    }
+
+    pub fn has_no_target(&self) -> bool {
+        return self.target_id.is_none()
     }
 
     pub fn calculate_turn(&self, ecs: &Ecs, map: &GameMap) -> EntityAction {
-        match ecs.get_component::<Position>(self.entity_id) {
-            Some(monster_position) => {
-                self.calculate_movement(ecs, monster_position, map)
+        if self.target_id.is_none() {
+            EntityAction::Idle
+        } else {
+            match ecs.get_component::<Position>(self.entity_id) {
+                Some(monster_position) => {
+                    self.calculate_movement(ecs, monster_position, map)
+                }
+                _ => EntityAction::Idle
             }
-            _ => EntityAction::Idle
         }
     }
 
     fn calculate_movement(&self, ecs: &Ecs, monster_position: &Position, map: &GameMap) -> EntityAction {
-        match ecs.get_component::<Position>(ecs.player_entity_id) {
+        // Unwrap is safe here, because the `None` check has already been performed in `calculate_turn`.
+        match ecs.get_component::<Position>(self.target_id.unwrap()) {
             Some(player_position) => {
                 let target = (player_position.position.0, player_position.position.1);
                 let distance = monster_position.distance_to(target);
 
                 if distance >= 2.0 {
-                    match monster_position.calculate_move_astar(ecs, map, ecs.player_entity_id) {
+                    match monster_position.calculate_move_astar(ecs, map, self.target_id.unwrap()) {
                         Some(pos) => return EntityAction::MoveTo(self.entity_id, pos),
                         _ => ()
                     }
                 } else {
-                    return EntityAction::MeleeAttack(self.entity_id, ecs.player_entity_id)
+                    return EntityAction::MeleeAttack(self.entity_id, self.target_id.unwrap())
                 }
 
                 EntityAction::Idle

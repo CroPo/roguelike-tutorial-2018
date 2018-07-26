@@ -134,8 +134,10 @@ impl GameMap {
                     ItemTemplate::HealthPotion
                 } else if rnd < 80 {
                     ItemTemplate::LightningScroll(5, 20)
-                } else {
+                } else if rnd < 90 {
                     ItemTemplate::FireballScroll(3, 12)
+                } else {
+                    ItemTemplate::ConfusionScroll
                 };
                 item.create_on_position(ecs, (x, y));
             }
