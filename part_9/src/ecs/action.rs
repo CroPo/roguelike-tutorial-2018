@@ -20,7 +20,7 @@ use tcod::Map;
 /// This struct defines the Result of one single action. A message can be created, and also
 /// a reaction can happen.
 struct ActionResult {
-    reaction: Option<EntityAction>,
+    reactions: Vec<EntityAction>,
     message: Option<Vec<Message>>,
     state: Option<GameState>,
 }
@@ -29,7 +29,7 @@ impl ActionResult {
     /// Return a `ActionResult` with all values being `None`
     pub fn none() -> ActionResult {
         ActionResult {
-            reaction: None,
+            reactions: vec![],
             message: None,
             state: None,
         }
@@ -48,6 +48,7 @@ pub enum EntityAction {
     DropItem(EntityId, u8),
     UseItem(EntityId, u8),
     AddItemToInventory(EntityId, EntityId),
+    RemoveItemFromInventory(EntityId, EntityId),
     Idle,
 }
 
@@ -63,6 +64,7 @@ impl EntityAction {
             EntityAction::PickUpItem(entity_id, item_id) => self.pick_up_item_action(ecs, entity_id, item_id),
             EntityAction::DropItem(entity_id, item_number) => self.drop_item_action(ecs, entity_id, item_number),
             EntityAction::AddItemToInventory(entity_id, item_id) => self.add_item_to_inventory_action(ecs, entity_id, item_id),
+            EntityAction::RemoveItemFromInventory(entity_id, item_id) => self.remove_item_from_inventory_action(ecs, entity_id, item_id),
             EntityAction::UseItem(entity_id, item_number) => self.use_item_action(ecs, fov_map, entity_id, item_number),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
@@ -73,11 +75,15 @@ impl EntityAction {
             }
         }
 
-        let resulting_state = if let Some(reaction) = result.reaction {
-            reaction.execute(ecs, fov_map, log)
-        } else {
-            None
-        };
+
+        let mut resulting_state = None;
+        for reaction in result.reactions {
+            resulting_state = if let Some(state) = reaction.execute(ecs, fov_map, log.clone()) {
+                Some(state)
+            } else {
+                resulting_state
+            }
+        }
 
         match result.state {
             None => {
@@ -98,7 +104,7 @@ impl EntityAction {
                     Some(damage) => {
                         ActionResult {
                             message: Some(vec![Message::new(format!("The {} attacks the {} .", attacker_name, target_name), colors::WHITE)]),
-                            reaction: Some(EntityAction::TakeDamage(target_id, damage)),
+                            reactions: vec![EntityAction::TakeDamage(target_id, damage)],
                             state: None,
                         }
                     },
@@ -136,13 +142,13 @@ impl EntityAction {
 
             return if e.hp <= 0 {
                 ActionResult {
-                    reaction: Some(EntityAction::Die(entity_id)),
+                    reactions: vec![EntityAction::Die(entity_id)],
                     message: Some(vec![message]),
                     state: None,
                 }
             } else {
                 ActionResult {
-                    reaction: None,
+                    reactions: vec![],
                     message: Some(vec![message]),
                     state: None,
                 }
@@ -184,6 +190,9 @@ impl EntityAction {
                 SpellResult { status: SpellStatus::Success, .. } => {
                     self.use_item_success(ecs, entity_id, item_id, item_number)
                 },
+                SpellResult { status: SpellStatus::Targeting(spell, caster_id), .. } => {
+                    Some(GameState::Targeting(spell, caster_id))
+                },
                 SpellResult { status: SpellStatus::Fail, .. } => {
                     Some(GameState::ShowInventoryUse)
                 },
@@ -197,13 +206,13 @@ impl EntityAction {
 
             return ActionResult {
                 message: Some(messages),
-                reaction: cast_result.reaction,
+                reactions: cast_result.reactions,
                 state,
             }
         } else {
             ActionResult {
                 message: None,
-                reaction: None,
+                reactions: vec![],
                 state: Some(GameState::ShowInventoryUse),
             }
         }
@@ -211,12 +220,14 @@ impl EntityAction {
 
     fn use_item_success(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId, item_number: u8) -> Option<GameState> {
         ecs.destroy_entity(&item_id);
-
-        if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
-            inventory.remove_item(item_number as usize);
-        }
-
         None
+    }
+
+    fn remove_item_from_inventory_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId) -> ActionResult{
+        if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
+            inventory.remove_item_id(item_id);
+        }
+        ActionResult::none()
     }
 
     fn drop_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_number: u8) -> ActionResult {
@@ -252,14 +263,14 @@ impl EntityAction {
             }
 
             ActionResult {
-                reaction: None,
+                reactions: vec![],
                 message: Some(vec![message]),
                 state: None,
             }
         } else {
             ActionResult {
+                reactions: vec![],
                 message: None,
-                reaction: None,
                 state: Some(GameState::ShowInventoryDrop),
             }
         }
@@ -275,7 +286,7 @@ impl EntityAction {
                                            colors::BLUE);
 
                 ActionResult {
-                    reaction: Some(EntityAction::AddItemToInventory(entity_id, item_id)),
+                    reactions: vec![EntityAction::AddItemToInventory(entity_id, item_id)],
                     message: Some(vec![message]),
                     state: None,
                 }
@@ -284,7 +295,7 @@ impl EntityAction {
                                                    item_name), colors::YELLOW);
 
                 ActionResult {
-                    reaction: None,
+                    reactions: vec![],
                     message: Some(vec![message]),
                     state: None,
                 }
@@ -326,7 +337,7 @@ impl EntityAction {
         }
 
         ActionResult {
-            reaction: None,
+            reactions: vec![],
             message: Some(vec![message]),
             state: None,
         }

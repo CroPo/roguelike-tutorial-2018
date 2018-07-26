@@ -68,7 +68,7 @@ fn main() {
     let mut mouse_pos = (0, 0);
 
     let max_monsters_per_room = 3;
-    let max_items_per_room = 2;
+    let max_items_per_room = 20;
 
     let log = Rc::new(MessageLog::new());
     let mut ecs = Ecs::initialize();

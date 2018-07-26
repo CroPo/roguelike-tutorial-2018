@@ -12,6 +12,7 @@ Contents of this Writeup:
 1. [Colored Messages](#colored-messages)
 2. [Extending the Items and the Inventory](#extending-the-items-and-the-inventory)
 3. [The Lightning Spell](#the-lightning-spell)
+4. [The Fireball Spell](#the-fireball-spell)
 
 ## Colored Messages
 
@@ -116,3 +117,31 @@ First I filter for all valid targets (not the caster, in fov and `Actors`), then
 return the nearest one.
 
 What's now left to do is randomly placing some scrolls on the map.
+
+## The Fireball Spell
+
+For the next Spell, I will need to make targeting by the mouse cursor happen. I will need a new `GameState` which will 
+let me select a target, and I will need to trigger that state from within a `Spell`. After target selection, I will
+need to continue the `Spell` calculation.
+
+Let's begin with the `Spell` and add an Item so I can trigger the target selection.
+
+A `Fireball` has a damage and radius value, as all the `Actors` around the impact will be affected by some colletaral 
+damage (I will include the player to that, so one needs to carefully select a target).  No range, because every target 
+in the fov should be targetable. 
+
+This was the easy part (and nothing does really happen by now). The not-that-easy part comes now: Triggering a new `GameState`
+to get a target. I will just focus on the actual targeing first, and then I will see how I continue to cast the spell
+and actually let the fireball explode on the desired location. To trigger this from the Spell itself, I add a new `SpellStatus`: `Targeting`. 
+From the `EntityAction`, this will trigger the `GameState`.
+
+Triggering the `Targeting` game state works fine. Now I need to pass the selected entity back to the `Spell`. I need to
+extend `SpellStatus::Targeting` first with a new value, the instance of the `Spell` itself, so I know to which `Spell` I 
+need to pass `Entity`.  Also, I will add a `cast_on_target` method which I can call then on the `Spell`.   
+Of course, the `Targeting` state needs to know of the `Spell` too, otherwise it can't work.
+
+Since the `Fireball` spell can hit more than one targets, and therefor produce more than one `TakeDamage` actions, both
+a `Spell` and an `EntityAction` can now trigger multiple reactions.
+
+Casting the `Spell` works now. But the item stays in the player's pocket. So that's the next I will need to take care of.
+To achieve that, I add a new value to the `Fireball` which is the `EntityId` of the used scroll.

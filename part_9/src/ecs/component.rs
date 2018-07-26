@@ -291,10 +291,22 @@ impl Inventory {
         }
     }
     pub fn remove_item(&mut self, item_number: usize) {
-
         if self.items.len() > item_number {
             self.items.remove(item_number);
         }
+    }
+    pub fn remove_item_id(&mut self, item_id: EntityId) {
+
+        let mut index_to_remove = 0;
+
+        for item in self.items.iter() {
+            if *item == item_id {
+                break;
+            }
+            index_to_remove+=1;
+        }
+
+        self.remove_item(index_to_remove)
     }
 }
 

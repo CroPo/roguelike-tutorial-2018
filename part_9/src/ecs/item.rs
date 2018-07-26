@@ -14,6 +14,7 @@ use ecs::spell::Spell;
 pub enum ItemTemplate {
     HealthPotion,
     LightningScroll(u8, u32),
+    FireballScroll(u8, u32),
 }
 
 impl ItemTemplate {
@@ -22,6 +23,7 @@ impl ItemTemplate {
         match *self {
             ItemTemplate::HealthPotion => ItemTemplate::create_health_potion_from_template(ecs),
             ItemTemplate::LightningScroll(range, damage) => ItemTemplate::create_lightning_scroll_from_template(ecs, range, damage),
+            ItemTemplate::FireballScroll(radius, damage) => ItemTemplate::create_fireball_scroll_from_template(ecs, radius, damage),
         }
     }
 
@@ -41,7 +43,7 @@ impl ItemTemplate {
 
     fn create_health_potion_from_template(ecs: &mut Ecs) -> Option<EntityId> {
         let id = ecs.create_entity();
-        ecs.register_component(id, Item::new(Spell::Heal));
+        ecs.register_component(id, Item::new(Spell::Heal(id)));
         ecs.register_component(id, Position::new(id, false));
         ecs.register_component(id, Render::new(id, '!', colors::VIOLET, RenderOrder::Item));
         ecs.register_component(id, Name { name: "Healing Potion".to_string(), description: "Restores health when used".to_string() });
@@ -50,10 +52,18 @@ impl ItemTemplate {
 
     fn create_lightning_scroll_from_template(ecs: &mut Ecs, range: u8, damage: u32) -> Option<EntityId> {
         let id = ecs.create_entity();
-        ecs.register_component(id, Item::new(Spell::Lightning(range, damage)));
+        ecs.register_component(id, Item::new(Spell::Lightning(id,range, damage)));
         ecs.register_component(id, Position::new(id, false));
         ecs.register_component(id, Render::new(id, '#', colors::YELLOW, RenderOrder::Item));
         ecs.register_component(id, Name { name: "Lightning Scroll".to_string(), description: "Casts a Lightning which strikes the nearest enemy".to_string() });
+        Some(id)
+    }
+    fn create_fireball_scroll_from_template(ecs: &mut Ecs, radius: u8, damage: u32) -> Option<EntityId> {
+        let id = ecs.create_entity();
+        ecs.register_component(id, Item::new(Spell::Fireball(id,radius, damage)));
+        ecs.register_component(id, Position::new(id, false));
+        ecs.register_component(id, Render::new(id, '#', colors::RED, RenderOrder::Item));
+        ecs.register_component(id, Name { name: "Fireball Scroll".to_string(), description: "Casts a Fireball at a target which deals damage to everyone around, too".to_string() });
         Some(id)
     }
 }

@@ -17,6 +17,8 @@ use message::MessageLog;
 use tcod::Map;
 use map_objects::map::GameMap;
 use message::Message;
+use ecs::spell::Spell;
+use ecs::id::EntityId;
 
 pub struct GameStateResult {
     pub next_state: GameState,
@@ -27,6 +29,7 @@ pub struct GameStateResult {
 enum InputAction {
     MovePlayer(i32, i32),
     MousePos(isize, isize),
+    SelectEntity(isize, isize),
     SelectOption(char),
     PickUp,
     ShowInventory,
@@ -42,13 +45,14 @@ fn handle_input(state: &GameState, event: Option<(EventFlags, Event)>) -> Option
             (tcod::input::KEY_PRESS, Event::Key(key)) => {
                 match state {
                     GameState::PlayersTurn => handle_keys_player_turn(key),
-                    GameState::PlayerDead => handle_keys_dead(key),
                     GameState::ShowInventoryUse | GameState::ShowInventoryDrop => handle_keys_selection_menu(key),
-                    GameState::EnemyTurn => None,
-                    _ => None
+                    _ => handle_keys_default(key),
                 }
             }
-            (_, Event::Mouse(mouse)) => handle_mouse(mouse),
+            (_, Event::Mouse(mouse)) => match state {
+                    GameState::Targeting( .. ) => handle_mouse_targeting(mouse),
+                    _ => handle_mouse_default(mouse)
+                },
             _ => None
         }
     } else {
@@ -56,8 +60,14 @@ fn handle_input(state: &GameState, event: Option<(EventFlags, Event)>) -> Option
     }
 }
 
+fn handle_mouse_targeting(mouse: Mouse) -> Option<InputAction> {
+    match mouse {
+        Mouse { lbutton_pressed: true, .. } => Some(InputAction::SelectEntity(mouse.cx, mouse.cy)),
+        Mouse { .. } => Some(InputAction::MousePos(mouse.cx, mouse.cy)),
+    }
+}
 
-fn handle_mouse(mouse: Mouse) -> Option<InputAction> {
+fn handle_mouse_default(mouse: Mouse) -> Option<InputAction> {
     match mouse {
         Mouse { .. } => Some(InputAction::MousePos(mouse.cx, mouse.cy)),
     }
@@ -90,7 +100,7 @@ fn handle_keys_selection_menu(key: Key) -> Option<InputAction> {
     }
 }
 
-fn handle_keys_dead(key: Key) -> Option<InputAction> {
+fn handle_keys_default(key: Key) -> Option<InputAction> {
     match key {
         Key { code: KeyCode::Escape, .. } => Some(InputAction::Exit),
         _ => None
@@ -104,6 +114,7 @@ pub enum GameState {
     PlayerDead,
     ShowInventoryUse,
     ShowInventoryDrop,
+    Targeting(Spell, EntityId),
 }
 
 impl GameState {
@@ -114,7 +125,61 @@ impl GameState {
             GameState::PlayersTurn => self.player_turn(ecs, fov_map, input_action, log, map),
             GameState::EnemyTurn => self.enemy_turn(ecs, fov_map, input_action, log, map),
             GameState::PlayerDead => self.player_dead(input_action),
-            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(ecs, fov_map, input_action, log)
+            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(ecs, fov_map, input_action, log),
+            GameState::Targeting(spell, caster_id) => self.targeting(ecs, fov_map, input_action, log, spell, caster_id),
+        }
+    }
+
+    fn targeting(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>, spell: Spell, caster_id: EntityId) -> GameStateResult {
+        match action {
+            Some(InputAction::Exit) => {
+                log.add(Message::new("Target selection was canceled".to_string(), colors::WHITE));
+                GameStateResult {
+                    next_state: GameState::PlayersTurn,
+                    engine_action: None,
+                }
+            }
+            Some(InputAction::MousePos(x, y)) => {
+                GameStateResult {
+                    next_state: *self,
+                    engine_action: Some(EngineAction::MousePos(x as i32, y as i32)),
+                }
+            }
+            Some(InputAction::SelectEntity(x, y)) => {
+                let targets: Vec<EntityId> = ecs.get_all::<Position>().iter().filter(|(id, p)| {
+                   ecs.has_component::<Actor>(**id) && p.position.0 == x as i32 && p.position.1 == y as i32
+                }).map(|(id, _)|{*id}).collect();
+
+                if let Some(target) = targets.first() {
+                    let spell_result = spell.cast_on_target(ecs, *target, caster_id);
+
+                    if let Some(message) = spell_result.message {
+                        log.add(message)
+                    }
+
+                    for action in spell_result.reactions {
+                        action.execute(ecs, fov_map, log.clone());
+                    }
+
+                    GameStateResult {
+                        next_state: GameState::EnemyTurn,
+                        engine_action: None,
+                    }
+                } else {
+                    log.add(Message::new("No valid target at the selected position".to_string(), colors::YELLOW));
+
+                    GameStateResult {
+                        next_state: *self,
+                        engine_action: None,
+                    }
+                }
+            }
+            _ => {
+                GameStateResult {
+                    engine_action: None,
+                    next_state: *self,
+                }
+            }
         }
     }
 
@@ -232,7 +297,7 @@ impl GameState {
                     GameState::PlayersTurn
                 } else {
                     actions.iter().for_each(|a| {
-                        a.execute(ecs, fov_map,Rc::clone(&log));
+                        a.execute(ecs, fov_map, Rc::clone(&log));
                     });
                     GameState::EnemyTurn
                 };
