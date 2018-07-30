@@ -17,6 +17,7 @@ use textwrap::wrap;
 use ecs::component::Name;
 use ecs::component::Inventory;
 use game_states::GameState;
+use settings::Settings;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum RenderOrder {
@@ -26,11 +27,12 @@ pub enum RenderOrder {
 }
 
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
-pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, game_state: &GameState,
-                  console: &mut Offscreen, panel: &mut Offscreen, root_console: &mut Root,
-                  bar_width: i32, panel_y: i32, log_panel: &MessagePanel, mouse_pos: (i32, i32)) {
-    map.draw(console, fov_map);
+pub fn render_all(ecs: &Ecs,root_console: &mut Root, settings: &Settings, map: &mut GameMap, fov_map: &Map, game_state: &GameState,
+                  log_panel: &MessagePanel, mouse_pos: (i32, i32)) {
+    let mut console = Offscreen::new(settings.screen_width(), settings.screen_height());
+    let mut panel = Offscreen::new(settings.screen_width(), settings.panel_height());
 
+    map.draw(&mut console, fov_map);
 
     let component_ids = ecs.get_all_ids::<Render>();
     let mut ids_filtered: Vec<&EntityId> = component_ids.iter().filter(|id| {
@@ -48,11 +50,11 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, game_state: &Game
     });
     ids_filtered.iter().for_each(|id| {
         let c = ecs.get_component::<Render>(**id).unwrap();
-        c.draw(ecs, console)
+        c.draw(ecs, &mut console)
     });
 
 
-    blit(console, (0, 0),
+    blit(&console, (0, 0),
          (console.width(), console.height()),
          root_console, (0, 0),
          1.0, 1.0);
@@ -66,13 +68,15 @@ pub fn render_all(ecs: &Ecs, map: &mut GameMap, fov_map: &Map, game_state: &Game
 
     if let Some(p) = ecs.get_component::<Actor>(ecs.player_entity_id) {
         panel.set_default_background(colors::BLACK);
-        render_bar(panel, (1, 1), bar_width, "HP", p.hp, p.max_hp, colors::RED, colors::DARK_RED);
+        render_bar(&mut panel, (1, 1), settings.bar_width(),
+                   "HP", p.hp, p.max_hp,
+                   colors::RED, colors::DARK_RED);
     }
-    log_panel.render(panel);
+    log_panel.render(&mut panel);
 
-    blit(panel, (0, 0),
+    blit(&panel, (0, 0),
          (panel.width(), panel.height()),
-         root_console, (0, panel_y),
+         root_console, settings.panel_pos(),
          1.0, 1.0);
 
 

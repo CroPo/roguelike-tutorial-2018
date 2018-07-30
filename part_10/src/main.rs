@@ -7,6 +7,7 @@ mod render;
 mod map_objects;
 mod game_states;
 mod message;
+mod settings;
 
 use tcod::console::{Root, Offscreen};
 use tcod::FontLayout;
@@ -34,6 +35,7 @@ use ecs::id::EntityId;
 use ecs::component::Item;
 use render::render_all;
 use render::clear_all;
+use settings::Settings;
 
 pub enum EngineAction {
     ToggleFullscreen,
@@ -42,68 +44,39 @@ pub enum EngineAction {
 }
 
 fn main() {
-    let screen_width = 80;
-    let screen_height = 50;
-
-    let bar_width = 20;
-    let panel_height = 7;
-
-    let message_x = bar_width + 2;
-
-    let panel_y = screen_height - panel_height;
-    let message_width = screen_width - bar_width - 2;
-    let message_height = panel_height - 1;
-
-    let map_width = 80;
-    let map_height = 43;
-
-    let room_max_size = 10;
-    let room_min_size = 6;
-    let max_rooms = 30;
-
-    let fov_algorithm = FovAlgorithm::Basic;
-    let fov_light_walls = true;
-    let fov_radius = 10;
 
     let mut mouse_pos = (0, 0);
-
-    let max_monsters_per_room = 3;
-    let max_items_per_room = 2;
+    let settings = Settings::new();
 
     let log = Rc::new(MessageLog::new());
     let mut ecs = Ecs::initialize();
 
     let mut root = Root::initializer()
-        .size(screen_width, screen_height)
-        .title("/r/roguelikedev Tutorial Part 10: Saving and Loading")
-        .font("arial10x10.png", FontLayout::Tcod)
-        .font_type(FontType::Greyscale)
+        .size(settings.screen_width(), settings.screen_height())
+        .title(settings.title())
+        .font(settings.font_path(), settings.font_layout())
+        .font_type(settings.font_type())
         .init();
 
-    let mut con = Offscreen::new(screen_width, screen_height);
-    let mut panel = Offscreen::new(screen_width, panel_height);
+    let mut map = GameMap::new(settings.map_width(), settings.map_height());
 
-    let mut map = GameMap::new(map_width, map_height);
-    map.make_map(max_rooms, room_min_size, room_max_size, &mut ecs, max_monsters_per_room, max_items_per_room);
+    map.make_map(&mut ecs, &settings);
 
     let mut fov_map = fov::initialize_fov(&map);
 
     let mut game_state = GameState::PlayersTurn;
 
-    let log_panel = MessagePanel::new((message_x, 0), (message_width, message_height), Rc::clone(&log));
+    let log_panel = MessagePanel::new(settings.message_pos(),
+                                      settings.message_dimensions(),
+                                      Rc::clone(&log));
 
     'game_loop: while !root.window_closed() {
-
         {
             let player_pos = ecs.get_component::<Position>(ecs.player_entity_id).unwrap();
-            fov::recompute_fov(&mut fov_map, (player_pos.position.0, player_pos.position.1), fov_radius, fov_light_walls, fov_algorithm);
+            fov::recompute_fov(&mut fov_map, (player_pos.position.0, player_pos.position.1), &settings);
         }
 
-        render_all(&ecs, &mut map, &fov_map, &game_state,
-                   &mut con, &mut panel, &mut root,
-                   bar_width, panel_y, &log_panel, mouse_pos);
-        clear_all(&ecs, &mut con);
-
+        render_all(&ecs, &mut root, &settings, &mut map, &fov_map, &game_state, &log_panel, mouse_pos);
 
         let result = game_state.run(&mut ecs, &fov_map, Rc::clone(&log), &map);
 

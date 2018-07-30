@@ -15,6 +15,7 @@ use ecs::Ecs;
 use ecs::creature::CreatureTemplate;
 use ecs::component::Position;
 use ecs::item::ItemTemplate;
+use settings::Settings;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -49,16 +50,13 @@ impl GameMap {
     }
 
     pub fn make_map(&mut self,
-                    max_rooms: i32,
-                    room_min_size: i32, room_max_size: i32,
-                    ecs: &mut Ecs,
-                    max_monsters_per_room: i32, max_items_per_room: i32) {
+                    ecs: &mut Ecs, settings: &Settings) {
         let mut rooms: Vec<Rect> = Vec::new();
         let mut rng = thread_rng();
 
-        'roomloop: while max_rooms > rooms.len() as i32 {
-            let w = rng.gen_range(room_min_size, room_max_size);
-            let h = rng.gen_range(room_min_size, room_max_size);
+        'roomloop: while settings.max_rooms() > rooms.len() as i32 {
+            let w = rng.gen_range(settings.room_min_size(), settings.room_max_size());
+            let h = rng.gen_range(settings.room_min_size(), settings.room_max_size());
 
             let x = rng.gen_range(0, self.dimensions.0 - w - 1);
             let y = rng.gen_range(0, self.dimensions.1 - h - 1);
@@ -87,7 +85,9 @@ impl GameMap {
                     self.create_h_tunnel(prev_center.0, center.0, center.1);
                 }
             }
-            self.place_entities(&new_room, ecs, max_monsters_per_room, max_items_per_room);
+            self.place_entities(&new_room, ecs,
+                                settings.max_monsters_per_room(),
+                                settings.max_items_per_room());
             rooms.push(new_room);
         }
     }
