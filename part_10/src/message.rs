@@ -3,6 +3,7 @@ use tcod::colors;
 use std::cell::RefCell;
 use std::cell::Ref;
 
+#[derive(Serialize, Deserialize)]
 pub struct Message {
     pub text: String,
     pub color: Color,
@@ -17,6 +18,7 @@ impl Message {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct MessageLog {
     messages: RefCell<Vec<Message>>
 }

@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Tile {
     pub block_move: bool,
     pub block_sight: bool,

@@ -9,6 +9,7 @@ wanted me to do - namely move all the game logic to another class - I don't expe
 
 Contents of this Writeup:
 1. [Settings](#settings)
+2. [Saving the Game](#saving-the-game)
 
 ## Settings
 
@@ -27,3 +28,133 @@ will remove the lose binding I now have, it will help me a bit because I won't h
 can display in a line any more.
 
 With these changes, the whole code looks quite a bit cleaner. Well, at least somewhat cleaner.
+
+## Saving the Game
+
+Let's face the problem here directly: Serialization and deserialization is way too much work for the scope of this tutorial
+to not use a existing library. Even though I am curious about how this can be done in Rust, I will try to use [serde](https://serde.rs/) here,
+one of the most popular serializers. Together with `serde-json` and `serde-derive`, this should do most of the work for me.
+
+### Serializing the Components
+
+I will start with the innermost layer of data: The `Component` structs. I simply add `#[derive(Serialize, Deserialize, Clone)]` 
+to each, which should work fine for most of the Data.
+
+The first error I encounter is the following one: 
+```
+error[E0277]: the trait bound `tcod::Color: serde::Serialize` is not satisfied
+```
+
+This could be a problem, but going through the `tcod-rs` source code, I found this:
+
+```rust
+#[cfg_attr(feature = "serialization", derive(Serialize, Deserialize))]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+```
+
+This means that all I need to do is activating a feature here, so the `Color` can be serialized, too. 
+
+This can be done by changing the dependencies in the `Cargo.toml`:
+
+```toml
+[dependencies.tcod]
+version = "0.12"
+features = ["serialization"]
+```
+
+All other errrors are similar: I need to implement the `Serialize` trait for every `enum` and `struct` which will be 
+serialized when I serialize the `Component`s.
+
+With this part of the serialization (and, of course, deserialization) running, I can go right to the next layer.
+
+### Serializing the EcsStorage
+
+This may be a bit harder, as `TypeId`, and `Any`, isn't supported by `serde_derive` out of the box as it seems:
+```text
+error[E0277]: the trait bound `std::any::TypeId: serde::Serialize` is not satisfied
+```
+I probably need to implement my own serializer for this. So let's just try that. 
+
+Since I try to keep it as simple as possible, I will only serialize this to an array of the components. All other
+data can be calculated again on the deserialization (namely, the `TypeId`).
+
+A default serialization implementation isn't possible, either, since the `Components` are stored as `Box<Any>`, and `Any`
+doesn't implement `Serialize` and `Deserialize` either. 
+
+So I can't go on like this, either. The next attempt isnt really a nice one, though. This is my serializer:
+
+```rust
+impl Serialize for EcsStorage {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
+        S: Serializer {
+        let mut storage = serializer.serialize_struct("Entity", self.data.len())?;
+
+        if let Some(c) = self.get::<Position>() {
+            storage.serialize_field("position", &c)?;
+        }
+        if let Some(c) = self.get::<Render>() {
+            storage.serialize_field("render", &c)?;
+        }
+        if let Some(c) = self.get::<Name>() {
+            storage.serialize_field("name", &c)?;
+        }
+        if let Some(c) = self.get::<Actor>() {
+            storage.serialize_field("actor", &c)?;
+        }
+        if let Some(c) = self.get::<MonsterAi>() {
+            storage.serialize_field("ai", &c)?;
+        }
+        if let Some(c) = self.get::<Corpse>() {
+            storage.serialize_field("Name", &c)?;
+        }
+        if let Some(c) = self.get::<Item>() {
+            storage.serialize_field("Name", &c)?;
+        }
+        if let Some(c) = self.get::<Inventory>() {
+            storage.serialize_field("Name", &c)?;
+        }
+        storage.end()
+    }
+}
+```
+Ugly, but it compiles. Let's just all hope this actually works. Also, I need to create a matching deserializer...
+later!
+
+Also, the test output seems to be ok, too, so I'll just go with this here. 
+
+### Serializing everything else
+
+Only a few more things need to be serialized now, and none of them implements stuff I can't use out of the box anymore.
+Well, mostly. For the `Ecs`, I need to find a way to serialize the value of `IdGenerator` so I save the last used Id.
+I could also implement a custom deserializer, which calculates the last used id from the entities and updates the
+`IdGenerator` once loaded - which is the way I will go here.
+
+The next thing to seriaize is the `GameMap`, which is not much more than a vector of `Tile`s, so both of these can be derived.
+So is the last `struct` to serialize: The `MessageLog`.
+
+### Bringing it all together
+
+One thing left to do for serialization: I need to bring all of the serialized values together into one `struct`, so I can
+serialize them to one `String`.
+
+For this, practically everything that is in the `main.rs` now needs to be moved somewhere else, into a new `struct` which
+I will just call `Game`.
+
+This is a rather lengthy task, and since it's only some code restructuring which doesn't directly affect the saving and loading
+I won't go much further into detail here. You can always look at the source code if you want further implementation details.
+
+### Saving
+
+At last, we need to write the generated json into a file which can be loaded again. For now, I will simply do that when
+I end the game with ESC. This, of course, has one major flaw: the game will be saved when the player is dead. Normally,
+in the case of a player's death, the game would delete the save game (because of permadeath).
+
+To address this issue, I will add a `bool` value to the `EngineAction::Exit`. If `true`, the game will be saved, if `false`,
+a saved game will be deleted. In the context of this tutorial, no other possiblity exists - either save or delete, no
+_Exit without saving_ or _die without deletion_.
+
+This workes well so far. Now to actually load the saved game again.

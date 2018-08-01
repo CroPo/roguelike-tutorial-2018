@@ -18,7 +18,7 @@ pub trait Component: Any {}
 
 /// A Component which contains informations of an `Entity`s position on the Map, and methods to
 /// interact with it
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Position {
     pub entity_id: EntityId,
     pub position: (i32, i32),
@@ -116,6 +116,7 @@ impl Component for Position {}
 
 
 /// This component handles the rendering of an Entity onto the map
+#[derive(Serialize, Deserialize)]
 pub struct Render {
     pub entity_id: EntityId,
     glyph: char,
@@ -150,6 +151,7 @@ impl Render {
 impl Component for Render {}
 
 /// The name and other textual data refering to an entity
+#[derive(Serialize, Deserialize)]
 pub struct Name {
     pub name: String,
     pub description: String,
@@ -159,6 +161,7 @@ impl Component for Name {}
 
 
 /// Basic stats for any creature
+#[derive(Serialize, Deserialize)]
 pub struct Actor {
     entity_id: EntityId,
     pub max_hp: u32,
@@ -204,6 +207,7 @@ impl Actor {
 
 impl Component for Actor {}
 
+#[derive(Serialize, Deserialize)]
 pub struct MonsterAi {
     entity_id: EntityId,
     target_id: Option<EntityId>
@@ -260,10 +264,12 @@ impl MonsterAi {
 
 impl Component for MonsterAi {}
 
+#[derive(Serialize, Deserialize)]
 pub struct Corpse {}
 
 impl Component for Corpse {}
 
+#[derive(Serialize, Deserialize)]
 pub struct Item {
     spell: Spell
 }
@@ -282,6 +288,7 @@ impl Item {
 
 impl Component for Item {}
 
+#[derive(Serialize, Deserialize)]
 pub struct Inventory {
     max_items: usize,
     pub items: Vec<EntityId>

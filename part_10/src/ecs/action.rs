@@ -12,7 +12,7 @@ use ecs::component::Name;
 use std::rc::Rc;
 use ecs::component::Inventory;
 use ecs::component::Item;
-use game_states::GameState;
+use game::state::GameState;
 use ecs::spell::SpellResult;
 use ecs::spell::SpellStatus;
 use tcod::Map;

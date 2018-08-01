@@ -5,7 +5,6 @@ use tcod::colors;
 use tcod::input;
 use tcod::input::{check_for_event, EventFlags, Event, Mouse, Key, KeyCode};
 
-use EngineAction;
 use ecs::Ecs;
 use ecs::action::EntityAction;
 use ecs::component::MonsterAi;
@@ -19,92 +18,14 @@ use map_objects::map::GameMap;
 use message::Message;
 use ecs::spell::Spell;
 use ecs::id::EntityId;
+use serde_json::to_string;
+use game::input::*;
+use game::EngineAction;
+
 
 pub struct GameStateResult {
     pub next_state: GameState,
     pub engine_action: Option<EngineAction>,
-}
-
-/// Action are triggered by the input (mouse & keys)
-enum InputAction {
-    MovePlayer(i32, i32),
-    MousePos(isize, isize),
-    SelectEntity(isize, isize),
-    SelectOption(char),
-    PickUp,
-    ShowInventory,
-    ShowInventoryDrop,
-    Fullscreen,
-    Exit,
-}
-
-
-fn handle_input(state: &GameState, event: Option<(EventFlags, Event)>) -> Option<InputAction> {
-    if let Some(e) = event {
-        match e {
-            (tcod::input::KEY_PRESS, Event::Key(key)) => {
-                match state {
-                    GameState::PlayersTurn => handle_keys_player_turn(key),
-                    GameState::ShowInventoryUse | GameState::ShowInventoryDrop => handle_keys_selection_menu(key),
-                    _ => handle_keys_default(key),
-                }
-            }
-            (_, Event::Mouse(mouse)) => match state {
-                    GameState::Targeting( .. ) => handle_mouse_targeting(mouse),
-                    _ => handle_mouse_default(mouse)
-                },
-            _ => None
-        }
-    } else {
-        None
-    }
-}
-
-fn handle_mouse_targeting(mouse: Mouse) -> Option<InputAction> {
-    match mouse {
-        Mouse { lbutton_pressed: true, .. } => Some(InputAction::SelectEntity(mouse.cx, mouse.cy)),
-        Mouse { .. } => Some(InputAction::MousePos(mouse.cx, mouse.cy)),
-    }
-}
-
-fn handle_mouse_default(mouse: Mouse) -> Option<InputAction> {
-    match mouse {
-        Mouse { .. } => Some(InputAction::MousePos(mouse.cx, mouse.cy)),
-    }
-}
-
-fn handle_keys_player_turn(key: Key) -> Option<InputAction> {
-    match key {
-        Key { code: KeyCode::Left, .. } | Key { printable: 'h', .. } => Some(InputAction::MovePlayer(-1, 0)),
-        Key { code: KeyCode::Right, .. } | Key { printable: 'l', .. } => Some(InputAction::MovePlayer(1, 0)),
-        Key { code: KeyCode::Up, .. } | Key { printable: 'k', .. } => Some(InputAction::MovePlayer(0, -1)),
-        Key { code: KeyCode::Down, .. } | Key { printable: 'j', .. } => Some(InputAction::MovePlayer(0, 1)),
-        Key { printable: 'y', .. } => Some(InputAction::MovePlayer(-1, -1)),
-        Key { printable: 'u', .. } => Some(InputAction::MovePlayer(1, -1)),
-        Key { printable: 'b', .. } => Some(InputAction::MovePlayer(-1, 1)),
-        Key { printable: 'n', .. } => Some(InputAction::MovePlayer(1, 1)),
-        Key { printable: 'i', .. } => Some(InputAction::ShowInventory),
-        Key { printable: 'd', .. } => Some(InputAction::ShowInventoryDrop),
-        Key { printable: 'g', .. } => Some(InputAction::PickUp),
-        Key { code: KeyCode::Escape, .. } => Some(InputAction::Exit),
-        Key { code: KeyCode::Enter, alt: true, .. } => Some(InputAction::Fullscreen),
-        _ => None
-    }
-}
-
-fn handle_keys_selection_menu(key: Key) -> Option<InputAction> {
-    match key {
-        Key { code: KeyCode::Escape, .. } => Some(InputAction::Exit),
-        Key { printable, .. } => Some(InputAction::SelectOption(printable)),
-        _ => None
-    }
-}
-
-fn handle_keys_default(key: Key) -> Option<InputAction> {
-    match key {
-        Key { code: KeyCode::Escape, .. } => Some(InputAction::Exit),
-        _ => None
-    }
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -130,7 +51,8 @@ impl GameState {
         }
     }
 
-    fn targeting(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>, spell: Spell, caster_id: EntityId) -> GameStateResult {
+    fn targeting(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>,
+                 log: Rc<MessageLog>, spell: Spell, caster_id: EntityId) -> GameStateResult {
         match action {
             Some(InputAction::Exit) => {
                 log.add(Message::new("Target selection was canceled".to_string(), colors::WHITE));
@@ -147,7 +69,7 @@ impl GameState {
             }
             Some(InputAction::SelectEntity(x, y)) => {
                 let targets: Vec<EntityId> = ecs.get_all::<Position>().iter().filter(|(id, p)| {
-                   ecs.has_component::<Actor>(**id) && p.position.0 == x as i32 && p.position.1 == y as i32
+                    ecs.has_component::<Actor>(**id) && p.position.0 == x as i32 && p.position.1 == y as i32
                 }).map(|(id, _)|{*id}).collect();
 
                 if let Some(target) = targets.first() {
@@ -230,7 +152,7 @@ impl GameState {
             Some(InputAction::Exit) => {
                 GameStateResult {
                     next_state: GameState::PlayerDead,
-                    engine_action: Some(EngineAction::Exit),
+                    engine_action: Some(EngineAction::Exit(false)),
                 }
             }
             _ => {
@@ -247,7 +169,7 @@ impl GameState {
             Some(InputAction::Exit) => {
                 GameStateResult {
                     next_state: GameState::PlayersTurn,
-                    engine_action: Some(EngineAction::Exit),
+                    engine_action: Some(EngineAction::Exit(true)),
                 }
             }
             Some(InputAction::MousePos(x, y)) => {

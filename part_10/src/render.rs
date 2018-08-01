@@ -16,10 +16,10 @@ use std::rc::Rc;
 use textwrap::wrap;
 use ecs::component::Name;
 use ecs::component::Inventory;
-use game_states::GameState;
+use game::state::GameState;
 use settings::Settings;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RenderOrder {
     Corpse = 1,
     Item = 2,
