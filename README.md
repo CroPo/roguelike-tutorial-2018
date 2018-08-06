@@ -18,5 +18,3 @@ Every part of the tutorial is a separate workspace member. You can run each part
 - [Part 9: Ranged Scrolls and Targeting](part_9/)
 
 Feel free to comment any piece of code you see. I appreciate any kind of feedback here, especially if it helps to get a better understanding of Rust itself.
-
-**Important:** I discontinued working on this. The tutorial code and the writeup won't get removed, but don't expect any more updates here.
