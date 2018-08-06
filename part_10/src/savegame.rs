@@ -4,7 +4,6 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Write;
 
-use serde_json::to_string;
 use std::fs;
 
 const SAVE_FILE_NAME: &str = "savegame.dat";
@@ -16,8 +15,8 @@ pub fn write(game: &Game) {
         .open(SAVE_FILE_NAME).unwrap();
 
 
-    let data = to_string(game).unwrap();
-    file.write_all(data.into_bytes().as_slice());
+    //let data = to_string(game).unwrap();
+    //file.write_all(data.into_bytes().as_slice());
 }
 
 pub fn delete() {

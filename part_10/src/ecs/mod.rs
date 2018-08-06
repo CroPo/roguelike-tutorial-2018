@@ -12,9 +12,7 @@ use std::any::TypeId;
 use std::any::Any;
 use ecs::component::Component;
 
-use serde::ser::{Serialize, Serializer, SerializeStruct};
 use ecs::component::*;
-use serde_json::to_string;
 
 struct EcsStorage {
     entity_id: EntityId,
@@ -67,17 +65,11 @@ impl EcsStorage {
 
 
 /// Handling access to Entities and to their Components
-#[derive(Serialize)]
 pub struct Ecs {
-    #[serde(skip)]
-    id_generator: IdGenerator,
-
     /// Id of the Entity which represents the player
     pub player_entity_id: EntityId,
-
+    id_generator: IdGenerator,
     storage: HashMap<EntityId, EcsStorage>,
-
-    #[serde(skip)]
     entities: HashMap<EntityId, Entity>,
 }
 
@@ -203,36 +195,3 @@ impl Ecs {
 
 /// A generic representation of things like NPCs, Monsters, Items, ... and of course, of the player, in the game.
 pub struct Entity {}
-
-impl Serialize for EcsStorage {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error> where
-        S: Serializer {
-        let mut storage = serializer.serialize_struct("Entity", self.data.len())?;
-
-        if let Some(c) = self.get::<Position>() {
-            storage.serialize_field("position", &c)?;
-        }
-        if let Some(c) = self.get::<Render>() {
-            storage.serialize_field("render", &c)?;
-        }
-        if let Some(c) = self.get::<Name>() {
-            storage.serialize_field("name", &c)?;
-        }
-        if let Some(c) = self.get::<Actor>() {
-            storage.serialize_field("actor", &c)?;
-        }
-        if let Some(c) = self.get::<MonsterAi>() {
-            storage.serialize_field("ai", &c)?;
-        }
-        if let Some(c) = self.get::<Corpse>() {
-            storage.serialize_field("corpse", &c)?;
-        }
-        if let Some(c) = self.get::<Item>() {
-            storage.serialize_field("item", &c)?;
-        }
-        if let Some(c) = self.get::<Inventory>() {
-            storage.serialize_field("inventory", &c)?;
-        }
-        storage.end()
-    }
-}

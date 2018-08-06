@@ -19,7 +19,7 @@ use ecs::component::Inventory;
 use game::state::GameState;
 use settings::Settings;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum RenderOrder {
     Corpse = 1,
     Item = 2,

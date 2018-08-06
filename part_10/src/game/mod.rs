@@ -10,7 +10,6 @@ use map_objects::fov;
 use tcod::console::Root;
 use ecs::component::Position;
 use render::render_all;
-use serde_json::to_string;
 use savegame;
 
 pub mod state;
@@ -22,21 +21,15 @@ pub enum EngineAction {
     Exit(bool),
 }
 
-#[derive(Serialize)]
 pub struct Game <'a> {
     ecs: Ecs,
     map: GameMap,
     log: Rc<MessageLog>,
 
-    #[serde(skip)]
     settings: &'a Settings,
-    #[serde(skip)]
     state: GameState,
-    #[serde(skip)]
     mouse_pos: (i32, i32),
-    #[serde(skip)]
     fov_map: Map,
-    #[serde(skip)]
     log_panel: MessagePanel
 }
 

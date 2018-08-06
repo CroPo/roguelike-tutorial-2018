@@ -158,3 +158,17 @@ a saved game will be deleted. In the context of this tutorial, no other possibli
 _Exit without saving_ or _die without deletion_.
 
 This workes well so far. Now to actually load the saved game again.
+
+## Saving the Game - Attempt 2
+
+So, this whole thing didn't quite go as planned. Even though I was able to serialize all the data I need I ran into a 
+dead end while trying to deserialie it. I came to the conclusion that it won't take as much time to implement a own
+JSON serialization that it would take me to implement a deserializer for the `serde` library.
+
+So, this is what I will do.
+
+### Resetting
+
+The first thing to do is to carefully remove all the Serialization and Deserialization code. I will simply do this
+by trial and error, removing the crates from `Cargo.toml` and then working through each and every `rustc` error until
+I can run the game again.

@@ -2,11 +2,6 @@ extern crate tcod;
 extern crate rand;
 extern crate textwrap;
 
-#[macro_use] extern crate serde_derive;
-
-extern crate serde;
-extern crate serde_json;
-
 mod ecs;
 mod render;
 mod map_objects;
@@ -43,7 +38,6 @@ use render::clear_all;
 use settings::Settings;
 use game::state::GameState;
 use game::Game;
-use serde_json::to_string;
 
 fn main() {
     let settings = Settings::new();

@@ -17,7 +17,6 @@ use ecs::component::Position;
 use ecs::item::ItemTemplate;
 use settings::Settings;
 
-#[derive(Serialize, Deserialize)]
 pub struct GameMap {
     pub dimensions: (i32, i32),
     tiles: Vec<Tile>,

@@ -18,7 +18,6 @@ use map_objects::map::GameMap;
 use message::Message;
 use ecs::spell::Spell;
 use ecs::id::EntityId;
-use serde_json::to_string;
 use game::input::*;
 use game::EngineAction;
 
