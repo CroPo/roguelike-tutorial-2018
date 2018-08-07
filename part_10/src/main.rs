@@ -2,6 +2,9 @@ extern crate tcod;
 extern crate rand;
 extern crate textwrap;
 
+#[macro_use]
+extern crate json;
+
 mod ecs;
 mod render;
 mod map_objects;
@@ -38,6 +41,7 @@ use render::clear_all;
 use settings::Settings;
 use game::state::GameState;
 use game::Game;
+
 
 fn main() {
     let settings = Settings::new();

@@ -8,13 +8,18 @@ use tcod::BackgroundFlag;
 use tcod::map::Map;
 use tcod::pathfinding::AStar;
 
+use json::JsonValue;
+use json;
+
 use ecs::action::EntityAction;
 use map_objects::map::GameMap;
 use render::RenderOrder;
 use ecs::spell::Spell;
 
+use savegame::Serialize;
+
 /// Used to indentify an Component
-pub trait Component: Any {}
+pub trait Component: Any + Serialize {}
 
 /// A Component which contains informations of an `Entity`s position on the Map, and methods to
 /// interact with it
@@ -112,6 +117,19 @@ impl Position {
     }
 }
 
+impl Serialize for Position {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "Position",
+        "data" => object!(
+                "x" => self.position.0,
+                "y" => self.position.0,
+                "blocking" => self.is_blocking,
+            )
+        )
+    }
+}
+
 impl Component for Position {}
 
 
@@ -147,12 +165,37 @@ impl Render {
     }
 }
 
+
+impl Serialize for Render {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "Render",
+        "data" => object!(
+            "glyph" => self.glyph.to_string(),
+            "order" => self.order.to_string(),
+            "color" => array![self.color.r, self.color.g, self.color.b]
+            )
+        )
+    }
+}
+
+
 impl Component for Render {}
 
 /// The name and other textual data refering to an entity
 pub struct Name {
-    pub name: String,
-    pub description: String,
+    pub name: String
+}
+
+impl Serialize for Name {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "Name",
+        "data" => object!(
+                "name" => self.name.clone(),
+            )
+        )
+    }
 }
 
 impl Component for Name {}
@@ -199,6 +242,21 @@ impl Actor {
         } else {
             None
         }
+    }
+}
+
+impl Serialize for Actor {
+    fn serialize(&self) -> JsonValue {
+
+        object!(
+        "type" => "Actor",
+        "data" => object!(
+                "max_hp" => self.max_hp,
+                "hp" => self.hp,
+                "power" => self.power,
+                "defense" => self.defense,
+            )
+        )
     }
 }
 
@@ -258,9 +316,28 @@ impl MonsterAi {
     }
 }
 
+impl Serialize for MonsterAi {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "MonsterAi",
+        "data" => object!(
+            "target" => self.target_id
+            )
+        )
+    }
+}
+
 impl Component for MonsterAi {}
 
 pub struct Corpse {}
+
+impl Serialize for Corpse {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "Corpse",
+        )
+    }
+}
 
 impl Component for Corpse {}
 
@@ -277,6 +354,18 @@ impl Item {
 
     pub fn use_item(&self) -> Option<Spell> {
         Some(self.spell.clone())
+    }
+}
+
+impl Serialize for Item {
+    fn serialize(&self) -> JsonValue {
+
+        object!(
+        "type" => "Spell",
+        "data" => object!(
+                "spell" => self.spell.serialize(),
+            )
+        )
     }
 }
 
@@ -324,5 +413,24 @@ impl Inventory {
     }
 }
 
+impl Serialize for Inventory {
+    fn serialize(&self) -> JsonValue {
+
+        let mut items = JsonValue::new_array();
+
+        self.items.iter().for_each(|id| {
+            items.push(*id);
+        });
+
+        object!(
+        "type" => "Inventory",
+        "data" => object!(
+                "max_items" => self.max_items,
+                "items" => items
+            )
+        )
+
+    }
+}
 
 impl Component for Inventory {}

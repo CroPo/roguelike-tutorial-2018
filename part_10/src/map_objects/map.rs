@@ -6,6 +6,8 @@ use tcod::Console;
 use tcod::BackgroundFlag;
 use tcod::Map;
 
+use json::JsonValue;
+
 use map_objects::tile::Tile;
 use map_objects::rectangle::Rect;
 
@@ -16,6 +18,7 @@ use ecs::creature::CreatureTemplate;
 use ecs::component::Position;
 use ecs::item::ItemTemplate;
 use settings::Settings;
+use savegame::Serialize;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -182,5 +185,22 @@ impl GameMap {
                 }
             }
         }
+    }
+}
+
+impl Serialize for GameMap {
+    fn serialize(&self) -> JsonValue {
+
+        let mut tiles = JsonValue::new_array();
+
+        for tile in self.tiles.iter() {
+            tiles.push(tile.serialize());
+        }
+
+        object!(
+            "width" => self.dimensions.0,
+            "height" => self.dimensions.1,
+            "tiles" => tiles
+        )
     }
 }

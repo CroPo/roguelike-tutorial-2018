@@ -1,3 +1,8 @@
+use json::JsonValue;
+use json;
+
+use savegame::Serialize;
+
 #[derive(Clone)]
 pub struct Tile {
     pub block_move: bool,
@@ -11,5 +16,11 @@ impl Tile {
         Tile {
             block_move, block_sight, explored : false
         }
+    }
+}
+
+impl Serialize for Tile {
+    fn serialize(&self) -> JsonValue {
+        array![self.block_move, self.block_sight, self.explored]
     }
 }

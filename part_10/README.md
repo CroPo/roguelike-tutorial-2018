@@ -10,6 +10,7 @@ wanted me to do - namely move all the game logic to another class - I don't expe
 Contents of this Writeup:
 1. [Settings](#settings)
 2. [Saving the Game](#saving-the-game)
+3. [Saving the Game - Attempt 2](#saving-the-game---attempt-2)
 
 ## Settings
 
@@ -172,3 +173,137 @@ So, this is what I will do.
 The first thing to do is to carefully remove all the Serialization and Deserialization code. I will simply do this
 by trial and error, removing the crates from `Cargo.toml` and then working through each and every `rustc` error until
 I can run the game again.
+
+### Some thoughts
+
+So, what do I really need to serialize in order to completely restor the game? Pretty much the same as I wanted before.
+This means I need to implement serialization for the `MessageLog` (easy), the `GameMap` (easy) and the `Ecs` (not _that_ easy).
+I will still be using the JSON format, since there is a nice JSON library for Rust which I am already somewhat familiar
+with. Of course, I could implement my own saving format, but JSON already exists and is able to store everything I need here.
+
+But to be fully honest with you: I wouldn't store a whole game map as JSON. JSON is just not made for that kind of data 
+(imo). Some binary storage format would be better here, but for this tutorial I will simply store everything into one
+big JSON file.
+
+### Basic Serialization
+
+First of all, I include the `json` library [(I'm using this particular one)](https://github.com/maciejhirsz/json-rust). 
+After that, I will create a `Serialize` trait, which has one function: `serialize()`, returning a `JsonValue`. Of course,
+this is way less dynamic and even more code than the previous attempt on the first look, but it will help me to
+solve the problems I couldn't with the library.
+
+Since I already have a `savegame` module I will simply put all the serialization and deserialization stuff in there too.
+
+And with this simple first implementation, the first step is already done:
+```rust
+impl Serialize for Game {
+    fn serialize(&self) -> JsonValue {
+        object!(
+            "ecs" => "",
+            "log" => "",
+            "map" => "",
+        )
+    }
+}
+```
+
+Of course, this will only return empty values now, but I will expand it continously.
+
+### Serializing the Map and the Log
+
+The next thing I will implement serialization for is the `GameMap`. It has only three values: width, height, and a `Vec<Tile>`.
+
+```rust
+impl Serialize for GameMap {
+    fn serialize(&self) -> JsonValue {
+
+        let mut tiles = JsonValue::new_array();
+
+        for tile in self.tiles.iter() {
+            tiles.push(tile.serialize());
+        }
+
+        object!(
+            "width" => self.dimensions.0,
+            "height" => self.dimensions.1,
+            "tiles" => tiles
+        )
+    }
+}
+```
+
+Something similar was done with the `Tile` itself, and there it is: A fully serialized `GameMap`.
+
+```rust
+impl Serialize for Tile {
+    fn serialize(&self) -> JsonValue {
+        array![self.block_move, self.block_sight, self.explored]
+    }
+}
+```
+
+The `MessageLog` is similarly easy:
+
+```rust
+impl Serialize for MessageLog {
+    fn serialize(&self) -> JsonValue {
+        let mut messages = JsonValue::new_array();
+        for message in self.messages.borrow().iter() {
+            messages.push(message.serialize());
+        }
+        messages
+    }
+}
+```
+
+And, of course, the `Message`:
+
+```rust
+impl Serialize for Message {
+    fn serialize(&self) -> JsonValue {
+
+        let mut color = JsonValue::new_array();
+
+        color.push(self.color.r);
+        color.push(self.color.g);
+        color.push(self.color.b);
+
+        object!(
+            "text" => self.text.clone(),
+            "color" => color
+        )
+    }
+}
+```
+
+Now that this is done: To the harder part
+
+### Serializing the ECS
+
+As before, each `Component` needs to be serialized individually. This will take some time, but it's not too complex
+either. Of course, some, like the inventory, might be a bit more work, but nothing entirely unhandleable.
+
+The main problem is I need to distinguish between the different `Component` implmentations in a way that I can 
+deserialize it again. Practically, whatever I do, I need to `match` the structs against some primitive value.
+
+This is what the `Position` structs serialization looks like:
+
+```rust
+impl Serialize for Position {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "Position",
+        "data" => object!(
+                "x" => self.position.0,
+                "y" => self.position.0,
+                "blocking" => self.is_blocking,
+            )
+        )
+    }
+}
+```
+
+`Spell` and `RenderOrder` also needed to be serializeable. Putting all of this together gives us quite a big file
+if compared against the game's scope. But optimizing the save file is nothing I intend to do at this point.
+
+Now with this done (again), I will need to implement loading the game. This time for real!

@@ -19,12 +19,21 @@ use ecs::component::Inventory;
 use game::state::GameState;
 use settings::Settings;
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+use std::fmt::{ Display, Formatter, Result, Debug };
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum RenderOrder {
     Corpse = 1,
     Item = 2,
     Actor = 3,
 }
+
+impl Display for RenderOrder {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        Debug::fmt(self, f)
+    }
+}
+
 
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
 pub fn render_all(ecs: &Ecs,root_console: &mut Root, settings: &Settings, map: &mut GameMap, fov_map: &Map, game_state: &GameState,

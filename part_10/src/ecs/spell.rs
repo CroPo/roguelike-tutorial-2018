@@ -1,3 +1,5 @@
+use json::JsonValue;
+
 use ecs::id::EntityId;
 use ecs::Ecs;
 use message::Message;
@@ -8,6 +10,8 @@ use tcod::colors;
 use ecs::component::Position;
 use tcod::Map;
 use ecs::action::EntityAction;
+
+use savegame::Serialize;
 
 pub struct SpellResult {
     pub message: Option<Message>,
@@ -214,6 +218,18 @@ impl Spell {
         match ecs.get_component::<Name>(id) {
             Some(n) => n.name.clone(),
             None => format!("a nameless entity (#{})", id)
+        }
+    }
+}
+
+impl Serialize for Spell {
+    fn serialize(&self) -> JsonValue {
+
+        match *self {
+            Spell::Heal(item_id) => object!("type" => "Heal", "data" => array![item_id]),
+            Spell::Lightning(item_id, range, damage) => object!("type" => "Lightning", "data" => array![item_id, range, damage]),
+            Spell::Fireball(item_id, radius, damage) => object!("type" => "Fireball", "data" => array![item_id, radius, damage]),
+            Spell::Confusion(item_id) => object!("type" => "Confusion", "data" => array![item_id])
         }
     }
 }

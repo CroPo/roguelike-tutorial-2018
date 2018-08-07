@@ -1,7 +1,12 @@
-use tcod::Color;
-use tcod::colors;
 use std::cell::RefCell;
 use std::cell::Ref;
+
+use json::JsonValue;
+
+use tcod::Color;
+use tcod::colors;
+
+use savegame::Serialize;
 
 pub struct Message {
     pub text: String,
@@ -14,6 +19,22 @@ impl Message {
             text,
             color,
         }
+    }
+}
+
+impl Serialize for Message {
+    fn serialize(&self) -> JsonValue {
+
+        let mut color = JsonValue::new_array();
+
+        color.push(self.color.r);
+        color.push(self.color.g);
+        color.push(self.color.b);
+
+        object!(
+            "text" => self.text.clone(),
+            "color" => color
+        )
     }
 }
 
@@ -34,6 +55,16 @@ impl MessageLog {
 
     pub fn messages(&self) -> Ref<Vec<Message>> {
         self.messages.borrow()
+    }
+}
+
+impl Serialize for MessageLog {
+    fn serialize(&self) -> JsonValue {
+        let mut messages = JsonValue::new_array();
+        for message in self.messages.borrow().iter() {
+            messages.push(message.serialize());
+        }
+        messages
     }
 }
 

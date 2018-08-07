@@ -6,16 +6,19 @@ pub mod action;
 pub mod item;
 pub mod spell;
 
-use ecs::id::{IdGenerator, EntityId};
+use json::JsonValue;
+
 use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
-use ecs::component::Component;
 
+use savegame::Serialize;
+
+use ecs::id::{IdGenerator, EntityId};
 use ecs::component::*;
 
+
 struct EcsStorage {
-    entity_id: EntityId,
     data: HashMap<TypeId, Box<Any>>,
 }
 
@@ -63,6 +66,38 @@ impl EcsStorage {
     }
 }
 
+impl Serialize for EcsStorage {
+    fn serialize(&self) -> JsonValue {
+
+        let mut components = JsonValue::new_array();
+
+        if let Some(c) = self.get::<Position>() {
+            components.push(c.serialize());
+        }
+        if let Some(c) = self.get::<Render>() {
+            components.push(c.serialize());
+        }
+        if let Some(c) = self.get::<Name>() {
+            components.push(c.serialize());
+        }
+        if let Some(c) = self.get::<Actor>() {
+            components.push(c.serialize());
+        }
+        if let Some(c) = self.get::<MonsterAi>() {
+            components.push(c.serialize());
+        }
+        if let Some(c) = self.get::<Corpse>() {
+            components.push(c.serialize());
+        }
+        if let Some(c) = self.get::<Item>() {
+            components.push(c.serialize());
+        }
+        if let Some(c) = self.get::<Inventory>() {
+            components.push(c.serialize());
+        }
+        components
+    }
+}
 
 /// Handling access to Entities and to their Components
 pub struct Ecs {
@@ -88,7 +123,7 @@ impl Ecs {
         let id = self.id_generator.get_next_id();
 
         self.entities.insert(id, Entity {});
-        self.storage.insert(id, EcsStorage { entity_id: id, data: HashMap::new() });
+        self.storage.insert(id, EcsStorage { data: HashMap::new() });
 
         id
     }
@@ -190,6 +225,20 @@ impl Ecs {
             return is_registered.unwrap();
         }
         false
+    }
+}
+
+impl Serialize for Ecs {
+    fn serialize(&self) -> JsonValue {
+        let mut entities = JsonValue::new_array();
+        self.storage.iter().for_each(|(id, entity)| {
+            entities.push(object!(
+                "id" => *id,
+                "entity" => entity.serialize()
+            ));
+
+        });
+        entities
     }
 }
 

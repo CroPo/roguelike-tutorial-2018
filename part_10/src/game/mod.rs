@@ -1,16 +1,22 @@
+use std::rc::Rc;
+
+use tcod::console::Root;
+use tcod::Map;
+
+use json::JsonValue;
+
 use ecs::Ecs;
+use ecs::component::Position;
+
 use map_objects::map::GameMap;
 use message::MessageLog;
-use std::rc::Rc;
 use settings::Settings;
 use game::state::GameState;
-use tcod::Map;
 use render::MessagePanel;
 use map_objects::fov;
-use tcod::console::Root;
-use ecs::component::Position;
 use render::render_all;
 use savegame;
+use savegame::Serialize;
 
 pub mod state;
 pub mod input;
@@ -73,7 +79,7 @@ impl <'a> Game <'a>  {
                 match engine_action {
                     EngineAction::Exit(save) => {
                             match save {
-                                true => savegame::write(&self),
+                                true => savegame::write(self),
                                 false => savegame::delete()
                             }
                             break 'game_loop
@@ -91,5 +97,15 @@ impl <'a> Game <'a>  {
 
             self.state = result.next_state;
         }
+    }
+}
+
+impl <'a> Serialize for Game <'a> {
+    fn serialize(&self) -> JsonValue {
+        object!(
+            "ecs" => self.ecs.serialize(),
+            "log" => self.log.serialize(),
+            "map" => self.map.serialize(),
+        )
     }
 }
