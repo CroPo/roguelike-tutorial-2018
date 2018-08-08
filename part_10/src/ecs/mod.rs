@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::any::TypeId;
 use std::any::Any;
 
-use savegame::Serialize;
+use savegame::{Serialize, Deserialize};
 
 use ecs::id::{IdGenerator, EntityId};
 use ecs::component::*;
@@ -23,6 +23,11 @@ struct EcsStorage {
 }
 
 impl EcsStorage {
+
+    fn new() -> Self {
+        Self{ data: HashMap::new() }
+    }
+
     /// Register a component to the storage
     ///
     /// No special case handling if the component is already registered. The old component will be
@@ -96,6 +101,29 @@ impl Serialize for EcsStorage {
             components.push(c.serialize());
         }
         components
+    }
+}
+
+impl Deserialize for EcsStorage {
+    fn deserialize(json: &JsonValue) -> Self {
+        let mut storage = Self::new();
+
+        for component_json in json.members() {
+
+            match component_json["type"].as_str().unwrap() {
+                "Position" => storage.register(Position::deserialize(&component_json["data"])),
+                "Render" => storage.register(Render::deserialize(&component_json["data"])),
+                "Name" => storage.register(Name::deserialize(&component_json["data"])),
+                "Actor" => storage.register(Actor::deserialize(&component_json["data"])),
+                "MonsterAi" => storage.register(MonsterAi::deserialize(&component_json["data"])),
+                "Corpse" => storage.register(Corpse::deserialize(&component_json["data"])),
+                "Item" => storage.register(Item::deserialize(&component_json["data"])),
+                "Inventory" => storage.register(Inventory::deserialize(&component_json["data"])),
+                _ => ()
+            }
+        }
+
+        storage
     }
 }
 
@@ -231,14 +259,47 @@ impl Ecs {
 impl Serialize for Ecs {
     fn serialize(&self) -> JsonValue {
         let mut entities = JsonValue::new_array();
-        self.storage.iter().for_each(|(id, entity)| {
+        self.storage.iter().for_each(|(id, components)| {
             entities.push(object!(
                 "id" => *id,
-                "entity" => entity.serialize()
+                "components" => components.serialize()
             ));
 
         });
-        entities
+
+        object!(
+        "player" => self.player_entity_id,
+        "entities" => entities
+        )
+    }
+}
+
+impl Deserialize for Ecs {
+    fn deserialize(json: &JsonValue) -> Self {
+
+        let mut ecs = Self::initialize();
+        let mut highest_id : EntityId = 0;
+        let mut storage : HashMap<EntityId, EcsStorage> = HashMap::new();
+        let mut entities : HashMap<EntityId, Entity> = HashMap::new();
+
+        for entity_json in json["entities"].members() {
+            let id = entity_json["id"].as_u16().unwrap();
+
+            if id > highest_id {
+                highest_id = id;
+            }
+
+            entities.insert(id, Entity{});
+            storage.insert(id, EcsStorage::deserialize(&entity_json["components"]));
+        }
+
+        Ecs {
+            id_generator: IdGenerator::start_with(highest_id),
+            player_entity_id: json["player"].as_u16().unwrap(),
+            storage,
+            entities: HashMap::new(),
+        }
+
     }
 }
 

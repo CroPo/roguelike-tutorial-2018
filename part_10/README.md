@@ -11,6 +11,7 @@ Contents of this Writeup:
 1. [Settings](#settings)
 2. [Saving the Game](#saving-the-game)
 3. [Saving the Game - Attempt 2](#saving-the-game---attempt-2)
+4. [Loading the Game](#loading-the-game)
 
 ## Settings
 
@@ -307,3 +308,85 @@ impl Serialize for Position {
 if compared against the game's scope. But optimizing the save file is nothing I intend to do at this point.
 
 Now with this done (again), I will need to implement loading the game. This time for real!
+
+## Loading the game
+
+Similarly to the serialization, I will create a `Deserialize` trait which, well, uses the json data to rebuild the
+game state.
+
+On the `Game` struct, I will create a new static function, `from_json`, which returns the loaded `Game` and takes two
+arguments: `Settings` and a `JsonValue`. 
+
+To be able to go step by step through the deserialization, I will copy the body of the `new` function and replace
+everything here step by step.
+
+First of all, because it's the easiest, I will deserialize the `MessageLog`.  A few small issues beside this works
+exactly as I thought it will. 
+
+This, for example, is the deserialization code of a `Message`:
+
+```rust
+impl Deserialize for Message {
+    fn deserialize(json: &JsonValue) -> Self {
+
+        Message {
+            text: json["text"].as_str().unwrap().to_string(),
+            color: Color {
+                r : json["color"][0].as_u8().unwrap(),
+                g : json["color"][1].as_u8().unwrap(),
+                b : json["color"][2].as_u8().unwrap(),
+            }
+        }
+    }
+}
+```
+
+I just came to the conclusion that it's fine to unwrap every value. Either everything is in place, or the save file is
+corrupted. So this is fine, imo.
+
+Deserializing the map will be pretty similar, with one exception: All `Entities` are created while creating the Map
+right now. This means the Game will ineviatebly crash on load because I have no player `Entity` which can be accessed.
+This means a bit of tinkering will be needed to get everything running again. But once It runs, it will run.
+
+I will do the `GameMap` first, since it's pretty similar to the `MessageLog`. Pretty much as easy as I thought it would 
+be. And last but not least, I need to deserialize the `Ecs`, too. This might cause some problems, and I will also need
+to add some additional functions to the `Ecs` and the `EcsStorage` structs.
+
+After implementing everything, and after everythng compiles... the game crashes at the start.
+```text
+thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', libcore/option.rs:345:21
+```
+This means that an `Component` is either missing or added to the wrong `Entity`. 
+
+As it turns out, besides a few typos, one of my main mistakes was the deserialization of the `glyph` value for `Render`
+
+```rust
+impl Deserialize for Render {
+    fn deserialize(json: &JsonValue) -> Self {
+        Render {
+            entity_id: json["id"].as_u16().unwrap(),
+            glyph: json["glyph"].as_str().unwrap().chars().next().unwrap(),
+            order: RenderOrder::deserialize(&json["order"]),
+            color: Color {
+                r : json["color"][0].as_u8().unwrap(),
+                g : json["color"][1].as_u8().unwrap(),
+                b : json["color"][2].as_u8().unwrap(),
+            }
+        }
+    }
+}
+```
+
+As you see, the on line for deserializing it is rather complex. I simply got it wrong on my first try.
+
+Deserilization now seems to work, becaus I got a completely different problem now:
+```text
+thread 'main' panicked at 'assertion failed: x < width && y < height',  .cargo/registry/src/github.com-1ecc6299db9ec823/tcod-0.12.1/src/map.rs:53:9
+```
+That practically means I got something with the map sizes wrong I think. It turned out a bit differently, though: 
+I serialized the x coordinate of `Position` two times, instead of x and y.
+
+Loading a Game basically works now. However, using a `Spell` does not. I got some bug in deserializing these then.
+I had a typo here, too. However, this typo happened in the serialization process, and not in deserializing.
+
+After these few issues were resolved, I am able to save a game on exit, and load it when I start the game again.

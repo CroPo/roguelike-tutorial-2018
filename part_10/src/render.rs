@@ -18,6 +18,8 @@ use ecs::component::Name;
 use ecs::component::Inventory;
 use game::state::GameState;
 use settings::Settings;
+use json::JsonValue;
+use savegame::Deserialize;
 
 use std::fmt::{ Display, Formatter, Result, Debug };
 
@@ -31,6 +33,17 @@ pub enum RenderOrder {
 impl Display for RenderOrder {
     fn fmt(&self, f: &mut Formatter) -> Result {
         Debug::fmt(self, f)
+    }
+}
+
+impl Deserialize for RenderOrder {
+    fn deserialize(json: &JsonValue) -> Self {
+        match json.as_str() {
+            Some("Corpse") => RenderOrder::Corpse,
+            Some("Item") => RenderOrder::Item,
+            Some("Actor") => RenderOrder::Actor,
+            _ => RenderOrder::Corpse
+        }
     }
 }
 

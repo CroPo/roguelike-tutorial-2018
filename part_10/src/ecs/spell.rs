@@ -11,7 +11,7 @@ use ecs::component::Position;
 use tcod::Map;
 use ecs::action::EntityAction;
 
-use savegame::Serialize;
+use savegame::{Serialize, Deserialize};
 
 pub struct SpellResult {
     pub message: Option<Message>,
@@ -68,6 +68,7 @@ pub enum Spell {
     Lightning(EntityId, u8, u32),
     Fireball(EntityId, u8, u32),
     Confusion(EntityId),
+    None,
 }
 
 impl Spell {
@@ -76,6 +77,7 @@ impl Spell {
             Spell::Heal(item_id) => self.heal(ecs, caster_id, item_id),
             Spell::Lightning(item_id, range, damage) => self.lightning(ecs, fov_map, caster_id, item_id, range, damage),
             Spell::Fireball(..) | Spell::Confusion(..) => SpellResult::targeting(*self, caster_id),
+            _ => SpellResult::fail(None)
         }
     }
 
@@ -229,7 +231,21 @@ impl Serialize for Spell {
             Spell::Heal(item_id) => object!("type" => "Heal", "data" => array![item_id]),
             Spell::Lightning(item_id, range, damage) => object!("type" => "Lightning", "data" => array![item_id, range, damage]),
             Spell::Fireball(item_id, radius, damage) => object!("type" => "Fireball", "data" => array![item_id, radius, damage]),
-            Spell::Confusion(item_id) => object!("type" => "Confusion", "data" => array![item_id])
+            Spell::Confusion(item_id) => object!("type" => "Confusion", "data" => array![item_id]),
+            _ => object!("type" => "", "data" => array![])
+        }
+    }
+}
+
+impl Deserialize for Spell {
+    fn deserialize(json: &JsonValue) -> Self {
+
+        match json["type"].as_str().unwrap() {
+            "Heal" =>  Spell::Heal(json["data"][0].as_u16().unwrap()),
+            "Lightning" => Spell::Lightning(json["data"][0].as_u16().unwrap(),json["data"][1].as_u8().unwrap(),json["data"][2].as_u32().unwrap()),
+            "Fireball" => Spell::Fireball(json["data"][0].as_u16().unwrap(),json["data"][1].as_u8().unwrap(),json["data"][2].as_u32().unwrap()),
+            "Confusion" =>  Spell::Confusion(json["data"][0].as_u16().unwrap()),
+            _ => Spell::None
         }
     }
 }

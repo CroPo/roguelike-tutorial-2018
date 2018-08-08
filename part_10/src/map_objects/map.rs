@@ -18,7 +18,7 @@ use ecs::creature::CreatureTemplate;
 use ecs::component::Position;
 use ecs::item::ItemTemplate;
 use settings::Settings;
-use savegame::Serialize;
+use savegame::{Serialize, Deserialize};
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -202,5 +202,21 @@ impl Serialize for GameMap {
             "height" => self.dimensions.1,
             "tiles" => tiles
         )
+    }
+}
+
+impl Deserialize for GameMap {
+    fn deserialize(json: &JsonValue) -> Self {
+
+        let mut tiles = vec!();
+
+        for t in json["tiles"].members() {
+            tiles.push(Tile::deserialize(t));
+        }
+
+        GameMap {
+            tiles,
+            dimensions: (json["width"].as_i32().unwrap(), json["height"].as_i32().unwrap()),
+        }
     }
 }

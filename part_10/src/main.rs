@@ -52,7 +52,10 @@ fn main() {
         .font_type(settings.font_type())
         .init();
 
-    let mut game = Game::new(&settings);
+    let mut game = match savegame::load(&settings) {
+        Some(game) => game,
+        None => Game::new(&settings)
+    };
     game.run(&mut root);
 }
 

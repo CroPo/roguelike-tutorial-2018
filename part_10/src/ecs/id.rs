@@ -14,6 +14,12 @@ impl IdGenerator {
         }
     }
 
+    pub fn start_with(id: EntityId) -> IdGenerator {
+        IdGenerator {
+            id,
+        }
+    }
+
     /// Generate a new ID
     pub fn get_next_id(&mut self) -> EntityId {
         self.id+=1;

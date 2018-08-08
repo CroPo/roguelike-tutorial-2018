@@ -16,7 +16,7 @@ use render::MessagePanel;
 use map_objects::fov;
 use render::render_all;
 use savegame;
-use savegame::Serialize;
+use savegame::{Serialize, Deserialize};
 
 pub mod state;
 pub mod input;
@@ -63,6 +63,30 @@ impl <'a> Game <'a>  {
         }
     }
 
+    pub fn from_json(settings: &Settings, json: JsonValue) -> Game {
+
+        let mut ecs = Ecs::deserialize(&json["ecs"]);
+        let map = GameMap::deserialize(&json["map"]);
+        let log = Rc::new(MessageLog::deserialize(&json["log"]));
+
+        let fov_map = fov::initialize_fov(&map);
+        let log_panel = MessagePanel::new(settings.message_pos(),
+                                          settings.message_dimensions(),
+                                          Rc::clone(&log));
+
+        Game {
+            ecs,
+            map,
+            log,
+            settings,
+            state: GameState::PlayersTurn,
+            mouse_pos: (0, 0),
+            fov_map,
+            log_panel
+        }
+    }
+
+
     pub fn run(&mut self, root: &mut Root) {
         'game_loop: while !root.window_closed() {
             {
@@ -79,7 +103,7 @@ impl <'a> Game <'a>  {
                 match engine_action {
                     EngineAction::Exit(save) => {
                             match save {
-                                true => savegame::write(self),
+                                true => savegame::save(self),
                                 false => savegame::delete()
                             }
                             break 'game_loop

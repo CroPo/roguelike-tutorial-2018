@@ -6,7 +6,7 @@ use json::JsonValue;
 use tcod::Color;
 use tcod::colors;
 
-use savegame::Serialize;
+use savegame::{Serialize, Deserialize};
 
 pub struct Message {
     pub text: String,
@@ -35,6 +35,20 @@ impl Serialize for Message {
             "text" => self.text.clone(),
             "color" => color
         )
+    }
+}
+
+impl Deserialize for Message {
+    fn deserialize(json: &JsonValue) -> Self {
+
+        Message {
+            text: json["text"].as_str().unwrap().to_string(),
+            color: Color {
+                r : json["color"][0].as_u8().unwrap(),
+                g : json["color"][1].as_u8().unwrap(),
+                b : json["color"][2].as_u8().unwrap(),
+            }
+        }
     }
 }
 
@@ -68,3 +82,13 @@ impl Serialize for MessageLog {
     }
 }
 
+impl Deserialize for MessageLog {
+    fn deserialize(json: &JsonValue) -> Self {
+        let mut log = Self::new();
+
+        for m in json.members() {
+            log.add(Message::deserialize(m))
+        }
+        log
+    }
+}

@@ -16,7 +16,7 @@ use map_objects::map::GameMap;
 use render::RenderOrder;
 use ecs::spell::Spell;
 
-use savegame::Serialize;
+use savegame::{Serialize, Deserialize};
 
 /// Used to indentify an Component
 pub trait Component: Any + Serialize {}
@@ -122,11 +122,22 @@ impl Serialize for Position {
         object!(
         "type" => "Position",
         "data" => object!(
+                "id" => self.entity_id,
                 "x" => self.position.0,
-                "y" => self.position.0,
+                "y" => self.position.1,
                 "blocking" => self.is_blocking,
             )
         )
+    }
+}
+
+impl Deserialize for Position {
+    fn deserialize(json: &JsonValue) -> Self {
+        Position {
+            entity_id: json["id"].as_u16().unwrap(),
+            position: (json["x"].as_i32().unwrap(), json["y"].as_i32().unwrap()),
+            is_blocking: json["blocking"].as_bool().unwrap()
+        }
     }
 }
 
@@ -171,11 +182,27 @@ impl Serialize for Render {
         object!(
         "type" => "Render",
         "data" => object!(
+            "id" => self.entity_id,
             "glyph" => self.glyph.to_string(),
             "order" => self.order.to_string(),
             "color" => array![self.color.r, self.color.g, self.color.b]
             )
         )
+    }
+}
+
+impl Deserialize for Render {
+    fn deserialize(json: &JsonValue) -> Self {
+        Render {
+            entity_id: json["id"].as_u16().unwrap(),
+            glyph: json["glyph"].as_str().unwrap().chars().next().unwrap(),
+            order: RenderOrder::deserialize(&json["order"]),
+            color: Color {
+                r : json["color"][0].as_u8().unwrap(),
+                g : json["color"][1].as_u8().unwrap(),
+                b : json["color"][2].as_u8().unwrap(),
+            }
+        }
     }
 }
 
@@ -195,6 +222,14 @@ impl Serialize for Name {
                 "name" => self.name.clone(),
             )
         )
+    }
+}
+
+impl Deserialize for Name {
+    fn deserialize(json: &JsonValue) -> Self {
+        Name {
+            name: json["name"].as_str().unwrap().to_string(),
+        }
     }
 }
 
@@ -251,12 +286,25 @@ impl Serialize for Actor {
         object!(
         "type" => "Actor",
         "data" => object!(
+                "id" => self.entity_id,
                 "max_hp" => self.max_hp,
                 "hp" => self.hp,
                 "power" => self.power,
                 "defense" => self.defense,
             )
         )
+    }
+}
+
+impl Deserialize for Actor {
+    fn deserialize(json: &JsonValue) -> Self {
+        Actor {
+            entity_id: json["id"].as_u16().unwrap(),
+            max_hp: json["max_hp"].as_u32().unwrap(),
+            hp: json["hp"].as_u32().unwrap(),
+            power: json["power"].as_i32().unwrap(),
+            defense: json["defense"].as_i32().unwrap(),
+        }
     }
 }
 
@@ -321,9 +369,19 @@ impl Serialize for MonsterAi {
         object!(
         "type" => "MonsterAi",
         "data" => object!(
+            "id" => self.entity_id,
             "target" => self.target_id
             )
         )
+    }
+}
+
+impl Deserialize for MonsterAi {
+    fn deserialize(json: &JsonValue) -> Self {
+        MonsterAi {
+            entity_id: json["id"].as_u16().unwrap(),
+            target_id: json["target"].as_u16()
+        }
     }
 }
 
@@ -335,9 +393,18 @@ impl Serialize for Corpse {
     fn serialize(&self) -> JsonValue {
         object!(
         "type" => "Corpse",
+        "data" => object!()
         )
     }
 }
+
+impl Deserialize for Corpse {
+    fn deserialize(json: &JsonValue) -> Self {
+        Corpse {
+        }
+    }
+}
+
 
 impl Component for Corpse {}
 
@@ -361,11 +428,19 @@ impl Serialize for Item {
     fn serialize(&self) -> JsonValue {
 
         object!(
-        "type" => "Spell",
+        "type" => "Item",
         "data" => object!(
                 "spell" => self.spell.serialize(),
             )
         )
+    }
+}
+
+impl Deserialize for Item {
+    fn deserialize(json: &JsonValue) -> Self {
+        Item {
+            spell: Spell::deserialize(&json["spell"]),
+        }
     }
 }
 
@@ -417,7 +492,6 @@ impl Serialize for Inventory {
     fn serialize(&self) -> JsonValue {
 
         let mut items = JsonValue::new_array();
-
         self.items.iter().for_each(|id| {
             items.push(*id);
         });
@@ -430,6 +504,20 @@ impl Serialize for Inventory {
             )
         )
 
+    }
+}
+
+impl Deserialize for Inventory {
+    fn deserialize(json: &JsonValue) -> Self {
+        let mut items = vec![];
+        for item_json in json["items"].members() {
+            items.push(item_json.as_u16().unwrap());
+        }
+
+        Inventory {
+            max_items: json["max_items"].as_usize().unwrap(),
+            items
+        }
     }
 }
 
