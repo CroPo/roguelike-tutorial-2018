@@ -13,6 +13,7 @@ Contents of this Writeup:
 3. [Saving the Game - Attempt 2](#saving-the-game---attempt-2)
 4. [Loading the Game](#loading-the-game)
 5. [The Main Menu](#the-main-menu)
+6. [Conclusion](#conclusion)
 
 ## Settings
 
@@ -412,3 +413,14 @@ The main menu was added, and handling the ESC key while the game is running was 
 lets you either save and quit, or cancel and continue the game.
 
 And... that's pretty much it. This part is done (finally).
+
+## Conclusion
+
+Most of the things I wanted to say are already written down. I really lost motivation here for a short time after I spent
+hours and hours for serializing just to find out I won't be able to deserialize it.
+
+Separating the `Engine` and the `Game` took some time, too, but was not that much of a problem since I utilize a lot
+of `RefCell<>` values here. Thank the Rust devs for that.
+
+One more thing: I _will_ finish the Game. Just three parts left, and I am normally not the guy who gives up because some
+things won't work. 
