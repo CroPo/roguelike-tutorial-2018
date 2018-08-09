@@ -154,7 +154,7 @@ fn render_main_menu(engine: &Engine) {
 
     root_console.print_ex(engine.settings.screen_width()/2, engine.settings.screen_height() - 2,
                           BackgroundFlag::None, TextAlignment::Center,
-                          "by /u/CrocodileSpacePopr");
+                          "by /u/CrocodileSpacePope");
 
     selection_menu(&mut root_console, "",
                    vec![String::from("New game"), String::from("Continue last game"), String::from("Quit")],
