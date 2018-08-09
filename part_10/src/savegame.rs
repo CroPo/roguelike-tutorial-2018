@@ -1,7 +1,7 @@
 use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
-use std::cell::RefMut;
+use std::cell::Ref;
 
 use json::{JsonValue};
 use json;
@@ -11,7 +11,7 @@ use settings::Settings;
 
 const SAVE_FILE_NAME: &str = "savegame.dat";
 
-pub fn save(game: &RefMut<Game>) {
+pub fn save(game: &Ref<Game>) {
     let mut file = OpenOptions::new()
         .write(true)
         .truncate(true)

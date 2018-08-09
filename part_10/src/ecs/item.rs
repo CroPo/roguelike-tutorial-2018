@@ -4,8 +4,6 @@ use ecs::component::Position;
 use ecs::component::Render;
 use ecs::component::Name;
 use ecs::id::EntityId;
-use ecs::component::MonsterAi;
-use ecs::component::Actor;
 use render::RenderOrder;
 use ecs::component::Item;
 use ecs::spell::Spell;

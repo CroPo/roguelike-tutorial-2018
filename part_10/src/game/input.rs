@@ -77,7 +77,6 @@ fn handle_keys_selection_menu(key: Key) -> Option<InputAction> {
     match key {
         Key { code: KeyCode::Escape, .. } => Some(InputAction::Exit),
         Key { printable, .. } => Some(InputAction::SelectOption(printable)),
-        _ => None
     }
 }
 

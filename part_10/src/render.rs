@@ -1,10 +1,9 @@
 use std::fmt::{ Display, Formatter, Result, Debug };
 use std::ops::DerefMut;
-use std::cell::RefMut;
+use std::cell::Ref;
 
 use tcod::console::{Console, Root, blit, Offscreen};
 
-use map_objects::map::GameMap;
 use tcod::Map;
 use ecs::Ecs;
 use ecs::component::Position;
@@ -21,7 +20,6 @@ use textwrap::wrap;
 use ecs::component::Name;
 use ecs::component::Inventory;
 use game::state::GameState;
-use settings::Settings;
 use json::JsonValue;
 use savegame::Deserialize;
 
@@ -54,7 +52,7 @@ impl Deserialize for RenderOrder {
 
 
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
-pub fn render_all(engine: &Engine, game: &RefMut<Game>) {
+pub fn render_all(engine: &Engine, game: &Ref<Game>) {
     let mut console = Offscreen::new(engine.settings.screen_width(), engine.settings.screen_height());
     let mut panel = Offscreen::new(engine.settings.screen_width(), engine.settings.panel_height());
 

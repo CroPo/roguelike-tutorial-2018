@@ -4,7 +4,6 @@ use std::cell::Ref;
 use json::JsonValue;
 
 use tcod::Color;
-use tcod::colors;
 
 use savegame::{Serialize, Deserialize};
 
@@ -84,7 +83,7 @@ impl Serialize for MessageLog {
 
 impl Deserialize for MessageLog {
     fn deserialize(json: &JsonValue) -> Self {
-        let mut log = Self::new();
+        let log = Self::new();
 
         for m in json.members() {
             log.add(Message::deserialize(m))

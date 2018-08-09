@@ -1,5 +1,4 @@
 use json::JsonValue;
-use json;
 
 use savegame::{Serialize, Deserialize};
 

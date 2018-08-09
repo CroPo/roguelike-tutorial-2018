@@ -4,10 +4,14 @@ use tcod::console::Root;
 
 use game::{Game, state::GameState};
 use render::render_all;
-use game::EngineAction;
 use savegame;
 use settings::Settings;
 
+pub enum EngineAction {
+    ToggleFullscreen,
+    MousePos(i32, i32),
+    Exit(bool),
+}
 
 pub struct Engine {
     pub game: RefCell<Game>,
@@ -28,14 +32,14 @@ impl Engine {
     fn initialize() -> Self {
         let settings = Settings::new();
 
-        let mut root_console = Root::initializer()
+        let root_console = Root::initializer()
             .size(settings.screen_width(), settings.screen_height())
             .title(settings.title())
             .font(settings.font_path(), settings.font_layout())
             .font_type(settings.font_type())
             .init();
 
-        let mut game = match savegame::load(&settings) {
+        let game = match savegame::load(&settings) {
             Some(game) => game,
             None => Game::new(&settings)
         };
@@ -52,7 +56,7 @@ impl Engine {
     fn game_loop(&mut self) {
         'game_loop: while !self.root_console.borrow().window_closed() {
 
-            let mut game = self.game.borrow_mut();
+            let game = self.game.borrow();
 
             render_all(&self, &game);
 
@@ -63,6 +67,8 @@ impl Engine {
                     EngineAction::Exit(save) => {
                         if save {
                             savegame::save(&game);
+                        } else {
+                            savegame::delete();
                         }
                         break 'game_loop;
                     }

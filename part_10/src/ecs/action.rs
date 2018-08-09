@@ -190,7 +190,7 @@ impl EntityAction {
 
             let state = match cast_result {
                 SpellResult { status: SpellStatus::Success, .. } => {
-                    self.use_item_success(ecs, entity_id, item_id, item_number)
+                    self.use_item_success(ecs, item_id)
                 },
                 SpellResult { status: SpellStatus::Targeting(spell, caster_id), .. } => {
                     Some(GameState::Targeting(spell, caster_id))
@@ -220,7 +220,7 @@ impl EntityAction {
         }
     }
 
-    fn use_item_success(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId, item_number: u8) -> Option<GameState> {
+    fn use_item_success(&self, ecs: &mut Ecs, item_id: EntityId) -> Option<GameState> {
         ecs.destroy_entity(&item_id);
         None
     }

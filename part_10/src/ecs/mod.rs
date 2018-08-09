@@ -277,7 +277,6 @@ impl Serialize for Ecs {
 impl Deserialize for Ecs {
     fn deserialize(json: &JsonValue) -> Self {
 
-        let ecs = Self::initialize();
         let mut highest_id : EntityId = 0;
         let mut storage : HashMap<EntityId, EcsStorage> = HashMap::new();
         let mut entities : HashMap<EntityId, Entity> = HashMap::new();

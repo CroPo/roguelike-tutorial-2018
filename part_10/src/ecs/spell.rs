@@ -136,7 +136,7 @@ impl Spell {
 
         let new_ai_target = if let Some(target) = ecs.get_component::<Position>(target_id) {
             match self.find_target(ecs, None, &target) {
-                Some((entity_id, distance)) => {
+                Some((entity_id, _)) => {
                     Some(entity_id)
                 }
                 None => None
@@ -161,7 +161,6 @@ impl Spell {
     }
 
     fn lightning(&self, ecs: &mut Ecs, fov_map: &Map, caster_id: EntityId, item_id: EntityId, range: u8, damage: u32) -> SpellResult {
-        let entity_name = Self::get_entity_name(ecs, caster_id);
 
         let target = if let Some(caster_position) = ecs.get_component::<Position>(caster_id) {
             match self.find_target(ecs, Some(fov_map), &caster_position) {
@@ -179,8 +178,7 @@ impl Spell {
         if let Some(target_id) = target {
             let target_name = Self::get_entity_name(ecs, target_id).to_uppercase();
 
-            /// We can unwrap this right at the place, because we already made sure that only `Actor` entities will be used
-            let target = ecs.get_component::<Actor>(target_id).unwrap();
+            // We can unwrap this right at the place, because we already made sure that only `Actor` entities will be used
             let message = Message::new(format!("A lighting bolt strikes the {} with a loud thunder!", target_name),
                                        colors::LIGHT_BLUE);
             SpellResult::success(caster_id, item_id, Some(message),

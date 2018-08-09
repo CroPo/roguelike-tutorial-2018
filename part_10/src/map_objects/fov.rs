@@ -1,5 +1,4 @@
 use map_objects::map::GameMap;
-use tcod::map::FovAlgorithm;
 use tcod::map::Map;
 use settings::Settings;
 use ecs::Ecs;

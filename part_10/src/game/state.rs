@@ -1,9 +1,7 @@
 use std::rc::Rc;
 
-use tcod;
 use tcod::colors;
-use tcod::input;
-use tcod::input::{check_for_event, EventFlags, Event, Mouse, Key, KeyCode};
+use tcod::input::{check_for_event, EventFlags};
 
 use ecs::Ecs;
 use ecs::action::EntityAction;
@@ -19,12 +17,12 @@ use message::Message;
 use ecs::spell::Spell;
 use ecs::id::EntityId;
 use game::input::*;
-use game::EngineAction;
 use map_objects::fov::recompute_fov;
 use settings::Settings;
 use game::Game;
 use engine::Engine;
-use std::cell::RefMut;
+use std::cell::Ref;
+use engine::EngineAction;
 
 
 pub struct GameStateResult {
@@ -43,7 +41,7 @@ pub enum GameState {
 }
 
 impl GameState {
-    pub fn run(&self, engine: &Engine, game: &RefMut<Game>) -> GameStateResult {
+    pub fn run(&self, engine: &Engine, game: &Ref<Game>) -> GameStateResult {
         let input_action = handle_input(self, check_for_event(EventFlags::all()));
         let log = game.log.clone();
         
@@ -53,7 +51,7 @@ impl GameState {
 
         match *self {
             GameState::PlayersTurn => self.player_turn(&mut ecs, &mut fov_map, input_action, log, &map, &engine.settings),
-            GameState::EnemyTurn => self.enemy_turn(&mut ecs, &fov_map, input_action, log, &map),
+            GameState::EnemyTurn => self.enemy_turn(&mut ecs, &fov_map, log, &map),
             GameState::PlayerDead => self.player_dead(input_action),
             GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(&mut ecs, &fov_map, input_action, log),
             GameState::Targeting(spell, caster_id) => self.targeting(&mut ecs, &fov_map, input_action, log, spell, caster_id),
@@ -255,7 +253,7 @@ impl GameState {
                     if let Some(target_id) = targets.iter().next() {
                         let player_creature = ecs.get_component::<Actor>(id).unwrap();
                         match player_creature.calculate_attack(&ecs, *target_id) {
-                            Some(x) => EntityAction::MeleeAttack(id, *target_id),
+                            Some(_x) => EntityAction::MeleeAttack(id, *target_id),
                             None => EntityAction::Idle
                         }
                     } else {
@@ -295,7 +293,7 @@ impl GameState {
         });
     }
 
-    fn enemy_turn(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
+    fn enemy_turn(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
         self.update_enemy_ai_target(ecs, fov_map, Rc::clone(&log));
 
         let entity_ids = ecs.get_all_ids::<MonsterAi>();

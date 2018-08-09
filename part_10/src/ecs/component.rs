@@ -9,7 +9,6 @@ use tcod::map::Map;
 use tcod::pathfinding::AStar;
 
 use json::JsonValue;
-use json;
 
 use ecs::action::EntityAction;
 use map_objects::map::GameMap;
@@ -166,12 +165,6 @@ impl Render {
         if let Some(p) = ecs.get_component::<Position>(self.entity_id) {
             console.set_default_foreground(self.color);
             console.put_char(p.position.0, p.position.1, self.glyph, BackgroundFlag::None);
-        }
-    }
-
-    pub fn clear(&self, ecs: &Ecs, console: &mut Console) {
-        if let Some(p) = ecs.get_component::<Position>(self.entity_id) {
-            console.put_char(p.position.0, p.position.1, ' ', BackgroundFlag::None);
         }
     }
 }
@@ -399,7 +392,7 @@ impl Serialize for Corpse {
 }
 
 impl Deserialize for Corpse {
-    fn deserialize(json: &JsonValue) -> Self {
+    fn deserialize(_json: &JsonValue) -> Self {
         Corpse {
         }
     }
