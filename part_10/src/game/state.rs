@@ -20,6 +20,11 @@ use ecs::spell::Spell;
 use ecs::id::EntityId;
 use game::input::*;
 use game::EngineAction;
+use map_objects::fov::recompute_fov;
+use settings::Settings;
+use game::Game;
+use engine::Engine;
+use std::cell::RefMut;
 
 
 pub struct GameStateResult {
@@ -38,15 +43,20 @@ pub enum GameState {
 }
 
 impl GameState {
-    pub fn run(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
+    pub fn run(&self, engine: &Engine, game: &RefMut<Game>) -> GameStateResult {
         let input_action = handle_input(self, check_for_event(EventFlags::all()));
+        let log = game.log.clone();
+        
+        let mut ecs = game.ecs.borrow_mut();
+        let mut fov_map = game.fov_map.borrow_mut();
+        let map = game.map.borrow();
 
         match *self {
-            GameState::PlayersTurn => self.player_turn(ecs, fov_map, input_action, log, map),
-            GameState::EnemyTurn => self.enemy_turn(ecs, fov_map, input_action, log, map),
+            GameState::PlayersTurn => self.player_turn(&mut ecs, &mut fov_map, input_action, log, &map, &engine.settings),
+            GameState::EnemyTurn => self.enemy_turn(&mut ecs, &fov_map, input_action, log, &map),
             GameState::PlayerDead => self.player_dead(input_action),
-            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(ecs, fov_map, input_action, log),
-            GameState::Targeting(spell, caster_id) => self.targeting(ecs, fov_map, input_action, log, spell, caster_id),
+            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(&mut ecs, &fov_map, input_action, log),
+            GameState::Targeting(spell, caster_id) => self.targeting(&mut ecs, &fov_map, input_action, log, spell, caster_id),
         }
     }
 
@@ -163,7 +173,10 @@ impl GameState {
         }
     }
 
-    fn player_turn(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
+    fn player_turn(&self, ecs: &mut Ecs, fov_map: &mut Map, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap, settings: &Settings) -> GameStateResult {
+
+        recompute_fov(ecs, fov_map, settings);
+
         match action {
             Some(InputAction::Exit) => {
                 GameStateResult {

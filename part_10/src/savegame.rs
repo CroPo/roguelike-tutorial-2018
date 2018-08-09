@@ -1,7 +1,7 @@
 use std::fs;
-
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
+use std::cell::RefMut;
 
 use json::{JsonValue};
 use json;
@@ -11,7 +11,7 @@ use settings::Settings;
 
 const SAVE_FILE_NAME: &str = "savegame.dat";
 
-pub fn save(game: &Serialize) {
+pub fn save(game: &RefMut<Game>) {
     let mut file = OpenOptions::new()
         .write(true)
         .truncate(true)
@@ -32,7 +32,7 @@ pub fn load(settings: &Settings) -> Option<Game> {
 
 }
 
-fn deserialize<'a>(settings: &'a Settings, file: &mut File) -> Option<Game<'a>> {
+fn deserialize(settings: &Settings, file: &mut File) -> Option<Game> {
     let mut data = String::new();
     file.read_to_string(&mut data);
 

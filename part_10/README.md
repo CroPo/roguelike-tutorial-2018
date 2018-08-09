@@ -12,6 +12,7 @@ Contents of this Writeup:
 2. [Saving the Game](#saving-the-game)
 3. [Saving the Game - Attempt 2](#saving-the-game---attempt-2)
 4. [Loading the Game](#loading-the-game)
+5. [The Main Menu](#the-main-menu)
 
 ## Settings
 
@@ -390,3 +391,18 @@ Loading a Game basically works now. However, using a `Spell` does not. I got som
 I had a typo here, too. However, this typo happened in the serialization process, and not in deserializing.
 
 After these few issues were resolved, I am able to save a game on exit, and load it when I start the game again.
+
+### The Main Menu
+
+The one thing left to do to finish this tutorial part is creating a main menu, so the game won't immediatelly start in
+a dungeon when the application is run. Also, the player should be able to choose between continuing the game or starting
+a new one. I will display both option independentally of a save file being present. If the player chooses to load a game
+without a save file being present, a new game will be run (just like it happens now).
+
+Also, when pressing the escape key while the game is running a selection will be shown with the option to either quit, save
+and quit, or cancel. Except when the player is dead - he will immediatelly be returned to the main menu.
+
+To Achieve this in a smooth way, I need to separate the `run` function of the `Game` struct, and put it into another place.
+After that I can actually add the main menu as an own `GameState`. 
+
+It was quite some work, but now everything is running again same as before. That initial work was needed.

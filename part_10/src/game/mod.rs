@@ -17,6 +17,7 @@ use map_objects::fov;
 use render::render_all;
 use savegame;
 use savegame::{Serialize, Deserialize};
+use std::cell::RefCell;
 
 pub mod state;
 pub mod input;
@@ -27,19 +28,16 @@ pub enum EngineAction {
     Exit(bool),
 }
 
-pub struct Game <'a> {
-    ecs: Ecs,
-    map: GameMap,
-    log: Rc<MessageLog>,
+pub struct Game {
+    pub ecs: RefCell<Ecs>,
+    pub map: RefCell<GameMap>,
+    pub log: Rc<MessageLog>,
 
-    settings: &'a Settings,
-    state: GameState,
-    mouse_pos: (i32, i32),
-    fov_map: Map,
-    log_panel: MessagePanel
+    pub fov_map: RefCell<Map>,
+    pub log_panel: MessagePanel
 }
 
-impl <'a> Game <'a>  {
+impl Game {
     pub fn new(settings: &Settings) -> Game {
 
         let mut ecs = Ecs::initialize();
@@ -52,13 +50,10 @@ impl <'a> Game <'a>  {
                                           Rc::clone(&log));
 
         Game {
-            ecs,
-            map,
+            ecs: RefCell::new(ecs),
+            map: RefCell::new(map),
             log,
-            settings,
-            state: GameState::PlayersTurn,
-            mouse_pos: (0, 0),
-            fov_map,
+            fov_map: RefCell::new(fov_map),
             log_panel
         }
     }
@@ -75,61 +70,21 @@ impl <'a> Game <'a>  {
                                           Rc::clone(&log));
 
         Game {
-            ecs,
-            map,
+            ecs: RefCell::new(ecs),
+            map: RefCell::new(map),
             log,
-            settings,
-            state: GameState::PlayersTurn,
-            mouse_pos: (0, 0),
-            fov_map,
+            fov_map: RefCell::new(fov_map),
             log_panel
-        }
-    }
-
-
-    pub fn run(&mut self, root: &mut Root) {
-        'game_loop: while !root.window_closed() {
-            {
-                let player_pos = self.ecs.get_component::<Position>(self.ecs.player_entity_id).unwrap();
-                fov::recompute_fov(&mut self.fov_map, (player_pos.position.0, player_pos.position.1), &self.settings);
-            }
-
-            render_all(&self.ecs, root, &self.settings, &mut self.map, &self.fov_map,
-                       &self.state, &self.log_panel, self.mouse_pos);
-
-            let result = self.state.run(&mut self.ecs, &self.fov_map, Rc::clone(&self.log), &self.map);
-
-            if let Some(engine_action) = result.engine_action {
-                match engine_action {
-                    EngineAction::Exit(save) => {
-                            match save {
-                                true => savegame::save(self),
-                                false => savegame::delete()
-                            }
-                            break 'game_loop
-                        }
-                    EngineAction::ToggleFullscreen => {
-                        let fullscreen = root.is_fullscreen();
-                        root.set_fullscreen(!fullscreen)
-                    },
-                    EngineAction::MousePos(x, y) => {
-                        self.mouse_pos.0 = x as i32;
-                        self.mouse_pos.1 = y as i32;
-                    }
-                }
-            }
-
-            self.state = result.next_state;
         }
     }
 }
 
-impl <'a> Serialize for Game <'a> {
+impl Serialize for Game {
     fn serialize(&self) -> JsonValue {
         object!(
-            "ecs" => self.ecs.serialize(),
+            "ecs" => self.ecs.borrow().serialize(),
             "log" => self.log.serialize(),
-            "map" => self.map.serialize(),
+            "map" => self.map.borrow().serialize(),
         )
     }
 }

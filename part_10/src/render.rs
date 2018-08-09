@@ -1,3 +1,7 @@
+use std::fmt::{ Display, Formatter, Result, Debug };
+use std::ops::DerefMut;
+use std::cell::RefMut;
+
 use tcod::console::{Console, Root, blit, Offscreen};
 
 use map_objects::map::GameMap;
@@ -21,7 +25,8 @@ use settings::Settings;
 use json::JsonValue;
 use savegame::Deserialize;
 
-use std::fmt::{ Display, Formatter, Result, Debug };
+use game::Game;
+use engine::Engine;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum RenderOrder {
@@ -49,12 +54,17 @@ impl Deserialize for RenderOrder {
 
 
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
-pub fn render_all(ecs: &Ecs,root_console: &mut Root, settings: &Settings, map: &mut GameMap, fov_map: &Map, game_state: &GameState,
-                  log_panel: &MessagePanel, mouse_pos: (i32, i32)) {
-    let mut console = Offscreen::new(settings.screen_width(), settings.screen_height());
-    let mut panel = Offscreen::new(settings.screen_width(), settings.panel_height());
+pub fn render_all(engine: &Engine, game: &RefMut<Game>) {
+    let mut console = Offscreen::new(engine.settings.screen_width(), engine.settings.screen_height());
+    let mut panel = Offscreen::new(engine.settings.screen_width(), engine.settings.panel_height());
 
-    map.draw(&mut console, fov_map);
+    let ecs = game.ecs.borrow();
+    let mut map = game.map.borrow_mut();
+    let fov_map = game.fov_map.borrow();
+
+    let mut root_console = engine.root_console.borrow_mut();
+
+    map.draw(&mut console, &fov_map);
 
     let component_ids = ecs.get_all_ids::<Render>();
     let mut ids_filtered: Vec<&EntityId> = component_ids.iter().filter(|id| {
@@ -72,13 +82,13 @@ pub fn render_all(ecs: &Ecs,root_console: &mut Root, settings: &Settings, map: &
     });
     ids_filtered.iter().for_each(|id| {
         let c = ecs.get_component::<Render>(**id).unwrap();
-        c.draw(ecs, &mut console)
+        c.draw(&ecs, &mut console)
     });
 
 
     blit(&console, (0, 0),
          (console.width(), console.height()),
-         root_console, (0, 0),
+         root_console.deref_mut(), (0, 0),
          1.0, 1.0);
 
 
@@ -86,44 +96,32 @@ pub fn render_all(ecs: &Ecs,root_console: &mut Root, settings: &Settings, map: &
     panel.set_default_background(colors::BLACK);
     panel.clear();
 
-    panel.print_ex(1, 0, BackgroundFlag::None, TextAlignment::Left, get_names_under_mouse(ecs, fov_map, mouse_pos));
+    panel.print_ex(1, 0, BackgroundFlag::None, TextAlignment::Left,
+                   get_names_under_mouse(&ecs, &fov_map, engine.mouse_pos));
 
     if let Some(p) = ecs.get_component::<Actor>(ecs.player_entity_id) {
         panel.set_default_background(colors::BLACK);
-        render_bar(&mut panel, (1, 1), settings.bar_width(),
+        render_bar(&mut panel, (1, 1), engine.settings.bar_width(),
                    "HP", p.hp, p.max_hp,
                    colors::RED, colors::DARK_RED);
     }
-    log_panel.render(&mut panel);
+
+    game.log_panel.render(&mut panel);
 
     blit(&panel, (0, 0),
          (panel.width(), panel.height()),
-         root_console, settings.panel_pos(),
+         root_console.deref_mut(), engine.settings.panel_pos(),
          1.0, 1.0);
 
 
-    match *game_state {
-        GameState::ShowInventoryUse => inventory_menu(root_console, ecs, "Press the key next to an item to use it, or Esc to cancel.",
+    match engine.state {
+        GameState::ShowInventoryUse => inventory_menu(root_console.deref_mut(), &ecs, "Press the key next to an item to use it, or Esc to cancel.",
                                                       50, console.width(), console.height()),
-        GameState::ShowInventoryDrop => inventory_menu(root_console, ecs, "Press the key next to an item to drop it, or Esc to cancel.",
+        GameState::ShowInventoryDrop => inventory_menu(root_console.deref_mut(), &ecs, "Press the key next to an item to drop it, or Esc to cancel.",
                                                       50, console.width(), console.height()),
         _ => ()
     }
     root_console.flush()
-}
-
-
-/// Clear all `Entity`s which got both the `Render` and the `Position` component assigned from the console
-pub fn clear_all(ecs: &Ecs, console: &mut Console) {
-    ecs.get_all::<Position>().iter().for_each(|(e, _)| {
-        let render_component = ecs.get_component::<Render>(*e);
-        match render_component {
-            Some(r) => {
-                r.clear(ecs, console)
-            }
-            None => ()
-        }
-    });
 }
 
 /// Render a bar to graphically represent a value
