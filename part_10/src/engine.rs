@@ -10,7 +10,9 @@ use settings::Settings;
 pub enum EngineAction {
     ToggleFullscreen,
     MousePos(i32, i32),
-    Exit(bool),
+    StartGame(bool),
+    QuitGame(bool),
+    Exit,
 }
 
 pub struct Engine {
@@ -39,24 +41,38 @@ impl Engine {
             .font_type(settings.font_type())
             .init();
 
-        let game = match savegame::load(&settings) {
+        /*let game = match savegame::load(&settings) {
             Some(game) => game,
             None => Game::new(&settings)
-        };
+        };*/
 
         Engine {
-            game: RefCell::new(game),
+            game: RefCell::new(Game::new()),
             settings,
             root_console: RefCell::new(root_console),
-            state: GameState::PlayersTurn,
+            state: GameState::MainMenu,
             mouse_pos: (0, 0),
         }
     }
 
-    fn game_loop(&mut self) {
-        'game_loop: while !self.root_console.borrow().window_closed() {
+    fn start_game(&self, game: &mut Game , load_game: bool) {
+        if load_game {
+            match savegame::load() {
+                Some(game_json) => {
+                    game.load(&self.settings, game_json);
+                    return;
+                }
+                None => ()
+            };
+        }
+        game.start_new(&self.settings);
+    }
 
-            let game = self.game.borrow();
+    fn game_loop(&mut self) {
+
+        let mut game = self.game.borrow_mut();
+
+        'game_loop: while !self.root_console.borrow().window_closed() {
 
             render_all(&self, &game);
 
@@ -64,13 +80,18 @@ impl Engine {
 
             if let Some(engine_action) = result.engine_action {
                 match engine_action {
-                    EngineAction::Exit(save) => {
+                    EngineAction::Exit => {
+                        break 'game_loop;
+                    }
+                    EngineAction::QuitGame(save) => {
                         if save {
                             savegame::save(&game);
                         } else {
                             savegame::delete();
                         }
-                        break 'game_loop;
+                    }
+                    EngineAction::StartGame(load_game) => {
+                        self.start_game(&mut game, load_game);
                     }
                     EngineAction::ToggleFullscreen => {
                         let fullscreen = self.root_console.borrow().is_fullscreen();

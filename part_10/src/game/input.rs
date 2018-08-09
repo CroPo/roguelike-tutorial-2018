@@ -15,6 +15,8 @@ pub enum InputAction {
     PickUp,
     ShowInventory,
     ShowInventoryDrop,
+    StartNewGame,
+    LoadGame,
     Fullscreen,
     Exit,
 }
@@ -26,7 +28,8 @@ pub fn handle_input(state: &GameState, event: Option<(EventFlags, Event)>) -> Op
             (KEY_PRESS, Event::Key(key)) => {
                 match state {
                     GameState::PlayersTurn => handle_keys_player_turn(key),
-                    GameState::ShowInventoryUse | GameState::ShowInventoryDrop => handle_keys_selection_menu(key),
+                    GameState::ShowInventoryUse | GameState::ShowInventoryDrop
+                    | GameState::MainMenu | GameState::ShowQuitGameMenu => handle_keys_selection_menu(key),
                     _ => handle_keys_default(key),
                 }
             }

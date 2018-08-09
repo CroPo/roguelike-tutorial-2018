@@ -405,4 +405,10 @@ and quit, or cancel. Except when the player is dead - he will immediatelly be re
 To Achieve this in a smooth way, I need to separate the `run` function of the `Game` struct, and put it into another place.
 After that I can actually add the main menu as an own `GameState`. 
 
-It was quite some work, but now everything is running again same as before. That initial work was needed.
+It was quite some work, but now everything is running again same as before. That initial work was needed. I will also
+have to modify the creation of a new game, too, at least a bit.
+
+The main menu was added, and handling the ESC key while the game is running was modified - a selection is shown which
+lets you either save and quit, or cancel and continue the game.
+
+And... that's pretty much it. This part is done (finally).

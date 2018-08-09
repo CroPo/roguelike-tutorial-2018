@@ -27,16 +27,13 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(settings: &Settings) -> Game {
+    pub fn new() -> Game {
 
         let mut ecs = Ecs::initialize();
-        let mut map = GameMap::new(settings.map_width(), settings.map_height());
-        map.make_map(&mut ecs, &settings);
+        let mut map = GameMap::new(1, 1);
         let log = Rc::new(MessageLog::new());
-        let fov_map = fov::initialize_fov(&map);
-        let log_panel = MessagePanel::new(settings.message_pos(),
-                                          settings.message_dimensions(),
-                                          Rc::clone(&log));
+        let fov_map = Map::new(1,1);
+        let log_panel = MessagePanel::new((0,0),(0,0),Rc::clone(&log));
 
         Game {
             ecs: RefCell::new(ecs),
@@ -47,24 +44,38 @@ impl Game {
         }
     }
 
-    pub fn from_json(settings: &Settings, json: JsonValue) -> Game {
+    pub fn start_new(&mut self, settings: &Settings) {
+
+        let mut ecs = Ecs::initialize();
+        let mut map = GameMap::new(settings.map_width(), settings.map_height());
+        map.make_map(&mut ecs, &settings);
+        let log = MessageLog::new();
+        let fov_map = fov::initialize_fov(&map);
+
+        self.ecs = RefCell::new(ecs);
+        self.map = RefCell::new(map);
+        self.log = Rc::new(log);
+        self.fov_map = RefCell::new(fov_map);
+        self.log_panel = MessagePanel::new(settings.message_pos(),
+                                           settings.message_dimensions(),
+                                           self.log.clone());
+    }
+
+    pub fn load(&mut self, settings: &Settings, json: JsonValue) {
 
         let ecs = Ecs::deserialize(&json["ecs"]);
         let map = GameMap::deserialize(&json["map"]);
-        let log = Rc::new(MessageLog::deserialize(&json["log"]));
+        let log = MessageLog::deserialize(&json["log"]);
 
         let fov_map = fov::initialize_fov(&map);
-        let log_panel = MessagePanel::new(settings.message_pos(),
-                                          settings.message_dimensions(),
-                                          Rc::clone(&log));
 
-        Game {
-            ecs: RefCell::new(ecs),
-            map: RefCell::new(map),
-            log,
-            fov_map: RefCell::new(fov_map),
-            log_panel
-        }
+        self.ecs = RefCell::new(ecs);
+        self.map = RefCell::new(map);
+        self.log = Rc::new(log);
+        self.fov_map = RefCell::new(fov_map);
+        self.log_panel = MessagePanel::new(settings.message_pos(),
+                                           settings.message_dimensions(),
+                                           self.log.clone());
     }
 }
 

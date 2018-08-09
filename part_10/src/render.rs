@@ -1,8 +1,9 @@
 use std::fmt::{ Display, Formatter, Result, Debug };
 use std::ops::DerefMut;
-use std::cell::Ref;
+use std::cell::RefMut;
 
 use tcod::console::{Console, Root, blit, Offscreen};
+use tcod::image;
 
 use tcod::Map;
 use ecs::Ecs;
@@ -25,6 +26,7 @@ use savegame::Deserialize;
 
 use game::Game;
 use engine::Engine;
+use tcod::image::Image;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum RenderOrder {
@@ -52,15 +54,23 @@ impl Deserialize for RenderOrder {
 
 
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
-pub fn render_all(engine: &Engine, game: &Ref<Game>) {
-    let mut console = Offscreen::new(engine.settings.screen_width(), engine.settings.screen_height());
-    let mut panel = Offscreen::new(engine.settings.screen_width(), engine.settings.panel_height());
+pub fn render_all(engine: &Engine, game: &RefMut<Game>) {
 
+    match engine.state {
+        GameState::MainMenu => render_main_menu(&engine),
+        _ => render_game(&engine, &game)
+    }
+}
+
+fn render_game(engine: &Engine, game: &RefMut<Game>) {
     let ecs = game.ecs.borrow();
     let mut map = game.map.borrow_mut();
     let fov_map = game.fov_map.borrow();
 
     let mut root_console = engine.root_console.borrow_mut();
+
+    let mut console = Offscreen::new(engine.settings.screen_width(), engine.settings.screen_height());
+    let mut panel = Offscreen::new(engine.settings.screen_width(), engine.settings.panel_height());
 
     map.draw(&mut console, &fov_map);
 
@@ -116,11 +126,44 @@ pub fn render_all(engine: &Engine, game: &Ref<Game>) {
         GameState::ShowInventoryUse => inventory_menu(root_console.deref_mut(), &ecs, "Press the key next to an item to use it, or Esc to cancel.",
                                                       50, console.width(), console.height()),
         GameState::ShowInventoryDrop => inventory_menu(root_console.deref_mut(), &ecs, "Press the key next to an item to drop it, or Esc to cancel.",
-                                                      50, console.width(), console.height()),
+                                                       50, console.width(), console.height()),
+        GameState::ShowQuitGameMenu => selection_menu(root_console.deref_mut(), "",
+                                                      vec![String::from("Save & Quit"), String::from("Cancel")],
+                                                      24, console.width(), console.height()),
+        GameState::PlayerDead => message_box(root_console.deref_mut(), "YOU ARE DEAD. Press Escape to return to the main menu",
+                                             console.width(), console.height()),
         _ => ()
     }
     root_console.flush()
 }
+
+fn render_main_menu(engine: &Engine) {
+    let mut root_console = engine.root_console.borrow_mut();
+
+    let background = Image::from_file("menu_background1.png").unwrap();
+
+    image::blit_2x(&background, (0,0),
+                   (-1, -1),
+                   root_console.deref_mut(), (0,0));
+
+    root_console.set_default_foreground(colors::LIGHT_YELLOW);
+
+    root_console.print_ex(engine.settings.screen_width()/2, engine.settings.screen_height() /2 - 4,
+                          BackgroundFlag::None, TextAlignment::Center,
+                    "/r/roguelikedev Tutorial Series 2018");
+
+    root_console.print_ex(engine.settings.screen_width()/2, engine.settings.screen_height() - 2,
+                          BackgroundFlag::None, TextAlignment::Center,
+                          "by /u/CrocodileSpacePopr");
+
+    selection_menu(&mut root_console, "",
+                   vec![String::from("New game"), String::from("Continue last game"), String::from("Quit")],
+                   24, engine.settings.screen_width(), engine.settings.screen_height());
+
+
+    root_console.flush();
+}
+
 
 /// Render a bar to graphically represent a value
 pub fn render_bar(panel: &mut Offscreen, pos: (i32, i32), width: i32, name: &str, value: u32, max: u32, bar_color: Color, back_color: Color) {
@@ -152,6 +195,10 @@ fn get_names_under_mouse(ecs: &Ecs, fov_map: &Map, mouse_pos: (i32, i32)) -> Str
     });
 
     names.join(",")
+}
+
+fn message_box(console: &mut Root, title: &str, screen_width: i32, screen_height: i32) {
+    selection_menu(console, title, vec![], 24, screen_width, screen_height);
 }
 
 /// Display a selection menu of various options

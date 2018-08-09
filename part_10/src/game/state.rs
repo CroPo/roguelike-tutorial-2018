@@ -21,7 +21,7 @@ use map_objects::fov::recompute_fov;
 use settings::Settings;
 use game::Game;
 use engine::Engine;
-use std::cell::Ref;
+use std::cell::RefMut;
 use engine::EngineAction;
 
 
@@ -37,11 +37,13 @@ pub enum GameState {
     PlayerDead,
     ShowInventoryUse,
     ShowInventoryDrop,
+    ShowQuitGameMenu,
     Targeting(Spell, EntityId),
+    MainMenu,
 }
 
 impl GameState {
-    pub fn run(&self, engine: &Engine, game: &Ref<Game>) -> GameStateResult {
+    pub fn run(&self, engine: &Engine, game: &RefMut<Game>) -> GameStateResult {
         let input_action = handle_input(self, check_for_event(EventFlags::all()));
         let log = game.log.clone();
         
@@ -53,6 +55,8 @@ impl GameState {
             GameState::PlayersTurn => self.player_turn(&mut ecs, &mut fov_map, input_action, log, &map, &engine.settings),
             GameState::EnemyTurn => self.enemy_turn(&mut ecs, &fov_map, log, &map),
             GameState::PlayerDead => self.player_dead(input_action),
+            GameState::MainMenu => self.main_menu(input_action),
+            GameState::ShowQuitGameMenu => self.quit_game_menu(input_action),
             GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(&mut ecs, &fov_map, input_action, log),
             GameState::Targeting(spell, caster_id) => self.targeting(&mut ecs, &fov_map, input_action, log, spell, caster_id),
         }
@@ -158,13 +162,64 @@ impl GameState {
         match action {
             Some(InputAction::Exit) => {
                 GameStateResult {
-                    next_state: GameState::PlayerDead,
-                    engine_action: Some(EngineAction::Exit(false)),
+                    next_state: GameState::MainMenu,
+                    engine_action: Some(EngineAction::QuitGame(false)),
                 }
             }
             _ => {
                 GameStateResult {
                     next_state: GameState::PlayerDead,
+                    engine_action: None,
+                }
+            }
+        }
+    }
+
+    fn main_menu(&self, action: Option<InputAction>) -> GameStateResult {
+        match action {
+            Some(InputAction::Exit) | Some(InputAction::SelectOption('c')) => {
+                GameStateResult {
+                    next_state: GameState::MainMenu,
+                    engine_action: Some(EngineAction::Exit),
+                }
+            }
+            Some(InputAction::SelectOption('a')) => {
+                GameStateResult {
+                    next_state: GameState::PlayersTurn,
+                    engine_action: Some(EngineAction::StartGame(false)),
+                }
+            }
+            Some(InputAction::SelectOption('b')) => {
+                GameStateResult {
+                    next_state: GameState::PlayersTurn,
+                    engine_action: Some(EngineAction::StartGame(true)),
+                }
+            }
+            _ => {
+                GameStateResult {
+                    next_state: GameState::MainMenu,
+                    engine_action: None,
+                }
+            }
+        }
+    }
+    fn quit_game_menu(&self, action: Option<InputAction>) -> GameStateResult {
+        match action {
+            Some(InputAction::Exit) | Some(InputAction::SelectOption('b')) => {
+                GameStateResult {
+                    next_state: GameState::PlayersTurn,
+                    engine_action: None,
+                }
+            }
+            Some(InputAction::SelectOption('a')) => {
+                GameStateResult {
+                    next_state: GameState::MainMenu,
+                    engine_action: Some(EngineAction::QuitGame(true)),
+                }
+            }
+            _ => {
+                GameStateResult {
+                    next_state: GameState::ShowQuitGameMenu,
                     engine_action: None,
                 }
             }
@@ -178,8 +233,8 @@ impl GameState {
         match action {
             Some(InputAction::Exit) => {
                 GameStateResult {
-                    next_state: GameState::PlayersTurn,
-                    engine_action: Some(EngineAction::Exit(true)),
+                    next_state: GameState::ShowQuitGameMenu,
+                    engine_action: None,
                 }
             }
             Some(InputAction::MousePos(x, y)) => {
