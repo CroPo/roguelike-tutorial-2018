@@ -29,6 +29,7 @@ use engine::Engine;
 use tcod::image::Image;
 use ecs::component::Stairs;
 use ecs::component::Corpse;
+use ecs::component::Level;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum RenderOrder {
@@ -222,7 +223,7 @@ fn generate_entity_text(ecs: &Ecs, id: EntityId) -> String {
         format!("{}", id)
     };
 
-    if let Some(a) = ecs.get_component::<Actor>(id) {
+    if let Some(a) = ecs.get_component::<Level>(id) {
         name = format!("{},lv.{}", name, a.level);
     }
     if let Some(c) = ecs.get_component::<Corpse>(id) {

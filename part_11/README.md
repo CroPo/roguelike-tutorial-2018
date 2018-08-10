@@ -13,6 +13,7 @@ Contents of this Writeup:
     3. [Creating the next floor](#creating-the-next-floor)
 2. [Actor Levels](#actor-levels)
     1. [Extending the Actor](#extending-the-actor)
+    2. [Gaining XP](#gaining-xp)
         
 ## Dungeons Levels
 
@@ -145,3 +146,57 @@ The second section of this part is about collecting experience and leveling up. 
 bit, because I want to know how much XP is rewarded for killing it. I will also add a value which represents the 
 `Actors`s level. Doing this I am also able to set an enemy to a different level. Since I do have that information 
 available now, I can also update the mouseover display.
+
+### Gaining XP
+
+As a next step, I want the player to be able to collect experience. 
+
+Every time an `Actor` dies, the killer should beawarded the correct amount of XP. I add a new `EntityAction` to be able
+to pass an amount of XP to any `Entity`.  The main problem here is that I have no information about who killed the 
+`Actor`. This information is not passed to the `TakeDamage` action, but it's dropped immediatelly afert all the time
+so it's no big deal to pass it to `TakeDamage`.
+
+To be actually able to do something with the rewarded XP, I need to create yet another `Component` for handling all
+the leveling stuff: `Level`. It needs a few values: the total collected xp, and the xp needed for the next level up. 
+Also a base value and a factor to calculate the XP needed for the next level. 
+
+Adding the `level` to the component was not that much of a good idea - that's why I will move it over to the `Level`
+component.
+
+That's how my XP calculation and the xp rewarding works:
+
+```rust
+pub struct Level {
+    entity_id: EntityId,
+    base: u32,
+    factor: f32,
+    pub level: u8,
+    pub xp_total: u32
+}
+
+impl Level {
+    pub fn new(entity_id: EntityId, level: u8, base: u32, factor: f32) -> Self {
+        Self {
+            entity_id,
+            xp_total: 0,
+            level,
+            base,
+            factor
+        }
+    }
+
+    pub fn xp_to_level(&mut self, level: i32) -> u32 {
+        (self.base as f32 * (1.0 + self.factor).powi(level as i32 - 1)).floor() as u32
+    }
+
+    pub fn reward_xp(&mut self, xp: u32) {
+        self.xp_total+=xp;
+
+        let next_level = self.level as i32 + 1;
+
+        if self.xp_total >= self.xp_to_level(next_level) {
+            self.level += 1;
+        }
+    }
+}
+```

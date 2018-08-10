@@ -1,13 +1,8 @@
 use tcod::colors;
 use ecs::Ecs;
-use ecs::component::Position;
-use ecs::component::Render;
-use ecs::component::Name;
+use ecs::component::{Position, Render, Name, MonsterAi, Actor, Inventory, Level};
 use ecs::id::EntityId;
-use ecs::component::MonsterAi;
-use ecs::component::Actor;
 use render::RenderOrder;
-use ecs::component::Inventory;
 
 /// Templates for common Creature types
 pub enum CreatureTemplate {
@@ -47,7 +42,8 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, '@', colors::WHITE, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Player".to_string()});
-        ecs.register_component(id, Actor::new(id, 30, 500, 2000, 0, 1));
+        ecs.register_component(id, Actor::new(id, 30, 500, 2000, 0));
+        ecs.register_component(id, Level::new(id, 1, 200, 0.75));
         Some(id)
     }
 
@@ -56,7 +52,8 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, 'o', colors::DESATURATED_GREEN, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Orc".to_string() });
-        ecs.register_component(id, Actor::new(id, 10, 3, 0,35, 1));
+        ecs.register_component(id, Actor::new(id, 10, 3, 0,35));
+        ecs.register_component(id, Level::new(id, 1, 0, 0.0));
         ecs.register_component(id, MonsterAi::new(id));
         Some(id)
     }
@@ -66,7 +63,8 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, 'T', colors::DARKER_GREEN, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Troll".to_string()});
-        ecs.register_component(id, Actor::new(id, 16, 4, 1,100, 1));
+        ecs.register_component(id, Actor::new(id, 16, 4, 1,100));
+        ecs.register_component(id, Level::new(id, 1, 0, 0.0));
         ecs.register_component(id, MonsterAi::new(id));
         Some(id)
     }

@@ -113,7 +113,7 @@ impl Spell {
         let message = Message::new(
             format!("The fireball explodes at {}, burning everything within {} tiles!", target_name, radius), colors::ORANGE,
         );
-        let reaction = EntityAction::TakeDamage(target_id, damage);
+        let reaction = EntityAction::TakeDamage(target_id, damage, caster_id);
 
         let mut spell_result = SpellResult::success(caster_id, item_id, Some(message), Some(reaction));
 
@@ -124,7 +124,7 @@ impl Spell {
         ecs.get_all::<Position>().iter().filter(|(id, p)| {
             **id != target_id && ecs.has_component::<Actor>(**id) && p.distance_to(target.position) <= radius as f64
         }).for_each(|(id, p)| {
-            let reaction = EntityAction::TakeDamage(*id, damage / p.distance_to(target.position) as u32);
+            let reaction = EntityAction::TakeDamage(*id, damage / p.distance_to(target.position) as u32, caster_id);
             spell_result.add_reaction(reaction);
         });
 
@@ -182,7 +182,7 @@ impl Spell {
             let message = Message::new(format!("A lighting bolt strikes the {} with a loud thunder!", target_name),
                                        colors::LIGHT_BLUE);
             SpellResult::success(caster_id, item_id, Some(message),
-                                 Some(EntityAction::TakeDamage(target_id, damage)))
+                                 Some(EntityAction::TakeDamage(target_id, damage, caster_id)))
         } else {
             SpellResult::fail(Some(Message::new("No valid target in sight and in range".to_string(), colors::RED)))
         }

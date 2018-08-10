@@ -16,6 +16,7 @@ use game::state::GameState;
 use ecs::spell::SpellResult;
 use ecs::spell::SpellStatus;
 use tcod::Map;
+use ecs::component::Level;
 
 /// This struct defines the Result of one single action. A message can be created, and also
 /// a reaction can happen.
@@ -40,7 +41,7 @@ impl ActionResult {
 #[derive(PartialEq)]
 pub enum EntityAction {
     MeleeAttack(EntityId, EntityId),
-    TakeDamage(EntityId, u32),
+    TakeDamage(EntityId, u32, EntityId),
     MoveTo(EntityId, (i32, i32)),
     MoveRelative(EntityId, (i32, i32)),
     Die(EntityId),
@@ -50,6 +51,7 @@ pub enum EntityAction {
     AddItemToInventory(EntityId, EntityId),
     RemoveItemFromInventory(EntityId, EntityId),
     SetAiTarget(EntityId, EntityId),
+    RewardXp(EntityId, u32),
     Idle,
 }
 
@@ -60,7 +62,7 @@ impl EntityAction {
             EntityAction::MoveTo(entity_id, pos) => self.move_to_action(ecs, entity_id, pos),
             EntityAction::MoveRelative(entity_id, delta) => self.move_relative_action(ecs, entity_id, delta),
             EntityAction::MeleeAttack(attacker_id, target_id) => self.melee_attack_action(ecs, attacker_id, target_id),
-            EntityAction::TakeDamage(entity_id, damage)  => self.take_damage_action(ecs, entity_id, damage),
+            EntityAction::TakeDamage(entity_id, damage, attacker_id)  => self.take_damage_action(ecs, entity_id, damage, attacker_id),
             EntityAction::Die(entity_id) => self.die_action(ecs, entity_id),
             EntityAction::PickUpItem(entity_id, item_id) => self.pick_up_item_action(ecs, entity_id, item_id),
             EntityAction::DropItem(entity_id, item_number) => self.drop_item_action(ecs, entity_id, item_number),
@@ -68,6 +70,7 @@ impl EntityAction {
             EntityAction::RemoveItemFromInventory(entity_id, item_id) => self.remove_item_from_inventory_action(ecs, entity_id, item_id),
             EntityAction::UseItem(entity_id, item_number) => self.use_item_action(ecs, fov_map, entity_id, item_number),
             EntityAction::SetAiTarget(entity_id, target_id) => self.set_ai_target_action(ecs, entity_id, target_id),
+            EntityAction::RewardXp(entity_id, xp) => self.reward_xp(ecs, entity_id, xp),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
 
@@ -106,7 +109,7 @@ impl EntityAction {
                     Some(damage) => {
                         ActionResult {
                             message: Some(vec![Message::new(format!("The {} attacks the {} .", attacker_name, target_name), colors::WHITE)]),
-                            reactions: vec![EntityAction::TakeDamage(target_id, damage)],
+                            reactions: vec![EntityAction::TakeDamage(target_id, damage, attacker_id)],
                             state: None,
                         }
                     },
@@ -114,6 +117,25 @@ impl EntityAction {
                 }
             },
             None => ActionResult::none()
+        }
+    }
+
+    fn reward_xp(&self, ecs: &mut Ecs, entity_id: EntityId, xp: u32) -> ActionResult {
+        let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
+
+        if let Some(l) = ecs.get_component_mut::<Level>(entity_id) {
+            l.reward_xp(xp);
+
+            let message = Message::new(format!("{} gains {} XP", entity_name, xp), colors::WHITE);
+
+            ActionResult {
+                reactions: vec![],
+                message: Some(vec![message]),
+                state: None,
+            }
+
+        } else {
+            ActionResult::none()
         }
     }
 
@@ -131,7 +153,7 @@ impl EntityAction {
         ActionResult::none()
     }
 
-    fn take_damage_action(&self, ecs: &mut Ecs, entity_id: EntityId, damage: u32) -> ActionResult {
+    fn take_damage_action(&self, ecs: &mut Ecs, entity_id: EntityId, damage: u32, attacker_id: EntityId) -> ActionResult {
         let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
         if let Some(e) = ecs.get_component_mut::<Actor>(entity_id) {
             e.take_damage(damage);
@@ -144,7 +166,10 @@ impl EntityAction {
 
             return if e.hp <= 0 {
                 ActionResult {
-                    reactions: vec![EntityAction::Die(entity_id)],
+                    reactions: vec![
+                        EntityAction::Die(entity_id),
+                        EntityAction::RewardXp(attacker_id, e.xp_reward)
+                    ],
                     message: Some(vec![message]),
                     state: None,
                 }

@@ -33,8 +33,8 @@ pub struct Game {
 impl Game {
     pub fn new() -> Game {
 
-        let mut ecs = Ecs::initialize();
-        let mut map = GameMap::new(1, 1);
+        let ecs = Ecs::initialize();
+        let map = GameMap::new(1, 1);
         let log = Rc::new(MessageLog::new());
         let fov_map = Map::new(1,1);
         let log_panel = MessagePanel::new((0,0),(0,0),Rc::clone(&log));

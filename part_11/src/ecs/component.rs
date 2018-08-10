@@ -237,11 +237,10 @@ pub struct Actor {
     pub power: i32,
     pub defense: i32,
     pub xp_reward: u32,
-    pub level: u8,
 }
 
 impl Actor {
-    pub fn new(entity_id: EntityId, max_hp: u32, power: i32, defense: i32, xp_reward: u32, level: u8) -> Actor {
+    pub fn new(entity_id: EntityId, max_hp: u32, power: i32, defense: i32, xp_reward: u32) -> Actor {
         Actor {
             entity_id,
             max_hp,
@@ -249,7 +248,6 @@ impl Actor {
             power,
             defense,
             xp_reward,
-            level
         }
     }
 
@@ -289,7 +287,6 @@ impl Serialize for Actor {
                 "power" => self.power,
                 "defense" => self.defense,
                 "xp_reward" => self.xp_reward,
-                "level" => self.level,
             )
         )
     }
@@ -304,7 +301,6 @@ impl Deserialize for Actor {
             power: json["power"].as_i32().unwrap(),
             defense: json["defense"].as_i32().unwrap(),
             xp_reward: json["xp_reward"].as_u32().unwrap(),
-            level: json["level"].as_u8().unwrap(),
         }
     }
 }
@@ -542,3 +538,66 @@ impl Deserialize for Stairs {
 }
 
 impl Component for Stairs {}
+
+pub struct Level {
+    entity_id: EntityId,
+    base: u32,
+    factor: f32,
+    pub level: u8,
+    pub xp_total: u32
+}
+
+impl Level {
+    pub fn new(entity_id: EntityId, level: u8, base: u32, factor: f32) -> Self {
+        Self {
+            entity_id,
+            xp_total: 0,
+            level,
+            base,
+            factor
+        }
+    }
+
+    pub fn xp_to_level(&mut self, level: i32) -> u32 {
+        (self.base as f32 * (1.0 + self.factor).powi(level as i32 - 1)).floor() as u32
+    }
+
+    pub fn reward_xp(&mut self, xp: u32) {
+        self.xp_total+=xp;
+
+        let next_level = self.level as i32 + 1;
+
+        if self.xp_total >= self.xp_to_level(next_level) {
+            self.level += 1;
+        }
+    }
+}
+
+impl Serialize for Level {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "Level",
+            "data" => object!(
+                "id" => self.entity_id,
+                "xp" => self.xp_total,
+                "level" => self.level,
+                "base" => self.base,
+                "factor" => self.factor,
+            )
+        )
+    }
+}
+
+impl Deserialize for Level {
+    fn deserialize(json: &JsonValue) -> Self {
+        Level {
+            entity_id: json["id"].as_u16().unwrap(),
+            xp_total: json["xp"].as_u32().unwrap(),
+            level: json["level"].as_u8().unwrap(),
+            base: json["base"].as_u32().unwrap(),
+            factor: json["factor"].as_f32().unwrap(),
+        }
+    }
+}
+
+impl Component for Level {}
