@@ -9,8 +9,8 @@ new will be added. I'm just building on what I already have.
 Contents of this Writeup:
 1. [Dungeon Levels](#dungeons-levels)
     1. [Adding Stairs](#adding-stairs)
-
-
+    2. [Making the Stairs work](#making-the-stairs-work)
+    
 ## Dungeons Levels
 
 ### Adding Stairs
@@ -74,5 +74,45 @@ fn add_stair(&mut self, ecs: &mut Ecs, room: &Rect) {
     ecs.register_component(id, Name {
         name: String::from("Stairs"),
     });
+}
+```
+
+### Making the Stairs work
+
+In order to make the `Stair` actually do something, I have to define an interaction key. Also, I have to tell the 
+`Engine` to create a new dungeon level and clean up the current one (means: remove every `Entity` which has a `Position`).
+
+First one is the easiest. I just add a new `InputAction` which is only used by the `PlayersTurn` game state. It checks
+if the player is standing on some `Stairs`, and tells the `Engine` to create a new level.
+
+```rust
+Some(InputAction::UseStairs) => {
+    let id = ecs.player_entity_id;
+    let p = {
+        let pos = ecs.get_component::<Position>(id).unwrap();
+        (pos.position.0, pos.position.1)
+    };
+    
+    let used_stairs = ecs.get_all_ids::<Stairs>().iter().any(|stair_id| {
+        if let Some(stair_pos) = ecs.get_component::<Position>(*stair_id) {
+            p.0 == stair_pos.position.0 && p.1 == stair_pos.position.1
+        } else {
+            false
+        }
+    });
+    
+    if used_stairs {
+        log.add(Message::new("You go down one level deeper...".to_string(), colors::GREEN));
+        GameStateResult {
+            next_state: GameState::PlayersTurn,
+            engine_action: Some(EngineAction::CreateNextFloor),
+        }
+    } else {
+        log.add(Message::new("No stairs to use here".to_string(), colors::YELLOW));
+        GameStateResult {
+            next_state: GameState::PlayersTurn,
+            engine_action: None,
+        }
+    }
 }
 ```

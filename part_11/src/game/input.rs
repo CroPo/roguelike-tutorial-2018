@@ -13,6 +13,7 @@ pub enum InputAction {
     SelectEntity(isize, isize),
     SelectOption(char),
     PickUp,
+    UseStairs,
     ShowInventory,
     ShowInventoryDrop,
     StartNewGame,
@@ -70,6 +71,7 @@ fn handle_keys_player_turn(key: Key) -> Option<InputAction> {
         Key { printable: 'i', .. } => Some(InputAction::ShowInventory),
         Key { printable: 'd', .. } => Some(InputAction::ShowInventoryDrop),
         Key { printable: 'g', .. } => Some(InputAction::PickUp),
+        Key { printable: '>', .. } => Some(InputAction::UseStairs),
         Key { code: KeyCode::Escape, .. } => Some(InputAction::Exit),
         Key { code: KeyCode::Enter, alt: true, .. } => Some(InputAction::Fullscreen),
         _ => None

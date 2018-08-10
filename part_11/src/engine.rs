@@ -12,6 +12,7 @@ pub enum EngineAction {
     MousePos(i32, i32),
     StartGame(bool),
     QuitGame(bool),
+    CreateNextFloor,
     Exit,
 }
 
@@ -40,11 +41,6 @@ impl Engine {
             .font(settings.font_path(), settings.font_layout())
             .font_type(settings.font_type())
             .init();
-
-        /*let game = match savegame::load(&settings) {
-            Some(game) => game,
-            None => Game::new(&settings)
-        };*/
 
         Engine {
             game: RefCell::new(Game::new()),
@@ -99,6 +95,9 @@ impl Engine {
                     }
                     EngineAction::MousePos(x, y) => {
                         self.mouse_pos = (x as i32, y as i32);
+                    }
+                    EngineAction::CreateNextFloor => {
+                        // Todo: do.
                     }
                 }
             }

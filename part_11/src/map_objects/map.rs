@@ -20,7 +20,7 @@ use ecs::component::Position;
 use ecs::item::ItemTemplate;
 use settings::Settings;
 use savegame::{Serialize, Deserialize};
-use ecs::component::Stair;
+use ecs::component::Stairs;
 use ecs::component::Render;
 use render::RenderOrder;
 use ecs::component::Name;
@@ -104,7 +104,7 @@ impl GameMap {
 
     fn add_stair(&mut self, ecs: &mut Ecs, room: &Rect) {
         let id = ecs.create_entity();
-        ecs.register_component(id, Stair {});
+        ecs.register_component(id, Stairs {});
         ecs.register_component(id, Position {
             entity_id: id,
             position: room.center(),

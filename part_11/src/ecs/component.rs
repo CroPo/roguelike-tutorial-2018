@@ -515,9 +515,9 @@ impl Deserialize for Inventory {
 
 impl Component for Inventory {}
 
-pub struct Stair {}
+pub struct Stairs {}
 
-impl Serialize for Stair {
+impl Serialize for Stairs {
     fn serialize(&self) -> JsonValue {
         object!(
         "type" => "Stair",
@@ -526,11 +526,11 @@ impl Serialize for Stair {
     }
 }
 
-impl Deserialize for Stair {
+impl Deserialize for Stairs {
     fn deserialize(_json: &JsonValue) -> Self {
-        Stair {
+        Stairs {
         }
     }
 }
 
-impl Component for Stair {}
+impl Component for Stairs {}

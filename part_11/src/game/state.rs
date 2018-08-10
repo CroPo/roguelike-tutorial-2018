@@ -23,6 +23,7 @@ use game::Game;
 use engine::Engine;
 use std::cell::RefMut;
 use engine::EngineAction;
+use ecs::component::Stairs;
 
 
 pub struct GameStateResult {
@@ -292,6 +293,35 @@ impl GameState {
                 GameStateResult {
                     next_state,
                     engine_action: None,
+                }
+            }
+            Some(InputAction::UseStairs) => {
+                let id = ecs.player_entity_id;
+                let p = {
+                    let pos = ecs.get_component::<Position>(id).unwrap();
+                    (pos.position.0, pos.position.1)
+                };
+
+                let used_stairs = ecs.get_all_ids::<Stairs>().iter().any(|stair_id| {
+                    if let Some(stair_pos) = ecs.get_component::<Position>(*stair_id) {
+                        p.0 == stair_pos.position.0 && p.1 == stair_pos.position.1
+                    } else {
+                        false
+                    }
+                });
+
+                if used_stairs {
+                    log.add(Message::new("You go down one level deeper...".to_string(), colors::GREEN));
+                    GameStateResult {
+                        next_state: GameState::PlayersTurn,
+                        engine_action: Some(EngineAction::CreateNextFloor),
+                    }
+                } else {
+                    log.add(Message::new("No stairs to use here".to_string(), colors::YELLOW));
+                    GameStateResult {
+                        next_state: GameState::PlayersTurn,
+                        engine_action: None,
+                    }
                 }
             }
             Some(InputAction::MovePlayer(vel_x, vel_y)) => {
