@@ -30,9 +30,10 @@ use tcod::image::Image;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum RenderOrder {
-    Corpse = 1,
-    Item = 2,
-    Actor = 3,
+    Stair = 1,
+    Corpse = 2,
+    Item = 3,
+    Actor = 4,
 }
 
 impl Display for RenderOrder {
@@ -47,6 +48,7 @@ impl Deserialize for RenderOrder {
             Some("Corpse") => RenderOrder::Corpse,
             Some("Item") => RenderOrder::Item,
             Some("Actor") => RenderOrder::Actor,
+            Some("Stair") => RenderOrder::Stair,
             _ => RenderOrder::Corpse
         }
     }

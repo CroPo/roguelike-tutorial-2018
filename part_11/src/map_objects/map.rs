@@ -5,6 +5,7 @@ use rand::prelude::*;
 use tcod::Console;
 use tcod::BackgroundFlag;
 use tcod::Map;
+use tcod::colors;
 
 use json::JsonValue;
 
@@ -19,6 +20,10 @@ use ecs::component::Position;
 use ecs::item::ItemTemplate;
 use settings::Settings;
 use savegame::{Serialize, Deserialize};
+use ecs::component::Stair;
+use ecs::component::Render;
+use render::RenderOrder;
+use ecs::component::Name;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -93,6 +98,23 @@ impl GameMap {
                                 settings.max_items_per_room());
             rooms.push(new_room);
         }
+
+        self.add_stair(ecs, &rooms[rooms.len()-1]);
+    }
+
+    fn add_stair(&mut self, ecs: &mut Ecs, room: &Rect) {
+        let id = ecs.create_entity();
+        ecs.register_component(id, Stair {});
+        ecs.register_component(id, Position {
+            entity_id: id,
+            position: room.center(),
+            is_blocking: false,
+        });
+        ecs.register_component(id, Render::new(id, '>',
+                                               colors::WHITE, RenderOrder::Stair));
+        ecs.register_component(id, Name {
+            name: String::from("Stairs"),
+        });
     }
 
     fn create_room(&mut self, room: &Rect) {

@@ -10,6 +10,7 @@ Contents of this Writeup:
 1. [Dungeon Levels](#dungeons-levels)
     1. [Adding Stairs](#adding-stairs)
 
+
 ## Dungeons Levels
 
 ### Adding Stairs
@@ -55,3 +56,23 @@ impl Component for Stair {}
 
 This is actually the whole code for `Stair` (Serialization needs to be extended in the `Ecs`, too).
 Of course, this only designates an `Entity` as stair, and doesn't do anything else.
+
+Exactly as the Python Tutorial suggests, I will add the stairs to the next dungeon level in the last created room. This
+is not too much work, too. I built a simple function which does everything I need.
+
+```rust
+fn add_stair(&mut self, ecs: &mut Ecs, room: &Rect) {
+    let id = ecs.create_entity();
+    ecs.register_component(id, Stair {});
+    ecs.register_component(id, Position {
+        entity_id: id,
+        position: room.center(),
+        is_blocking: false,
+    });
+    ecs.register_component(id, Render::new(id, '>',
+                                           colors::WHITE, RenderOrder::Stair));
+    ecs.register_component(id, Name {
+        name: String::from("Stairs"),
+    });
+}
+```
