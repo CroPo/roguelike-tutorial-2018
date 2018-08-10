@@ -17,5 +17,6 @@ Every part of the tutorial is a separate workspace member. You can run each part
 - [Part 8: Items and Inventory](part_8/)
 - [Part 9: Ranged Scrolls and Targeting](part_9/)
 - [Part 10: Saving and Loading](part_10/)
+- [Part 11: Leveling Up](part_11/)
 
 Feel free to comment any piece of code you see. I appreciate any kind of feedback here, especially if it helps to get a better understanding of Rust itself.

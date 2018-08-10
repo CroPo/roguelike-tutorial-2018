@@ -1,0 +1,10 @@
+[package]
+name = "part_11"
+version = "0.11.0"
+authors = ["Crocodile Space Pope"]
+
+[dependencies]
+tcod = "0.12"
+rand = "0.5"
+textwrap = "0.10.0"
+json = "0.11.13"
