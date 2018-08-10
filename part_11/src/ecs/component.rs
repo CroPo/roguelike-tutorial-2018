@@ -398,7 +398,6 @@ impl Deserialize for Corpse {
     }
 }
 
-
 impl Component for Corpse {}
 
 pub struct Item {
@@ -515,3 +514,23 @@ impl Deserialize for Inventory {
 }
 
 impl Component for Inventory {}
+
+pub struct Stair {}
+
+impl Serialize for Stair {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "Stair",
+        "data" => object!()
+        )
+    }
+}
+
+impl Deserialize for Stair {
+    fn deserialize(_json: &JsonValue) -> Self {
+        Stair {
+        }
+    }
+}
+
+impl Component for Stair {}
