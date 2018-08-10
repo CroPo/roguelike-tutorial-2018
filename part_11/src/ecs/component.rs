@@ -558,7 +558,7 @@ impl Level {
         }
     }
 
-    pub fn xp_to_level(&mut self, level: i32) -> u32 {
+    pub fn xp_to_level(&self, level: i32) -> u32 {
         (self.base as f32 * (1.0 + self.factor).powi(level as i32 - 1)).floor() as u32
     }
 

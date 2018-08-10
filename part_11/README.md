@@ -15,6 +15,7 @@ Contents of this Writeup:
     1. [Extending the Actor](#extending-the-actor)
     2. [Gaining XP](#gaining-xp)
     3. [Leveling Up](#leveling-up)
+    4. [Character Screen](#character-screen)
         
 ## Dungeons Levels
 
@@ -227,3 +228,10 @@ pub fn level_up(&mut self) {
 
 I need a new `EngineAction` which does the levle up stuff for me. It needs to send a message, actually increase the
 level and trigger a new `GameState` - a selection menu which lets me choose the stat I want to increase.
+
+### Character Screen
+
+Since I am now able to level my character up I also want some kind of character Screen to display my current stats.
+I start by adding a new `GameState` and a key binding to open it during the `PlayersTurn` state. 
+
+After that, I only need to create a function for it in the `render` module and call it in the right `GameState`.

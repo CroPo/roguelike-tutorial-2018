@@ -139,6 +139,8 @@ fn render_game(engine: &Engine, game: &RefMut<Game>) {
         GameState::ShowQuitGameMenu => selection_menu(root_console.deref_mut(), "",
                                                       vec![String::from("Save & Quit"), String::from("Cancel")],
                                                       24, console.width(), console.height()),
+        GameState::ShowCharacterScreen => character_screen(root_console.deref_mut(), &ecs,30, 10,
+                                                           console.width(), console.height()),
         GameState::PlayerDead => message_box(root_console.deref_mut(), "YOU ARE DEAD. Press Escape to return to the main menu",
                                              console.width(), console.height()),
         _ => ()
@@ -280,6 +282,46 @@ pub fn inventory_menu(console: &mut Root, ecs: &Ecs, title: &str, width: i32, sc
 
         selection_menu(console, title, items, width, screen_width, screen_height);
     }
+}
+
+pub fn character_screen(console: &mut Root, ecs: &Ecs, width: i32, height: i32, screen_width: i32, screen_height: i32) {
+
+    let mut panel = Offscreen::new(width, height);
+    panel.set_default_foreground(colors::WHITE);
+
+    let mut text_row = 3;
+
+    panel.print_rect_ex(0, 1, width, height, BackgroundFlag::None, TextAlignment::Left,
+        "Character Information");
+
+    if let Some(l) = ecs.get_component::<Level>(ecs.player_entity_id) {
+        panel.print_rect_ex(0, text_row, width, height, BackgroundFlag::None, TextAlignment::Left,
+                            format!("Level:            {}", l.level));
+        panel.print_rect_ex(0, text_row+1, width, height, BackgroundFlag::None, TextAlignment::Left,
+                            format!("Total XP:         {}", l.xp_total));
+        panel.print_rect_ex(0, text_row+2, width, height, BackgroundFlag::None, TextAlignment::Left,
+                            format!("XP to next Level: {}", l.xp_to_level(l.level as i32 + 1)));
+
+        text_row = 7;
+    }
+
+    if let Some(a) = ecs.get_component::<Actor>(ecs.player_entity_id) {
+        panel.print_rect_ex(0, text_row, width, height, BackgroundFlag::None, TextAlignment::Left,
+                            format!("Maximum HP:       {}", a.max_hp));
+        panel.print_rect_ex(0, text_row+1, width, height, BackgroundFlag::None, TextAlignment::Left,
+                            format!("Attack Power:     {}", a.power));
+        panel.print_rect_ex(0, text_row+2, width, height, BackgroundFlag::None, TextAlignment::Left,
+                            format!("Defense:          {}", a.defense));
+    }
+
+    let x = screen_width / 2 - width / 2;
+    let y = screen_height / 2 - height / 2;
+
+    blit(&panel, (0, 0),
+         (width, height),
+         console, (x, y),
+         1.0, 1.0);
+
 }
 
 pub fn level_up_menu(console: &mut Root, ecs: &Ecs, screen_width: i32, screen_height: i32) {

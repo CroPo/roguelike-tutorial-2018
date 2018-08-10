@@ -40,6 +40,7 @@ pub enum GameState {
     ShowInventoryDrop,
     ShowQuitGameMenu,
     ShowLeveUpMenu,
+    ShowCharacterScreen,
     Targeting(Spell, EntityId),
     MainMenu,
 }
@@ -60,6 +61,7 @@ impl GameState {
             GameState::MainMenu => self.main_menu(input_action),
             GameState::ShowQuitGameMenu => self.quit_game_menu(input_action),
             GameState::ShowLeveUpMenu => self.level_up_menu(&mut ecs, input_action),
+            GameState::ShowCharacterScreen => self.show_character_screen(input_action),
             GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(&mut ecs, &fov_map, input_action, log),
             GameState::Targeting(spell, caster_id) => self.targeting(&mut ecs, &fov_map, input_action, log, spell, caster_id),
         }
@@ -172,6 +174,23 @@ impl GameState {
             _ => {
                 GameStateResult {
                     next_state: GameState::PlayerDead,
+                    engine_action: None,
+                }
+            }
+        }
+    }
+
+    fn show_character_screen(&self, action: Option<InputAction>) -> GameStateResult {
+        match action {
+            Some(InputAction::Exit) => {
+                GameStateResult {
+                    next_state: GameState::PlayersTurn,
+                    engine_action: None,
+                }
+            }
+            _ => {
+                GameStateResult {
+                    next_state: GameState::ShowCharacterScreen,
                     engine_action: None,
                 }
             }
@@ -313,6 +332,12 @@ impl GameState {
             Some(InputAction::ShowInventoryDrop) => {
                 GameStateResult {
                     next_state: GameState::ShowInventoryDrop,
+                    engine_action: None,
+                }
+            }
+            Some(InputAction::ShowCharacterScreen) => {
+                GameStateResult {
+                    next_state: GameState::ShowCharacterScreen,
                     engine_action: None,
                 }
             }
