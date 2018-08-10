@@ -16,6 +16,7 @@ Contents of this Writeup:
     2. [Gaining XP](#gaining-xp)
     3. [Leveling Up](#leveling-up)
     4. [Character Screen](#character-screen)
+3. [Conclusion](#conclusion)
         
 ## Dungeons Levels
 
@@ -235,3 +236,11 @@ Since I am now able to level my character up I also want some kind of character 
 I start by adding a new `GameState` and a key binding to open it during the `PlayersTurn` state. 
 
 After that, I only need to create a function for it in the `render` module and call it in the right `GameState`.
+
+## Conclusion
+
+This was an easy one. As I have written right on the top: Because everything I needed was already there, I had no need
+to implement something completely new once more.
+
+Only two tutorial parts are missing by now - with the next one being rather small, but I think it could be quite some
+fun.
