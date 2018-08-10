@@ -1,4 +1,4 @@
-use std::fmt::{ Display, Formatter, Result, Debug };
+use std::fmt::{Display, Formatter, Result, Debug};
 use std::ops::DerefMut;
 use std::cell::RefMut;
 
@@ -28,6 +28,7 @@ use game::Game;
 use engine::Engine;
 use tcod::image::Image;
 use ecs::component::Stairs;
+use ecs::component::Corpse;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum RenderOrder {
@@ -58,7 +59,6 @@ impl Deserialize for RenderOrder {
 
 /// Render all `Entity`s which got both the `Render` and the `Position` component assigned onto the console
 pub fn render_all(engine: &Engine, game: &RefMut<Game>) {
-
     match engine.state {
         GameState::MainMenu => render_main_menu(&engine),
         _ => render_game(&engine, &game)
@@ -81,8 +81,8 @@ fn render_game(engine: &Engine, game: &RefMut<Game>) {
     let mut ids_filtered: Vec<&EntityId> = component_ids.iter().filter(|id| {
         if let Some(p) = ecs.get_component::<Position>(**id) {
             fov_map.is_in_fov(p.position.0, p.position.1)
-                || ( map.get_tile(p.position.0 as usize, p.position.1 as usize).explored &&
-                ecs.has_component::<Stairs>(**id) )
+                || (map.get_tile(p.position.0 as usize, p.position.1 as usize).explored &&
+                ecs.has_component::<Stairs>(**id))
         } else {
             false
         }
@@ -149,17 +149,17 @@ fn render_main_menu(engine: &Engine) {
 
     let background = Image::from_file("menu_background1.png").unwrap();
 
-    image::blit_2x(&background, (0,0),
+    image::blit_2x(&background, (0, 0),
                    (-1, -1),
-                   root_console.deref_mut(), (0,0));
+                   root_console.deref_mut(), (0, 0));
 
     root_console.set_default_foreground(colors::LIGHT_YELLOW);
 
-    root_console.print_ex(engine.settings.screen_width()/2, engine.settings.screen_height() /2 - 4,
+    root_console.print_ex(engine.settings.screen_width() / 2, engine.settings.screen_height() / 2 - 4,
                           BackgroundFlag::None, TextAlignment::Center,
-                    "/r/roguelikedev Tutorial Series 2018");
+                          "/r/roguelikedev Tutorial Series 2018");
 
-    root_console.print_ex(engine.settings.screen_width()/2, engine.settings.screen_height() - 2,
+    root_console.print_ex(engine.settings.screen_width() / 2, engine.settings.screen_height() - 2,
                           BackgroundFlag::None, TextAlignment::Center,
                           "by /u/CrocodileSpacePope");
 
@@ -193,15 +193,43 @@ pub fn render_bar(panel: &mut Offscreen, pos: (i32, i32), width: i32, name: &str
 fn get_names_under_mouse(ecs: &Ecs, fov_map: &Map, mouse_pos: (i32, i32)) -> String {
     let mut names = vec![];
 
-    ecs.get_all::<Position>().iter().filter(|(_, p)| {
-        p.position.0 == mouse_pos.0 && p.position.1 == mouse_pos.1 && fov_map.is_in_fov(mouse_pos.0, mouse_pos.1)
-    }).for_each(|(id, _)| {
-        if let Some(n) = ecs.get_component::<Name>(*id) {
-            names.push(n.name.clone());
-        }
+    let mut ids_filtered: Vec<EntityId> = ecs.get_all::<Position>().iter().filter(|(id, p)| {
+        p.position.0 == mouse_pos.0 && p.position.1 == mouse_pos.1
+            && fov_map.is_in_fov(mouse_pos.0, mouse_pos.1)
+            && ecs.has_component::<Render>(**id)
+    }).map(|(id, _)| {
+        id.clone()
+    }).collect();
+
+    ids_filtered.sort_by(|id_a, id_b| {
+        let comp_a = ecs.get_component::<Render>(*id_a).unwrap();
+        let comp_b = ecs.get_component::<Render>(*id_b).unwrap();
+
+        comp_b.order.cmp(&comp_a.order)
     });
 
-    names.join(",")
+    ids_filtered.iter().for_each(|id| {
+        names.push(generate_entity_text(ecs, *id));
+    });
+
+    names.join("; ")
+}
+
+fn generate_entity_text(ecs: &Ecs, id: EntityId) -> String {
+    let mut name = if let Some(n) = ecs.get_component::<Name>(id) {
+        n.name.clone()
+    } else {
+        format!("{}", id)
+    };
+
+    if let Some(a) = ecs.get_component::<Actor>(id) {
+        name = format!("{},lv.{}", name, a.level);
+    }
+    if let Some(c) = ecs.get_component::<Corpse>(id) {
+        name = format!("{},Dead", name);
+    }
+
+    name
 }
 
 fn message_box(console: &mut Root, title: &str, screen_width: i32, screen_height: i32) {
@@ -223,8 +251,8 @@ pub fn selection_menu(console: &mut Root, title: &str, options: Vec<String>, wid
     for option in options {
         let text = format!("({}) {}", letter_index as char, option);
         menu_panel.print_ex(0, y, BackgroundFlag::None, TextAlignment::Left, text);
-        y+=1;
-        letter_index+=1;
+        y += 1;
+        letter_index += 1;
     }
 
     let x = screen_width / 2 - width / 2;
@@ -237,13 +265,11 @@ pub fn selection_menu(console: &mut Root, title: &str, options: Vec<String>, wid
 }
 
 pub fn inventory_menu(console: &mut Root, ecs: &Ecs, title: &str, width: i32, screen_width: i32, screen_height: i32) {
-
     if let Some(inventory) = ecs.get_component::<Inventory>(ecs.player_entity_id) {
-
         let items = if inventory.items.len() == 0 {
             vec!["Inventory is empty".to_string()]
         } else {
-            inventory.items.iter().filter(|item_id|{
+            inventory.items.iter().filter(|item_id| {
                 ecs.has_component::<Name>(**item_id)
             }).map(|item_id| {
                 ecs.get_component::<Name>(*item_id).unwrap().name.clone()

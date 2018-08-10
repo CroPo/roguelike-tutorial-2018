@@ -236,16 +236,20 @@ pub struct Actor {
     pub hp: u32,
     pub power: i32,
     pub defense: i32,
+    pub xp_reward: u32,
+    pub level: u8,
 }
 
 impl Actor {
-    pub fn new(entity_id: EntityId, max_hp: u32, power: i32, defense: i32) -> Actor {
+    pub fn new(entity_id: EntityId, max_hp: u32, power: i32, defense: i32, xp_reward: u32, level: u8) -> Actor {
         Actor {
             entity_id,
             max_hp,
             hp: max_hp,
             power,
             defense,
+            xp_reward,
+            level
         }
     }
 
@@ -284,6 +288,8 @@ impl Serialize for Actor {
                 "hp" => self.hp,
                 "power" => self.power,
                 "defense" => self.defense,
+                "xp_reward" => self.xp_reward,
+                "level" => self.level,
             )
         )
     }
@@ -297,6 +303,8 @@ impl Deserialize for Actor {
             hp: json["hp"].as_u32().unwrap(),
             power: json["power"].as_i32().unwrap(),
             defense: json["defense"].as_i32().unwrap(),
+            xp_reward: json["xp_reward"].as_u32().unwrap(),
+            level: json["level"].as_u8().unwrap(),
         }
     }
 }

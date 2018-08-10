@@ -11,6 +11,8 @@ Contents of this Writeup:
     1. [Adding Stairs](#adding-stairs)
     2. [Making the Stairs work](#making-the-stairs-work)
     3. [Creating the next floor](#creating-the-next-floor)
+2. [Actor Levels](#actor-levels)
+    1. [Extending the Actor](#extending-the-actor)
         
 ## Dungeons Levels
 
@@ -134,3 +136,12 @@ The level transistion works fine after I solved a few issues. First I forgot to 
 reinitilaize the fov_map.
 
 Now Just display the floor on the ui, and I am done.
+
+## Actor Levels
+
+### Extending the Actor
+
+The second section of this part is about collecting experience and leveling up. First of all, I need to extend `Actor` a 
+bit, because I want to know how much XP is rewarded for killing it. I will also add a value which represents the 
+`Actors`s level. Doing this I am also able to set an enemy to a different level. Since I do have that information 
+available now, I can also update the mouseover display.

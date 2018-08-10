@@ -116,7 +116,7 @@ impl Settings {
     }
 
     pub fn message_pos(&self) -> (i32, i32) {
-        (self.message_x(), 0)
+        (self.message_x(), self.message_y_offset)
     }
 
     pub fn map_width(&self) -> i32 {
