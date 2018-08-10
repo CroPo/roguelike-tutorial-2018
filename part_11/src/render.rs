@@ -135,6 +135,7 @@ fn render_game(engine: &Engine, game: &RefMut<Game>) {
                                                       50, console.width(), console.height()),
         GameState::ShowInventoryDrop => inventory_menu(root_console.deref_mut(), &ecs, "Press the key next to an item to drop it, or Esc to cancel.",
                                                        50, console.width(), console.height()),
+        GameState::ShowLeveUpMenu => level_up_menu(root_console.deref_mut(), &ecs,console.width(), console.height()),
         GameState::ShowQuitGameMenu => selection_menu(root_console.deref_mut(), "",
                                                       vec![String::from("Save & Quit"), String::from("Cancel")],
                                                       24, console.width(), console.height()),
@@ -281,6 +282,18 @@ pub fn inventory_menu(console: &mut Root, ecs: &Ecs, title: &str, width: i32, sc
     }
 }
 
+pub fn level_up_menu(console: &mut Root, ecs: &Ecs, screen_width: i32, screen_height: i32) {
+    if let Some(actor) = ecs.get_component::<Actor>(ecs.player_entity_id) {
+        let items =
+            vec![
+                format!("+20 Maximum Health (currently: {})", actor.max_hp),
+                format!("+1 Attack Power    (currently: {})", actor.power),
+                format!("+1 Defense         (currently: {})", actor.defense),
+            ];
+
+        selection_menu(console, "Level Up! Select a stat to raise:", items, 40, screen_width, screen_height);
+    }
+}
 
 pub struct MessagePanel {
     pos: (i32, i32),

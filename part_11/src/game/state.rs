@@ -31,7 +31,7 @@ pub struct GameStateResult {
     pub engine_action: Option<EngineAction>,
 }
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum GameState {
     PlayersTurn,
     EnemyTurn,
@@ -39,6 +39,7 @@ pub enum GameState {
     ShowInventoryUse,
     ShowInventoryDrop,
     ShowQuitGameMenu,
+    ShowLeveUpMenu,
     Targeting(Spell, EntityId),
     MainMenu,
 }
@@ -47,7 +48,7 @@ impl GameState {
     pub fn run(&self, engine: &Engine, game: &RefMut<Game>) -> GameStateResult {
         let input_action = handle_input(self, check_for_event(EventFlags::all()));
         let log = game.log.clone();
-        
+
         let mut ecs = game.ecs.borrow_mut();
         let mut fov_map = game.fov_map.borrow_mut();
         let map = game.map.borrow();
@@ -58,6 +59,7 @@ impl GameState {
             GameState::PlayerDead => self.player_dead(input_action),
             GameState::MainMenu => self.main_menu(input_action),
             GameState::ShowQuitGameMenu => self.quit_game_menu(input_action),
+            GameState::ShowLeveUpMenu => self.level_up_menu(&mut ecs, input_action),
             GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(&mut ecs, &fov_map, input_action, log),
             GameState::Targeting(spell, caster_id) => self.targeting(&mut ecs, &fov_map, input_action, log, spell, caster_id),
         }
@@ -227,6 +229,58 @@ impl GameState {
         }
     }
 
+    fn level_up_menu(&self, ecs: &mut Ecs, action: Option<InputAction>) -> GameStateResult {
+
+        let id = ecs.player_entity_id;
+
+        if let Some(actor) = ecs.get_component_mut::<Actor>(id) {
+            match action {
+                Some(InputAction::SelectOption('a')) => {
+
+                    actor.max_hp += 20;
+                    actor.hp = actor.max_hp;
+
+                    GameStateResult {
+                        next_state: GameState::EnemyTurn,
+                        engine_action: None,
+                    }
+                }
+                Some(InputAction::SelectOption('b')) => {
+
+                    actor.power += 1;
+                    actor.hp = actor.max_hp;
+
+                    GameStateResult {
+                        next_state: GameState::EnemyTurn,
+                        engine_action: None,
+                    }
+                }
+                Some(InputAction::SelectOption('c')) => {
+
+                    actor.defense += 1;
+                    actor.hp = actor.max_hp;
+
+                    GameStateResult {
+                        next_state: GameState::EnemyTurn,
+                        engine_action: None,
+                    }
+                }
+                _ => {
+                    GameStateResult {
+                        next_state: GameState::ShowLeveUpMenu,
+                        engine_action: None,
+                    }
+                }
+            }
+        }
+        else {
+            GameStateResult {
+                next_state: GameState::PlayersTurn,
+                engine_action: None,
+            }
+        }
+    }
+
     fn player_turn(&self, ecs: &mut Ecs, fov_map: &mut Map, action: Option<InputAction>, log: Rc<MessageLog>, map: &GameMap, settings: &Settings) -> GameStateResult {
 
         recompute_fov(ecs, fov_map, settings);
@@ -348,10 +402,14 @@ impl GameState {
                     EntityAction::Idle
                 };
 
-                action.execute(ecs, fov_map, Rc::clone(&log));
+                let next_state = if let Some(state) = action.execute(ecs, fov_map, Rc::clone(&log)) {
+                    state
+                } else {
+                    GameState::EnemyTurn
+                };
 
                 GameStateResult {
-                    next_state: GameState::EnemyTurn,
+                    next_state,
                     engine_action: None,
                 }
             }

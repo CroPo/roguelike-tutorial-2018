@@ -52,6 +52,7 @@ pub enum EntityAction {
     RemoveItemFromInventory(EntityId, EntityId),
     SetAiTarget(EntityId, EntityId),
     RewardXp(EntityId, u32),
+    LevelUp(EntityId),
     Idle,
 }
 
@@ -62,7 +63,7 @@ impl EntityAction {
             EntityAction::MoveTo(entity_id, pos) => self.move_to_action(ecs, entity_id, pos),
             EntityAction::MoveRelative(entity_id, delta) => self.move_relative_action(ecs, entity_id, delta),
             EntityAction::MeleeAttack(attacker_id, target_id) => self.melee_attack_action(ecs, attacker_id, target_id),
-            EntityAction::TakeDamage(entity_id, damage, attacker_id)  => self.take_damage_action(ecs, entity_id, damage, attacker_id),
+            EntityAction::TakeDamage(entity_id, damage, attacker_id) => self.take_damage_action(ecs, entity_id, damage, attacker_id),
             EntityAction::Die(entity_id) => self.die_action(ecs, entity_id),
             EntityAction::PickUpItem(entity_id, item_id) => self.pick_up_item_action(ecs, entity_id, item_id),
             EntityAction::DropItem(entity_id, item_number) => self.drop_item_action(ecs, entity_id, item_number),
@@ -71,6 +72,7 @@ impl EntityAction {
             EntityAction::UseItem(entity_id, item_number) => self.use_item_action(ecs, fov_map, entity_id, item_number),
             EntityAction::SetAiTarget(entity_id, target_id) => self.set_ai_target_action(ecs, entity_id, target_id),
             EntityAction::RewardXp(entity_id, xp) => self.reward_xp(ecs, entity_id, xp),
+            EntityAction::LevelUp(entity_id) => self.level_up(ecs, entity_id),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
 
@@ -94,12 +96,13 @@ impl EntityAction {
             None => {
                 resulting_state
             }
-            _ => result.state
+            _ => {
+                result.state
+            }
         }
     }
 
     fn melee_attack_action(&self, ecs: &mut Ecs, attacker_id: EntityId, target_id: EntityId) -> ActionResult {
-
         let attacker_name = EntityAction::get_entity_name(ecs, attacker_id).to_uppercase();
         let target_name = EntityAction::get_entity_name(ecs, target_id);
 
@@ -112,10 +115,10 @@ impl EntityAction {
                             reactions: vec![EntityAction::TakeDamage(target_id, damage, attacker_id)],
                             state: None,
                         }
-                    },
+                    }
                     None => ActionResult::none()
                 }
-            },
+            }
             None => ActionResult::none()
         }
     }
@@ -124,20 +127,42 @@ impl EntityAction {
         let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
 
         if let Some(l) = ecs.get_component_mut::<Level>(entity_id) {
-            l.reward_xp(xp);
+            let reactions = if l.reward_xp(xp) {
+                vec![EntityAction::LevelUp(entity_id)]
+            } else {
+                vec![]
+            };
 
             let message = Message::new(format!("{} gains {} XP", entity_name, xp), colors::WHITE);
 
             ActionResult {
-                reactions: vec![],
+                reactions,
                 message: Some(vec![message]),
                 state: None,
             }
-
         } else {
             ActionResult::none()
         }
     }
+
+    fn level_up(&self, ecs: &mut Ecs, entity_id: EntityId) -> ActionResult {
+        let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
+
+        if let Some(l) = ecs.get_component_mut::<Level>(entity_id) {
+
+            l.level_up();
+            let message = Message::new(format!("{} feels stronger: Reached level {}.", entity_name, l.level), colors::YELLOW);
+
+            ActionResult {
+                reactions: vec![],
+                message: Some(vec![message]),
+                state: Some(GameState::ShowLeveUpMenu),
+            }
+        } else {
+            ActionResult::none()
+        }
+    }
+
 
     fn move_to_action(&self, ecs: &mut Ecs, entity_id: EntityId, pos: (i32, i32)) -> ActionResult {
         if let Some(c) = ecs.get_component_mut::<Position>(entity_id) {
@@ -216,13 +241,13 @@ impl EntityAction {
             let state = match cast_result {
                 SpellResult { status: SpellStatus::Success, .. } => {
                     self.use_item_success(ecs, item_id)
-                },
+                }
                 SpellResult { status: SpellStatus::Targeting(spell, caster_id), .. } => {
                     Some(GameState::Targeting(spell, caster_id))
-                },
+                }
                 SpellResult { status: SpellStatus::Fail, .. } => {
                     Some(GameState::ShowInventoryUse)
-                },
+                }
             };
 
             match cast_result {
@@ -235,7 +260,7 @@ impl EntityAction {
                 message: Some(messages),
                 reactions: cast_result.reactions,
                 state,
-            }
+            };
         } else {
             ActionResult {
                 message: None,
@@ -250,7 +275,7 @@ impl EntityAction {
         None
     }
 
-    fn remove_item_from_inventory_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId) -> ActionResult{
+    fn remove_item_from_inventory_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_id: EntityId) -> ActionResult {
         if let Some(inventory) = ecs.get_component_mut::<Inventory>(entity_id) {
             inventory.remove_item_id(item_id);
         }
@@ -371,7 +396,6 @@ impl EntityAction {
     }
 
     fn set_ai_target_action(&self, ecs: &mut Ecs, entity_id: EntityId, target_id: EntityId) -> ActionResult {
-
         if let Some(ai) = ecs.get_component_mut::<MonsterAi>(entity_id) {
             ai.set_target(target_id);
         }

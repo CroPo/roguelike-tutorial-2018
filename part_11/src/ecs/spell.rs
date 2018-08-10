@@ -62,7 +62,7 @@ pub enum SpellStatus {
     Fail,
 }
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum Spell {
     Heal(EntityId),
     Lightning(EntityId, u8, u32),

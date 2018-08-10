@@ -14,6 +14,7 @@ Contents of this Writeup:
 2. [Actor Levels](#actor-levels)
     1. [Extending the Actor](#extending-the-actor)
     2. [Gaining XP](#gaining-xp)
+    3. [Leveling Up](#leveling-up)
         
 ## Dungeons Levels
 
@@ -200,3 +201,29 @@ impl Level {
     }
 }
 ```
+
+### Leveling Up
+
+Gaining XP works fine, and the level of the `Entity` is also already increased. Now it's time to let something happen
+here, too. To keep it simple - on each level up, one stat (HP, defense, power) can be increased.
+
+First of all, the `EntityAction` needs to know if rewarding xp also triggered a level up. I will let the `reward_xp`
+function return either true or false, with the latter meaning _no level up_. Also, I only increase the level after
+the level up is triggered, not when rewarding the xp.
+
+That's why I did split the method up:
+
+```rust
+pub fn reward_xp(&mut self, xp: u32) -> bool {
+    self.xp_total+=xp;
+    let next_level = self.level as i32 + 1;
+    self.xp_total >= self.xp_to_level(next_level)
+}
+
+pub fn level_up(&mut self) {
+    self.level+=1;
+}
+```
+
+I need a new `EngineAction` which does the levle up stuff for me. It needs to send a message, actually increase the
+level and trigger a new `GameState` - a selection menu which lets me choose the stat I want to increase.

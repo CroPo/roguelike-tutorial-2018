@@ -562,14 +562,16 @@ impl Level {
         (self.base as f32 * (1.0 + self.factor).powi(level as i32 - 1)).floor() as u32
     }
 
-    pub fn reward_xp(&mut self, xp: u32) {
+    pub fn reward_xp(&mut self, xp: u32) -> bool {
         self.xp_total+=xp;
-
         let next_level = self.level as i32 + 1;
+        let xp_to_next = self.xp_to_level(next_level);
 
-        if self.xp_total >= self.xp_to_level(next_level) {
-            self.level += 1;
-        }
+        self.xp_total >= xp_to_next && xp_to_next > 0
+    }
+
+    pub fn level_up(&mut self) {
+        self.level+=1;
     }
 }
 
