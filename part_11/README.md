@@ -10,7 +10,8 @@ Contents of this Writeup:
 1. [Dungeon Levels](#dungeons-levels)
     1. [Adding Stairs](#adding-stairs)
     2. [Making the Stairs work](#making-the-stairs-work)
-    
+    3. [Creating the next floor](#creating-the-next-floor)
+        
 ## Dungeons Levels
 
 ### Adding Stairs
@@ -116,3 +117,20 @@ Some(InputAction::UseStairs) => {
     }
 }
 ```
+
+### Creating the next floor
+
+Before I can create additional floors I want to know on which floor I am at the moment. Since this information is missing,
+I will add a new value to the `Game`: `floor_number` as an indicator for that.
+
+`GameMap` already has a `make_map` method which already does everything I need to make new floors, except for the cleanup
+process. I will add the floor number as a new parameter here, and only change the player's `Position` if the `Entity` was
+already created.
+
+And I will wrap that into a new method, `next_floor`, which does all the cleanup stuff before generating the map. This
+function will be placed in the `Game` struct.
+
+The level transistion works fine after I solved a few issues. First I forgot to reset the map, then I forgot to 
+reinitilaize the fov_map.
+
+Now Just display the floor on the ui, and I am done.

@@ -50,6 +50,11 @@ impl GameMap {
         vec![Tile::new(true, true); height * width]
     }
 
+    fn reset_tiles(&mut self) {
+        let size = self.tiles.len();
+        self.tiles = vec![Tile::new(true, true); size]
+    }
+
     pub fn is_move_blocked(&self, x: i32, y: i32) -> bool {
         if self.get_tile(x as usize, y as usize).block_move {
             return true;
@@ -58,7 +63,9 @@ impl GameMap {
     }
 
     pub fn make_map(&mut self,
-                    ecs: &mut Ecs, settings: &Settings) {
+                    ecs: &mut Ecs, settings: &Settings, floor_number: u8) {
+
+        self.reset_tiles();
         let mut rooms: Vec<Rect> = Vec::new();
         let mut rng = thread_rng();
 
@@ -81,7 +88,7 @@ impl GameMap {
             let center = new_room.center();
 
             if rooms.len() == 0 {
-                CreatureTemplate::Player.create_on_position(ecs, center);
+                self.create_or_update_player(ecs, center);
             } else {
                 let prev_center = rooms[rooms.len() - 1].center();
 
@@ -100,6 +107,16 @@ impl GameMap {
         }
 
         self.add_stair(ecs, &rooms[rooms.len()-1]);
+    }
+
+    fn create_or_update_player(&self, ecs: &mut Ecs, position: (i32, i32)) {
+        let id = ecs.player_entity_id;
+        if ecs.player_entity_id > 0 {
+            let p = ecs.get_component_mut::<Position>(id).unwrap();
+            p.move_absolute(position);
+        } else {
+            CreatureTemplate::Player.create_on_position(ecs, position);
+        }
     }
 
     fn add_stair(&mut self, ecs: &mut Ecs, room: &Rect) {

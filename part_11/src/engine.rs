@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use tcod::console::Root;
+use tcod::console::{Console, Root};
 
 use game::{Game, state::GameState};
 use render::render_all;
@@ -87,6 +87,7 @@ impl Engine {
                         }
                     }
                     EngineAction::StartGame(load_game) => {
+                        self.root_console.borrow_mut().clear();
                         self.start_game(&mut game, load_game);
                     }
                     EngineAction::ToggleFullscreen => {
@@ -97,7 +98,8 @@ impl Engine {
                         self.mouse_pos = (x as i32, y as i32);
                     }
                     EngineAction::CreateNextFloor => {
-                        // Todo: do.
+                        self.root_console.borrow_mut().clear();
+                        game.next_floor(&self.settings);
                     }
                 }
             }

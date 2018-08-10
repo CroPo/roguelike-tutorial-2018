@@ -27,6 +27,7 @@ use savegame::Deserialize;
 use game::Game;
 use engine::Engine;
 use tcod::image::Image;
+use ecs::component::Stairs;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum RenderOrder {
@@ -80,6 +81,8 @@ fn render_game(engine: &Engine, game: &RefMut<Game>) {
     let mut ids_filtered: Vec<&EntityId> = component_ids.iter().filter(|id| {
         if let Some(p) = ecs.get_component::<Position>(**id) {
             fov_map.is_in_fov(p.position.0, p.position.1)
+                || ( map.get_tile(p.position.0 as usize, p.position.1 as usize).explored &&
+                ecs.has_component::<Stairs>(**id) )
         } else {
             false
         }
@@ -115,6 +118,8 @@ fn render_game(engine: &Engine, game: &RefMut<Game>) {
                    "HP", p.hp, p.max_hp,
                    colors::RED, colors::DARK_RED);
     }
+
+    panel.print_ex(1, 3, BackgroundFlag::None, TextAlignment::Left, format!("Dungeon level: {}", game.floor_number));
 
     game.log_panel.render(&mut panel);
 
