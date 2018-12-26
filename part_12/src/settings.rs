@@ -38,7 +38,7 @@ impl Settings {
         Settings {
             screen_width: 80,
             screen_height: 50,
-            title: "/r/roguelikedev Tutorial Part 11: Leveling Up".to_string(),
+            title: "/r/roguelikedev Tutorial Part 12: Monster and Item Progression".to_string(),
             font_path: "arial10x10.png".to_string(),
             font_layout: FontLayout::Tcod,
             font_type: FontType::Greyscale,
