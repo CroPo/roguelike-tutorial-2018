@@ -40,8 +40,13 @@ impl Position {
 
     /// Checks if a position is already blocked by an `Entity` and returns the id of the blocker.
     pub fn is_blocked_by(ecs: &Ecs, position: (i32, i32)) -> Vec<EntityId> {
-        ecs.get_all::<Self>().iter().filter(|(_, p)| {
-            p.position.0 == position.0 && p.position.1 == position.1 && p.is_blocking
+        ecs.get_all::<Self>().iter().filter(|(entity_id, p)| {
+            let is_blocking = p.position.0 == position.0 && p.position.1 == position.1 && p.is_blocking;
+            if let Some(a) = ecs.get_component::<Actor>(**entity_id) {
+                is_blocking && !a.is_dead()
+            } else {
+                is_blocking
+            }
         }).map(|(i, _)| *i).collect()
     }
 
@@ -272,6 +277,10 @@ impl Actor {
         } else {
             None
         }
+    }
+
+    pub fn is_dead(&self) -> bool{
+        self.hp == 0
     }
 }
 
