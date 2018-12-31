@@ -29,6 +29,8 @@ pub struct Settings {
     fov_light_walls: bool,
     fov_radius: i32,
 
+    ai_radius: i32,
+
     max_monsters_per_room: i32,
     max_items_per_room: i32,
 }
@@ -54,6 +56,7 @@ impl Settings {
             fov_algorithm: FovAlgorithm::Basic,
             fov_light_walls: true,
             fov_radius: 10,
+            ai_radius: 12,
             max_monsters_per_room: 3,
             max_items_per_room: 2,
         }
@@ -149,6 +152,10 @@ impl Settings {
 
     pub fn fov_radius(&self) -> i32 {
         self.fov_radius
+    }
+
+    pub fn ai_radius(&self) -> i32 {
+        self.ai_radius
     }
 
     pub fn max_monsters_per_room(&self) -> i32 {

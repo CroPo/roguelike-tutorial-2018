@@ -124,11 +124,11 @@ impl Position {
         let mut path = AStar::new_from_map(fov, 1.41);
         path.find((self.position.0, self.position.1), (target.position.0, target.position.1));
 
-        return if !path.is_empty() && path.len() < 25 {
+        if !path.is_empty() && path.len() < 25 {
             path.iter().next()
         } else {
             self.calculate_move_towards(ecs, map, (target.position.0, target.position.1))
-        };
+        }
     }
 }
 
