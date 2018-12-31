@@ -3,6 +3,7 @@ use ecs::Ecs;
 use ecs::component::{Position, Render, Name, MonsterAi, Actor, Inventory, Level};
 use ecs::id::EntityId;
 use render::RenderOrder;
+use map_objects::map::GameMap;
 
 /// Templates for common Creature types
 pub enum CreatureTemplate {
@@ -13,7 +14,7 @@ pub enum CreatureTemplate {
 
 impl CreatureTemplate {
     /// Create Some Entity from the Selected template, or None if the templates isn't implemented yet
-    pub fn create(&self, ecs: &mut Ecs) -> Option<EntityId> {
+    pub fn create(&self, ecs: &mut Ecs, game_map: &GameMap) -> Option<EntityId> {
         match *self {
             CreatureTemplate::Player => CreatureTemplate::create_player_from_template(ecs),
             CreatureTemplate::Troll => CreatureTemplate::create_troll_from_template(ecs),
@@ -22,8 +23,8 @@ impl CreatureTemplate {
     }
 
     /// Creates the Entity on a given Position
-    pub fn create_on_position(&self, ecs: &mut Ecs, pos: (i32, i32)) -> Option<EntityId> {
-        match self.create(ecs) {
+    pub fn create_on_position(&self, ecs: &mut Ecs, game_map: &GameMap, pos: (i32, i32)) -> Option<EntityId> {
+        match self.create(ecs, game_map) {
             Some(id) => {
                 match ecs.get_component_mut::<Position>(id) {
                     Some(p) => p.position = pos,

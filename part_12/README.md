@@ -10,6 +10,7 @@ This means - time for the last 2 pats of this tutorial. First of all, I will loo
 Contents of this Writeup:
 1. [Preparations](#preparations)
     1. [Fixing some bugs](#fixing-some-bugs)
+    2. [Monster Movement](#monster-movement)
         
 ## Preparations
 
@@ -44,3 +45,25 @@ pub fn is_blocked_by(ecs: &Ecs, position: (i32, i32)) -> Vec<EntityId> {
 ```
 
 Of course, the A* calculation needs to handle the dead `Actor`s correctly, too.
+
+### Monster Movement
+
+The next issue I want to solve is the general monster movement. The `MonsterAi` always knows the exact location of the player,
+and will start chasing said `Entity` from across the whole dungeon in the moment the layer sets foot onto a dungeon floor.
+
+Due to simplicity, I will solve this by giving each monster an own FOV. Once they see the player they will start chasing,
+even if the player is no longer in the FOV. The latter is done due to simplicity. In fact, this is the most easy way to
+handle this. Theoretically, the `MonsterAi` could remember the last known position of the player and move to (or near),
+and could look for a specific threshold of turns in a specific area if the player can be found again, to name just one
+example of better AI behavior. Maybe I will look into that later, since I personally like enemy behaviour development. A lot. 
+
+But this is not today's concern. I want to do two concrete things: 
+
+First, I want to give monsters the ability to see and chase the player. Again, I am choosing the most simple solution
+here, again: Once the monster spotted the player, it will start chasing until one of both is dead. Also, each entity
+will have the same FOV radius.
+
+Secondly, I want monsters to only do _anything_ (including looking for the player) if they are within a specific 
+distance to the player. This should help to increase performance, since the fov doesnt need to be updated for every
+entity in every turn.
+

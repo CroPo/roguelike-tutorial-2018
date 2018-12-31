@@ -115,7 +115,7 @@ impl GameMap {
             let p = ecs.get_component_mut::<Position>(id).unwrap();
             p.move_absolute(position);
         } else {
-            CreatureTemplate::Player.create_on_position(ecs, position);
+            CreatureTemplate::Player.create_on_position(ecs, &self, position);
         }
     }
 
@@ -160,7 +160,7 @@ impl GameMap {
                     CreatureTemplate::Troll
                 };
 
-                monster.create_on_position(ecs, (x, y));
+                monster.create_on_position(ecs, &self, (x, y));
             }
         }
 

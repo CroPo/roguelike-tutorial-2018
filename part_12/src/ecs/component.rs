@@ -16,6 +16,9 @@ use render::RenderOrder;
 use ecs::spell::Spell;
 
 use savegame::{Serialize, Deserialize};
+use map_objects::fov::initialize_fov;
+use map_objects::fov::recompute_fov;
+use settings::Settings;
 
 /// Used to indentify an Component
 pub trait Component: Any + Serialize {}
@@ -129,6 +132,14 @@ impl Position {
         } else {
             self.calculate_move_towards(ecs, map, (target.position.0, target.position.1))
         }
+    }
+
+    pub fn x(&self) -> i32 {
+        self.position.0
+    }
+
+    pub fn y(&self) -> i32 {
+        self.position.1
     }
 }
 
@@ -329,12 +340,18 @@ impl Component for Actor {}
 
 pub struct MonsterAi {
     entity_id: EntityId,
-    target_id: Option<EntityId>
+    target_id: Option<EntityId>,
+    fov_map: Map,
 }
 
 impl MonsterAi {
     pub fn new(entity_id: EntityId) -> MonsterAi {
-        MonsterAi { entity_id, target_id:None }
+
+        MonsterAi {
+            entity_id,
+            target_id:None,
+            fov_map: Map::new(1,1)
+        }
     }
 
     pub fn set_target(&mut self, target_id: EntityId) {
@@ -355,6 +372,26 @@ impl MonsterAi {
                 }
                 _ => EntityAction::Idle
             }
+        }
+    }
+
+    pub fn initialize_fov(&mut self, game_map: &GameMap) {
+        self.fov_map = Map::new(game_map.dimensions.0, game_map.dimensions.1);
+
+        for x in 0..game_map.dimensions.0 {
+            for y in 0..game_map.dimensions.1 {
+                let tile = game_map.get_tile(x as usize, y as usize);
+                self.fov_map.set(x, y, !tile.block_sight, !tile.block_move);
+            }
+        }
+    }
+
+    pub fn recompute_fov(&mut self, ecs: &Ecs, settings: &Settings) {
+        if let Some(position) = ecs.get_component::<Position>(self.entity_id) {
+            self.fov_map.compute_fov(position.x(), position.y(),
+                                settings.fov_radius(),
+                                false,
+                                settings.fov_algorithm());
         }
     }
 
@@ -397,7 +434,8 @@ impl Deserialize for MonsterAi {
     fn deserialize(json: &JsonValue) -> Self {
         MonsterAi {
             entity_id: json["id"].as_u16().unwrap(),
-            target_id: json["target"].as_u16()
+            target_id: json["target"].as_u16(),
+            fov_map: Map::new(1,1 )
         }
     }
 }

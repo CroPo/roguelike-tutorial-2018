@@ -16,22 +16,25 @@ use map_objects::fov;
 use savegame::{Serialize, Deserialize};
 use std::cell::RefCell;
 use ecs::component::Position;
+use ecs::component::MonsterAi;
 
 pub mod state;
 pub mod input;
 
-pub struct Game {
+pub struct Game<'game> {
     pub ecs: RefCell<Ecs>,
     pub map: RefCell<GameMap>,
     pub log: Rc<MessageLog>,
+
+    pub settings: &'game Settings,
 
     pub fov_map: RefCell<Map>,
     pub log_panel: MessagePanel,
     pub floor_number: u8
 }
 
-impl Game {
-    pub fn new() -> Game {
+impl<'game> Game<'game> {
+    pub fn new(settings: &'game Settings) -> Game {
 
         let ecs = Ecs::initialize();
         let map = GameMap::new(1, 1);
@@ -43,17 +46,18 @@ impl Game {
             ecs: RefCell::new(ecs),
             map: RefCell::new(map),
             log,
+            settings,
             fov_map: RefCell::new(fov_map),
             log_panel,
             floor_number: 1
         }
     }
 
-    pub fn start_new(&mut self, settings: &Settings) {
+    pub fn start_new(&mut self) {
 
         let mut ecs = Ecs::initialize();
-        let mut map = GameMap::new(settings.map_width(), settings.map_height());
-        map.make_map(&mut ecs, &settings, self.floor_number);
+        let mut map = GameMap::new(self.settings.map_width(), self.settings.map_height());
+        map.make_map(&mut ecs, self.settings, self.floor_number);
         let log = MessageLog::new();
         let fov_map = fov::initialize_fov(&map);
 
@@ -61,12 +65,14 @@ impl Game {
         self.map = RefCell::new(map);
         self.log = Rc::new(log);
         self.fov_map = RefCell::new(fov_map);
-        self.log_panel = MessagePanel::new(settings.message_pos(),
-                                           settings.message_dimensions(),
+        self.log_panel = MessagePanel::new(self.settings.message_pos(),
+                                           self.settings.message_dimensions(),
                                            self.log.clone());
+
+        self.init_entities();
     }
 
-    pub fn load(&mut self, settings: &Settings, json: JsonValue) {
+    pub fn load(&mut self, json: JsonValue) {
 
         let ecs = Ecs::deserialize(&json["ecs"]);
         let map = GameMap::deserialize(&json["map"]);
@@ -79,12 +85,14 @@ impl Game {
         self.floor_number = json["floor_number"].as_u8().unwrap();
         self.log = Rc::new(log);
         self.fov_map = RefCell::new(fov_map);
-        self.log_panel = MessagePanel::new(settings.message_pos(),
-                                           settings.message_dimensions(),
+        self.log_panel = MessagePanel::new(self.settings.message_pos(),
+                                           self.settings.message_dimensions(),
                                            self.log.clone());
+
+        self.init_entities();
     }
 
-    pub fn next_floor(&mut self, settings: &Settings) {
+    pub fn next_floor(&mut self) {
 
         self.floor_number+=1;
         let mut ecs = self.ecs.borrow_mut();
@@ -95,13 +103,25 @@ impl Game {
             }
         });
 
-        self.map.borrow_mut().make_map(ecs.deref_mut(), settings, self.floor_number);
+        self.map.borrow_mut().make_map(ecs.deref_mut(), self.settings, self.floor_number);
         self.fov_map = RefCell::new(fov::initialize_fov(&self.map.borrow()));
+
+        self.init_entities();
+    }
+
+    /// run initialization on the entities
+    fn init_entities(&self) {
+        let mut ecs = self.ecs.borrow_mut();
+
+        ecs.get_all_ids::<MonsterAi>().clone().iter().for_each(|id| {
+            let mut ai = ecs.get_component_mut::<MonsterAi>(*id).unwrap();
+            ai.initialize_fov(&self.map.borrow())
+        })
     }
 
 }
 
-impl Serialize for Game {
+impl<'game> Serialize for Game<'game> {
     fn serialize(&self) -> JsonValue {
         object!(
             "ecs" => self.ecs.borrow().serialize(),

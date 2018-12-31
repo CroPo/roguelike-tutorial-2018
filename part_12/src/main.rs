@@ -15,8 +15,9 @@ mod savegame;
 mod engine;
 
 use engine::Engine;
+use settings::Settings;
 
 fn main() {
-    Engine::run();
+    Engine::run(&Settings::new());
 }
 

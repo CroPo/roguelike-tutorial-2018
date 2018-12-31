@@ -16,24 +16,23 @@ pub enum EngineAction {
     Exit,
 }
 
-pub struct Engine {
-    pub game: RefCell<Game>,
-    pub settings: Settings,
+pub struct Engine<'engine> {
+    pub game: RefCell<Game<'engine>>,
+    pub settings: & 'engine Settings,
     pub root_console: RefCell<Root>,
 
     pub state: GameState,
     pub mouse_pos: (i32, i32),
 }
 
-impl Engine {
-    pub fn run() {
-        let mut engine = Engine::initialize();
+impl<'engine> Engine<'engine> {
+    pub fn run(settings: &'engine Settings) {
+        let mut engine = Engine::initialize(settings);
 
         engine.game_loop();
     }
 
-    fn initialize() -> Self {
-        let settings = Settings::new();
+    fn initialize(settings: &'engine Settings) -> Self {
 
         let root_console = Root::initializer()
             .size(settings.screen_width(), settings.screen_height())
@@ -43,7 +42,7 @@ impl Engine {
             .init();
 
         Engine {
-            game: RefCell::new(Game::new()),
+            game: RefCell::new(Game::new(settings)),
             settings,
             root_console: RefCell::new(root_console),
             state: GameState::MainMenu,
@@ -55,13 +54,13 @@ impl Engine {
         if load_game {
             match savegame::load() {
                 Some(game_json) => {
-                    game.load(&self.settings, game_json);
+                    game.load(game_json);
                     return;
                 }
                 None => ()
             };
         }
-        game.start_new(&self.settings);
+        game.start_new();
     }
 
     fn game_loop(&mut self) {
@@ -99,7 +98,7 @@ impl Engine {
                     }
                     EngineAction::CreateNextFloor => {
                         self.root_console.borrow_mut().clear();
-                        game.next_floor(&self.settings);
+                        game.next_floor();
                     }
                 }
             }
