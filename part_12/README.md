@@ -9,7 +9,7 @@ This means - time for the last 2 pats of this tutorial. First of all, I will loo
 
 Contents of this Writeup:
 1. [Preparations](#preparations)
-    1. [Fixing some buges](#fixing-some-bugs)
+    1. [Fixing some bugs](#fixing-some-bugs)
         
 ## Preparations
 
@@ -43,4 +43,3 @@ pub fn is_blocked_by(ecs: &Ecs, position: (i32, i32)) -> Vec<EntityId> {
 }
 ```
 
-a
