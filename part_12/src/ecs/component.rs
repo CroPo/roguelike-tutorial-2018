@@ -104,10 +104,21 @@ impl Position {
             }
         }
 
-        ecs.get_all::<Position>().iter().filter(|(id, _)| {
-            **id != target_id && **id != self.entity_id
+        ecs.get_all::<Position>().iter().filter(|(id, p)| {
+            // Filter out all entities which can be ignored for pathfinding:
+            // - the entity itself
+            // - dead actors
+            // - non-blocking entities
+            let is_self = **id != target_id && **id != self.entity_id;
+            let is_blocking = p.is_blocking;
+            if let Some(a) = ecs.get_component::<Actor>(**id) {
+                is_self && is_blocking && !a.is_dead()
+            } else {
+                is_self && is_blocking
+            }
+
         }).for_each(|(_, p)| {
-            fov.set(p.position.0, p.position.1, true, false);
+            fov.set(p.position.0, p.position.1, true, !p.is_blocking);
         });
 
         let mut path = AStar::new_from_map(fov, 1.41);

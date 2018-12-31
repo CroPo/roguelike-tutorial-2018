@@ -28,7 +28,7 @@ pub fn is_blocked_by(ecs: &Ecs, position: (i32, i32)) -> Vec<EntityId> {
 }
 ``` 
 
-Another filter has to be added to filter out those entities which are dead actors:
+Another filter has to be added to filter out those entities which are dead `Actor`s:
 
 ```rust
 pub fn is_blocked_by(ecs: &Ecs, position: (i32, i32)) -> Vec<EntityId> {
@@ -43,3 +43,4 @@ pub fn is_blocked_by(ecs: &Ecs, position: (i32, i32)) -> Vec<EntityId> {
 }
 ```
 
+Of course, the A* calculation needs to handle the dead `Actor`s correctly, too.
