@@ -4,6 +4,7 @@ extern crate textwrap;
 
 #[macro_use]
 extern crate json;
+extern crate core;
 
 mod ecs;
 mod render;

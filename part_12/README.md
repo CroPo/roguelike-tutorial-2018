@@ -14,6 +14,7 @@ Contents of this Writeup:
     3. [Dungeon Generator](#dungeon-generator)
 2. [Monster and Item progression](#monster-and-item-progression)
     1. [Updating the random generation](#updating-the-random-generation)
+    2. [Dungeon Level Scaling](#dungeon-level-scaling)
         
         
 ## Preparations
@@ -133,3 +134,23 @@ pub fn create_random(ecs: &mut Ecs, game_map: &GameMap, pos: (i32, i32)) -> Opti
 
 ```
 The method for creating a random item is pretty much the same.
+
+### Dungeon Level Scaling
+
+The next thing on the list is to make the game more difficult with each new dungeon level. First of all, I will need
+to adapt the function which selects a chance by dungeon level:
+
+```rust
+pub fn by_dungeon_level(chance_table: Vec<(i32, i32)>, level: i32) -> i32 {
+    let mut value_of_level = 0;
+    chance_table.iter().for_each(|(value, min_level)|{
+        if level >= min_level {
+            value_of_level = *value;
+        }
+    });
+    value_of_level
+}
+```
+
+The rest of this is just a bit fiddling around with the numbers to increase difficulty. Because, as of right now, 
+you only need to invest one point into defense to be invulnerable to orc attacks. 

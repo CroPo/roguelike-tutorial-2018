@@ -2,9 +2,11 @@ use tcod::colors;
 use ecs::Ecs;
 use ecs::component::{Position, Render, Name, MonsterAi, Actor, Inventory, Level};
 use ecs::id::EntityId;
+use std::borrow::Cow;
 use render::RenderOrder;
 use map_objects::map::GameMap;
 use random_utils::random_choice_index;
+use random_utils::by_dungeon_level;
 
 /// Templates for common Creature types
 pub enum CreatureTemplate {
@@ -38,10 +40,10 @@ impl CreatureTemplate {
     }
 
     /// Create a random creature
-    pub fn create_random(ecs: &mut Ecs, game_map: &GameMap, pos: (i32, i32)) -> Option<EntityId>  {
+    pub fn create_random(ecs: &mut Ecs, game_map: &GameMap, pos: (i32, i32), floor_number: u8) -> Option<EntityId>  {
         let available_creatures = vec![
             (CreatureTemplate::Orc, 80),
-            (CreatureTemplate::Troll, 20),
+            (CreatureTemplate::Troll, by_dungeon_level(Cow::Owned(vec![(15, 3), (30, 5), (60, 7)]), floor_number)),
         ];
 
         let chances = available_creatures.iter().map(|(_,chance)|{
@@ -60,7 +62,7 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, '@', colors::WHITE, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Player".to_string()});
-        ecs.register_component(id, Actor::new(id, 30, 5, 2, 0));
+        ecs.register_component(id, Actor::new(id, 100, 4, 1, 0));
         ecs.register_component(id, Level::new(id, 1, 200, 0.75));
         Some(id)
     }
@@ -70,7 +72,7 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, 'o', colors::DESATURATED_GREEN, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Orc".to_string() });
-        ecs.register_component(id, Actor::new(id, 10, 3, 0,35));
+        ecs.register_component(id, Actor::new(id, 20, 4, 0,35));
         ecs.register_component(id, Level::new(id, 1, 0, 0.0));
         ecs.register_component(id, MonsterAi::new(id));
         Some(id)
@@ -81,7 +83,7 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, 'T', colors::DARKER_GREEN, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Troll".to_string()});
-        ecs.register_component(id, Actor::new(id, 16, 4, 1,100));
+        ecs.register_component(id, Actor::new(id, 30, 8, 2,100));
         ecs.register_component(id, Level::new(id, 1, 0, 0.0));
         ecs.register_component(id, MonsterAi::new(id));
         Some(id)

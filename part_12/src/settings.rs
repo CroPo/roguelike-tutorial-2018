@@ -1,6 +1,8 @@
 use tcod::map::FovAlgorithm;
 use tcod::FontLayout;
 use tcod::FontType;
+use core::borrow::Borrow;
+use std::borrow::Cow;
 
 pub struct Settings {
     screen_width: i32,
@@ -38,8 +40,8 @@ pub struct Settings {
 
     ai_distance: f64,
 
-    max_monsters_per_room: i32,
-    max_items_per_room: i32,
+    max_monsters_per_room: Vec<(i32, i32)>,
+    max_items_per_room: Vec<(i32, i32)>,
 }
 
 impl Settings {
@@ -67,8 +69,8 @@ impl Settings {
             fov_light_walls: true,
             fov_radius: 10,
             ai_distance: 12.0,
-            max_monsters_per_room: 3,
-            max_items_per_room: 2,
+            max_monsters_per_room: vec![(2,1),(3,4),(5,6)],
+            max_items_per_room: vec![(10,1),(2,4)],
         }
     }
 
@@ -178,11 +180,11 @@ impl Settings {
         self.ai_distance
     }
 
-    pub fn max_monsters_per_room(&self) -> i32 {
-        self.max_monsters_per_room
+    pub fn max_monsters_per_room(&self) -> Cow<Vec<(i32, i32)>> {
+        Cow::Borrowed(&self.max_monsters_per_room)
     }
 
-    pub fn max_items_per_room(&self) -> i32 {
-        self.max_items_per_room
+    pub fn max_items_per_room(&self) -> Cow<Vec<(i32, i32)>> {
+        Cow::Borrowed(&self.max_items_per_room)
     }
 }

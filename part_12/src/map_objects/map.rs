@@ -24,6 +24,8 @@ use ecs::component::Stairs;
 use ecs::component::Render;
 use render::RenderOrder;
 use ecs::component::Name;
+use random_utils::by_dungeon_level;
+use std::borrow::Cow;
 
 pub struct GameMap {
     pub dimensions: (i32, i32),
@@ -125,7 +127,7 @@ impl GameMap {
             }
             self.place_entities(&new_room, ecs,
                                 settings.max_monsters_per_room(),
-                                settings.max_items_per_room());
+                                settings.max_items_per_room(), floor_number);
             rooms.push(new_room);
         }
 
@@ -167,18 +169,20 @@ impl GameMap {
         }
     }
 
-    fn place_entities(&mut self, room: &Rect, ecs: &mut Ecs, max_monsters_per_room: i32, max_items_per_room: i32) {
+    fn place_entities(&mut self, room: &Rect, ecs: &mut Ecs,
+                        max_monsters_per_room: Cow<Vec<(i32, i32)>>, max_items_per_room: Cow<Vec<(i32, i32)>>,
+                      floor_number: u8 ) {
         let mut rng = thread_rng();
 
-        let monster_count = rng.gen_range(0, max_monsters_per_room);
-        let item_count = rng.gen_range(0, max_items_per_room);
+        let monster_count = rng.gen_range(0, by_dungeon_level(max_monsters_per_room, floor_number));
+        let item_count = rng.gen_range(0, by_dungeon_level(max_items_per_room, floor_number));
 
         for _ in 0..monster_count {
             let x = rng.gen_range(room.tl.0 + 1, room.lr.0 - 1);
             let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
 
             if !ecs.get_all::<Position>().iter().any(|(_, p)| p.position.0 == x && p.position.1 == y) {
-                CreatureTemplate::create_random(ecs, &self, (x, y));
+                CreatureTemplate::create_random(ecs, &self, (x, y), floor_number);
             }
         }
 
@@ -187,7 +191,7 @@ impl GameMap {
             let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
 
             if !ecs.get_all::<Position>().iter().any(|(_, p)| p.position.0 == x && p.position.1 == y) {
-                ItemTemplate::create_random(ecs, (x,y));
+                ItemTemplate::create_random(ecs, (x,y), floor_number);
             }
         }
     }

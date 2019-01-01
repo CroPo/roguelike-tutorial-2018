@@ -64,7 +64,7 @@ pub enum SpellStatus {
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 pub enum Spell {
-    Heal(EntityId),
+    Heal(EntityId, u32),
     Lightning(EntityId, u8, u32),
     Fireball(EntityId, u8, u32),
     Confusion(EntityId),
@@ -74,7 +74,7 @@ pub enum Spell {
 impl Spell {
     pub fn cast(&self, ecs: &mut Ecs, fov_map: &Map, caster_id: EntityId) -> SpellResult {
         match *self {
-            Spell::Heal(item_id) => self.heal(ecs, caster_id, item_id),
+            Spell::Heal(item_id, amount) => self.heal(ecs, caster_id, item_id, amount),
             Spell::Lightning(item_id, range, damage) => self.lightning(ecs, fov_map, caster_id, item_id, range, damage),
             Spell::Fireball(..) | Spell::Confusion(..) => SpellResult::targeting(*self, caster_id),
             _ => SpellResult::fail(None)
@@ -89,17 +89,26 @@ impl Spell {
         }
     }
 
-    fn heal(&self, ecs: &mut Ecs, caster_id: EntityId, item_id: EntityId) -> SpellResult {
+    fn heal(&self, ecs: &mut Ecs, caster_id: EntityId, item_id: EntityId, amount : u32) -> SpellResult {
         let entity_name = Self::get_entity_name(ecs, caster_id);
 
         if let Some(actor) = ecs.get_component_mut::<Actor>(caster_id) {
             if actor.hp == actor.max_hp {
                 SpellResult::fail(Some(Message::new(format!("{} is already at full health", entity_name), colors::YELLOW)))
             } else {
-                actor.hp = actor.max_hp;
+
+                let amount_healed = if actor.hp + amount > actor.max_hp {
+                    actor.max_hp - actor.hp
+                } else {
+                    amount
+                };
+
+                actor.hp += amount_healed;
+
+
                 SpellResult::success(
                     caster_id, item_id,
-                    Some(Message::new(format!("{} was fully healed", entity_name), colors::GREEN)),
+                    Some(Message::new(format!("{} was healed for {}", entity_name, amount_healed), colors::GREEN)),
                     None)
             }
         } else {
@@ -226,7 +235,7 @@ impl Serialize for Spell {
     fn serialize(&self) -> JsonValue {
 
         match *self {
-            Spell::Heal(item_id) => object!("type" => "Heal", "data" => array![item_id]),
+            Spell::Heal(item_id, amount) => object!("type" => "Heal", "data" => array![item_id, amount]),
             Spell::Lightning(item_id, range, damage) => object!("type" => "Lightning", "data" => array![item_id, range, damage]),
             Spell::Fireball(item_id, radius, damage) => object!("type" => "Fireball", "data" => array![item_id, radius, damage]),
             Spell::Confusion(item_id) => object!("type" => "Confusion", "data" => array![item_id]),
@@ -239,7 +248,7 @@ impl Deserialize for Spell {
     fn deserialize(json: &JsonValue) -> Self {
 
         match json["type"].as_str().unwrap() {
-            "Heal" =>  Spell::Heal(json["data"][0].as_u16().unwrap()),
+            "Heal" =>  Spell::Heal(json["data"][0].as_u16().unwrap(),json["data"][1].as_u32().unwrap()),
             "Lightning" => Spell::Lightning(json["data"][0].as_u16().unwrap(),json["data"][1].as_u8().unwrap(),json["data"][2].as_u32().unwrap()),
             "Fireball" => Spell::Fireball(json["data"][0].as_u16().unwrap(),json["data"][1].as_u8().unwrap(),json["data"][2].as_u32().unwrap()),
             "Confusion" =>  Spell::Confusion(json["data"][0].as_u16().unwrap()),
