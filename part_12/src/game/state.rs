@@ -55,19 +55,19 @@ impl GameState {
         let map = game.map.borrow();
 
         match *self {
-            GameState::PlayersTurn => self.player_turn(&mut ecs, &mut fov_map, input_action, log, &map, &engine.settings),
-            GameState::EnemyTurn => self.enemy_turn(&mut ecs, &fov_map, log, &map),
+            GameState::PlayersTurn => self.player_turn(&mut ecs, &mut fov_map, input_action, log, &map, game.settings),
+            GameState::EnemyTurn => self.enemy_turn(&mut ecs, &fov_map, log, &map, game.settings),
             GameState::PlayerDead => self.player_dead(input_action),
             GameState::MainMenu => self.main_menu(input_action),
             GameState::ShowQuitGameMenu => self.quit_game_menu(input_action),
             GameState::ShowLeveUpMenu => self.level_up_menu(&mut ecs, input_action),
             GameState::ShowCharacterScreen => self.show_character_screen(input_action),
-            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(&mut ecs, &fov_map, input_action, log),
-            GameState::Targeting(spell, caster_id) => self.targeting(&mut ecs, &fov_map, input_action, log, spell, caster_id),
+            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(&mut ecs, &fov_map, game.settings, input_action, log),
+            GameState::Targeting(spell, caster_id) => self.targeting(&mut ecs, &fov_map, game.settings, input_action, log, spell, caster_id),
         }
     }
 
-    fn targeting(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>,
+    fn targeting(&self, ecs: &mut Ecs, fov_map: &Map, settings: &Settings, action: Option<InputAction>,
                  log: Rc<MessageLog>, spell: Spell, caster_id: EntityId) -> GameStateResult {
         match action {
             Some(InputAction::Exit) => {
@@ -96,7 +96,7 @@ impl GameState {
                     }
 
                     for action in spell_result.reactions {
-                        action.execute(ecs, fov_map, Rc::clone(&log));
+                        action.execute(ecs, fov_map, Rc::clone(&log), settings);
                     }
 
                     GameStateResult {
@@ -121,7 +121,7 @@ impl GameState {
         }
     }
 
-    fn show_inventory(&self, ecs: &mut Ecs, fov_map: &Map, action: Option<InputAction>, log: Rc<MessageLog>) -> GameStateResult {
+    fn show_inventory(&self, ecs: &mut Ecs, fov_map: &Map, settings: &Settings, action: Option<InputAction>, log: Rc<MessageLog>) -> GameStateResult {
         match action {
             Some(InputAction::Exit) => {
                 GameStateResult {
@@ -137,7 +137,7 @@ impl GameState {
                         GameState::ShowInventoryDrop => EntityAction::DropItem(ecs.player_entity_id, item_number as u8),
                         GameState::ShowInventoryUse => EntityAction::UseItem(ecs.player_entity_id, item_number as u8),
                         _ => EntityAction::Idle
-                    }.execute(ecs, fov_map, log) {
+                    }.execute(ecs, fov_map, log, settings) {
                         state
                     } else {
                         GameState::EnemyTurn
@@ -364,7 +364,7 @@ impl GameState {
                     GameState::PlayersTurn
                 } else {
                     actions.iter().for_each(|a| {
-                        a.execute(ecs, fov_map, Rc::clone(&log));
+                        a.execute(ecs, fov_map, Rc::clone(&log), settings);
                     });
                     GameState::EnemyTurn
                 };
@@ -427,7 +427,7 @@ impl GameState {
                     EntityAction::Idle
                 };
 
-                let next_state = if let Some(state) = action.execute(ecs, fov_map, Rc::clone(&log)) {
+                let next_state = if let Some(state) = action.execute(ecs, fov_map, Rc::clone(&log), settings) {
                     state
                 } else {
                     GameState::EnemyTurn
@@ -447,31 +447,63 @@ impl GameState {
         }
     }
 
-    fn update_enemy_ai_target(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>) {
+    /// Enemy AI updates before the actual actions are taken.
+    ///
+    /// These are:
+    ///  - Set the player as target if no other target is set
+    ///  - Recompute the FOV
+    ///  - Look if the target is inside the FOV
+    ///
+    fn update_enemy_ai(&self, ecs: &mut Ecs, fov_map: &Map, settings: &Settings, log: Rc<MessageLog>) {
         let player_id = ecs.player_entity_id;
 
-        let actions :Vec<EntityAction> = ecs.get_all::<MonsterAi>().iter().filter(|(_, ai)|{
-            ai.has_no_target()
-        }).map(|(id, _)| {
-            EntityAction::SetAiTarget(*id, player_id)
-        }).collect();
+        let mut actions : Vec<EntityAction> = vec![];
+        actions.extend(self.create_set_ai_target_actions(ecs, player_id));
+        actions.extend(self.create_update_fov_actions(ecs));
+        actions.extend(self.create_look_for_target_actions(ecs));
 
         actions.iter().for_each(|action| {
-            action.execute(ecs, fov_map, Rc::clone(&log));
+            action.execute(ecs, fov_map, Rc::clone(&log), settings);
         });
     }
 
-    fn enemy_turn(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>, map: &GameMap) -> GameStateResult {
-        self.update_enemy_ai_target(ecs, fov_map, Rc::clone(&log));
+    /// Set the player as target for each entity which has no target
+    fn create_set_ai_target_actions(&self, ecs: &Ecs, player_id: EntityId) -> Vec<EntityAction> {
+        ecs.get_all::<MonsterAi>().iter().filter(|(_, ai)|{
+            ai.has_no_target()
+        }).map(|(id, _)| {
+            EntityAction::SetAiTarget(*id, player_id)
+        }).collect()
+    }
+
+    fn create_update_fov_actions(&self, ecs: &Ecs) -> Vec<EntityAction> {
+        ecs.get_all::<MonsterAi>().iter().filter(|(_, ai)|{
+            !ai.is_chasing_target()
+        }).map(|(id, _)|{
+            EntityAction::UpdateFov(*id)
+        }).collect()
+    }
+
+    fn create_look_for_target_actions(&self, ecs: &Ecs) -> Vec<EntityAction> {
+        ecs.get_all::<MonsterAi>().iter().filter(|(_, ai)|{
+            !ai.is_chasing_target()
+        }).map(|(id, _)|{
+            EntityAction::LookForTarget(*id)
+        }).collect()
+    }
+
+
+    fn enemy_turn(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>, map: &GameMap, settings: &Settings) -> GameStateResult {
+        self.update_enemy_ai(ecs, fov_map, settings, Rc::clone(&log));
 
         let entity_ids = ecs.get_all_ids::<MonsterAi>();
 
         entity_ids.iter().for_each(|entity_id| {
             let action = match ecs.get_component::<MonsterAi>(*entity_id) {
-                Some(ai) => ai.calculate_turn(&ecs, &map),
+                Some(ai) => ai.calculate_turn(ecs, map, settings),
                 _ => EntityAction::Idle
             };
-            action.execute(ecs, fov_map, Rc::clone(&log));
+            action.execute(ecs, fov_map, Rc::clone(&log), settings);
         });
 
         if ecs.has_component::<Corpse>(ecs.player_entity_id) {

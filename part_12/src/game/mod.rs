@@ -114,7 +114,7 @@ impl<'game> Game<'game> {
         let mut ecs = self.ecs.borrow_mut();
 
         ecs.get_all_ids::<MonsterAi>().clone().iter().for_each(|id| {
-            let mut ai = ecs.get_component_mut::<MonsterAi>(*id).unwrap();
+            let ai = ecs.get_component_mut::<MonsterAi>(*id).unwrap();
             ai.initialize_fov(&self.map.borrow())
         })
     }

@@ -17,6 +17,7 @@ use ecs::spell::SpellResult;
 use ecs::spell::SpellStatus;
 use tcod::Map;
 use ecs::component::Level;
+use settings::Settings;
 
 /// This struct defines the Result of one single action. A message can be created, and also
 /// a reaction can happen.
@@ -53,12 +54,14 @@ pub enum EntityAction {
     SetAiTarget(EntityId, EntityId),
     RewardXp(EntityId, u32),
     LevelUp(EntityId),
+    UpdateFov(EntityId),
+    LookForTarget(EntityId),
     Idle,
 }
 
 impl EntityAction {
     /// Execute the action
-    pub fn execute(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>) -> Option<GameState> {
+    pub fn execute(&self, ecs: &mut Ecs, fov_map: &Map, log: Rc<MessageLog>, settings: &Settings) -> Option<GameState> {
         let result = match *self {
             EntityAction::MoveTo(entity_id, pos) => self.move_to_action(ecs, entity_id, pos),
             EntityAction::MoveRelative(entity_id, delta) => self.move_relative_action(ecs, entity_id, delta),
@@ -73,6 +76,8 @@ impl EntityAction {
             EntityAction::SetAiTarget(entity_id, target_id) => self.set_ai_target_action(ecs, entity_id, target_id),
             EntityAction::RewardXp(entity_id, xp) => self.reward_xp(ecs, entity_id, xp),
             EntityAction::LevelUp(entity_id) => self.level_up(ecs, entity_id),
+            EntityAction::LookForTarget(entity_id)  => self.look_for_target_action(ecs, entity_id, settings),
+            EntityAction::UpdateFov(entity_id) => self.update_fov_action(ecs, entity_id, settings),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
 
@@ -85,7 +90,7 @@ impl EntityAction {
 
         let mut resulting_state = None;
         for reaction in result.reactions {
-            resulting_state = if let Some(state) = reaction.execute(ecs, fov_map, Rc::clone(&log)) {
+            resulting_state = if let Some(state) = reaction.execute(ecs, fov_map, Rc::clone(&log), settings) {
                 Some(state)
             } else {
                 resulting_state
@@ -399,6 +404,56 @@ impl EntityAction {
         if let Some(ai) = ecs.get_component_mut::<MonsterAi>(entity_id) {
             ai.set_target(target_id);
         }
+
+        ActionResult {
+            reactions: vec![],
+            message: None,
+            state: None,
+        }
+    }
+
+    fn look_for_target_action(&self, ecs: &mut Ecs, entity_id: EntityId, settings: &Settings) -> ActionResult {
+
+        let target_in_fov =  {
+            if let Some(ai) = ecs.get_component::<MonsterAi>(entity_id) {
+                ai.is_within_ai_distance(ecs, settings) && ai.is_target_in_fov(ecs, settings)
+            } else {
+                false
+            }
+        } ;
+
+        if let Some(ai) = ecs.get_component_mut::<MonsterAi>(entity_id) {
+            ai.set_chasing_target(target_in_fov);
+        }
+
+
+        ActionResult {
+            reactions: vec![],
+            message: None,
+            state: None,
+        }
+    }
+
+    fn update_fov_action(&self, ecs: &mut Ecs, entity_id: EntityId, settings: &Settings) -> ActionResult {
+
+        let position = {
+            if let Some(p) = ecs.get_component::<Position>(entity_id) {
+                Some((p.x(), p.y()))
+            } else {
+                None
+            }
+        };
+
+
+        match position {
+            Some((x, y)) => {
+                if let Some(ai) = ecs.get_component_mut::<MonsterAi>(entity_id) {
+                    ai.recompute_fov(settings, x, y)
+                }
+            },
+            _ => {}
+        }
+
 
         ActionResult {
             reactions: vec![],

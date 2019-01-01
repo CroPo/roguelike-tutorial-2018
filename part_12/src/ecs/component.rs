@@ -342,6 +342,7 @@ pub struct MonsterAi {
     entity_id: EntityId,
     target_id: Option<EntityId>,
     fov_map: Map,
+    chase_target: bool
 }
 
 impl MonsterAi {
@@ -350,7 +351,8 @@ impl MonsterAi {
         MonsterAi {
             entity_id,
             target_id:None,
-            fov_map: Map::new(1,1)
+            fov_map: Map::new(1,1),
+            chase_target: false
         }
     }
 
@@ -362,18 +364,59 @@ impl MonsterAi {
         return self.target_id.is_none()
     }
 
-    pub fn calculate_turn(&self, ecs: &Ecs, map: &GameMap) -> EntityAction {
-        if self.target_id.is_none() {
+    pub fn calculate_turn(&self, ecs: &Ecs, map: &GameMap, settings: &Settings) -> EntityAction {
+
+        if !self.is_within_ai_distance(ecs, settings) {
+            EntityAction::Idle
+        } else if self.target_id.is_none() {
             EntityAction::Idle
         } else {
-            match ecs.get_component::<Position>(self.entity_id) {
-                Some(monster_position) => {
+            match (self.chase_target, ecs.get_component::<Position>(self.entity_id)) {
+                (true, Some(monster_position)) => {
                     self.calculate_movement(ecs, monster_position, map)
                 }
                 _ => EntityAction::Idle
             }
         }
     }
+
+    pub fn is_chasing_target(&self) -> bool {
+        self.chase_target
+    }
+
+
+    pub fn set_chasing_target(&mut self, chase: bool) {
+        self.chase_target = chase;
+    }
+
+    /// Returns true if the target is in FOV
+    pub fn is_target_in_fov(&self, ecs : &Ecs, settings: &Settings) -> bool {
+        if self.has_no_target() {
+            false
+        } else if let Some(player_position) = ecs.get_component::<Position>(self.target_id.unwrap()) {
+            self.fov_map.is_in_fov(player_position.x(), player_position.y())
+        } else {
+            false
+        }
+    }
+
+
+    /// return true if this `Entity` is within the defined AI distance to the player, or has no
+    /// `Position` component at all.
+    pub fn is_within_ai_distance(&self, ecs: &Ecs, settings: &Settings) -> bool {
+
+        if let Some(positon) = ecs.get_component::<Position>(self.entity_id) {
+            if let Some(player_position) = ecs.get_component::<Position>(ecs.player_entity_id) {
+                player_position.distance_to(positon.position) <= settings.ai_distance()
+            }
+           else {
+               false
+           }
+        } else {
+            true
+        }
+    }
+
 
     pub fn initialize_fov(&mut self, game_map: &GameMap) {
         self.fov_map = Map::new(game_map.dimensions.0, game_map.dimensions.1);
@@ -386,13 +429,11 @@ impl MonsterAi {
         }
     }
 
-    pub fn recompute_fov(&mut self, ecs: &Ecs, settings: &Settings) {
-        if let Some(position) = ecs.get_component::<Position>(self.entity_id) {
-            self.fov_map.compute_fov(position.x(), position.y(),
-                                settings.fov_radius(),
-                                false,
-                                settings.fov_algorithm());
-        }
+    pub fn recompute_fov(&mut self, settings: &Settings, origin_x: i32, origin_y: i32) {
+        self.fov_map.compute_fov(origin_x, origin_y,
+                            settings.fov_radius(),
+                            false,
+                            settings.fov_algorithm());
     }
 
     fn calculate_movement(&self, ecs: &Ecs, monster_position: &Position, map: &GameMap) -> EntityAction {
@@ -424,7 +465,8 @@ impl Serialize for MonsterAi {
         "type" => "MonsterAi",
         "data" => object!(
             "id" => self.entity_id,
-            "target" => self.target_id
+            "target" => self.target_id,
+            "chase_target" => self.chase_target
             )
         )
     }
@@ -435,7 +477,8 @@ impl Deserialize for MonsterAi {
         MonsterAi {
             entity_id: json["id"].as_u16().unwrap(),
             target_id: json["target"].as_u16(),
-            fov_map: Map::new(1,1 )
+            fov_map: Map::new(1,1 ),
+            chase_target: json["chase_target"].as_bool().unwrap_or(false)
         }
     }
 }
