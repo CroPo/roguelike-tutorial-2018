@@ -69,7 +69,7 @@ impl<'game> Game<'game> {
                                            self.settings.message_dimensions(),
                                            self.log.clone());
 
-        self.init_entities();
+        self.init_entities(self.ecs.borrow_mut().deref_mut());
     }
 
     pub fn load(&mut self, json: JsonValue) {
@@ -89,7 +89,7 @@ impl<'game> Game<'game> {
                                            self.settings.message_dimensions(),
                                            self.log.clone());
 
-        self.init_entities();
+        self.init_entities(self.ecs.borrow_mut().deref_mut());
     }
 
     pub fn next_floor(&mut self) {
@@ -106,16 +106,15 @@ impl<'game> Game<'game> {
         self.map.borrow_mut().make_map(ecs.deref_mut(), self.settings, self.floor_number);
         self.fov_map = RefCell::new(fov::initialize_fov(&self.map.borrow()));
 
-        self.init_entities();
+        self.init_entities(ecs.deref_mut());
     }
 
     /// run initialization on the entities
-    fn init_entities(&self) {
-        let mut ecs = self.ecs.borrow_mut();
-
+    fn init_entities(&self, ecs : &mut Ecs) {
         ecs.get_all_ids::<MonsterAi>().clone().iter().for_each(|id| {
-            let ai = ecs.get_component_mut::<MonsterAi>(*id).unwrap();
-            ai.initialize_fov(&self.map.borrow())
+            if let Some(ai) = ecs.get_component_mut::<MonsterAi>(*id) {
+                ai.initialize_fov(&self.map.borrow())
+            }
         })
     }
 

@@ -43,7 +43,7 @@ impl CreatureTemplate {
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, '@', colors::WHITE, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Player".to_string()});
-        ecs.register_component(id, Actor::new(id, 30, 5, 2, 0));
+        ecs.register_component(id, Actor::new(id, 30, 50, 20, 0));
         ecs.register_component(id, Level::new(id, 1, 200, 0.75));
         Some(id)
     }
