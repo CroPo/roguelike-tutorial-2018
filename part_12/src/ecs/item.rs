@@ -7,6 +7,7 @@ use ecs::id::EntityId;
 use render::RenderOrder;
 use ecs::component::Item;
 use ecs::spell::Spell;
+use random_utils::random_choice_index;
 
 /// Templates for common Creature types
 pub enum ItemTemplate {
@@ -40,6 +41,24 @@ impl ItemTemplate {
             _ => None
         }
     }
+
+    /// Create a random item
+    pub fn create_random(ecs: &mut Ecs, pos: (i32, i32)) -> Option<EntityId>  {
+        let available_creatures = vec![
+            (ItemTemplate::HealthPotion, 70),
+            (ItemTemplate::ConfusionScroll, 10),
+            (ItemTemplate::FireballScroll(3, 12), 10),
+            (ItemTemplate::LightningScroll(5,20), 10),
+        ];
+
+        let chances = available_creatures.iter().map(|(_,chance)|{
+            *chance
+        }).collect();
+
+        let ref selection: (ItemTemplate, i32) = available_creatures[random_choice_index(chances)];
+        selection.0.create_on_position(ecs, pos)
+    }
+
 
     fn create_health_potion_from_template(ecs: &mut Ecs) -> Option<EntityId> {
         let id = ecs.create_entity();

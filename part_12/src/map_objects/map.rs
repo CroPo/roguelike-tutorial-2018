@@ -178,13 +178,7 @@ impl GameMap {
             let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
 
             if !ecs.get_all::<Position>().iter().any(|(_, p)| p.position.0 == x && p.position.1 == y) {
-                let mut monster = if rng.gen_range(0, 100) < 80 {
-                    CreatureTemplate::Orc
-                } else {
-                    CreatureTemplate::Troll
-                };
-
-                monster.create_on_position(ecs, &self, (x, y));
+                CreatureTemplate::create_random(ecs, &self, (x, y));
             }
         }
 
@@ -193,19 +187,7 @@ impl GameMap {
             let y = rng.gen_range(room.tl.1 + 1, room.lr.1 - 1);
 
             if !ecs.get_all::<Position>().iter().any(|(_, p)| p.position.0 == x && p.position.1 == y) {
-
-                let rnd =  rng.gen_range(0, 100);
-
-                let item = if rnd < 70  {
-                    ItemTemplate::HealthPotion
-                } else if rnd < 80 {
-                    ItemTemplate::LightningScroll(5, 20)
-                } else if rnd < 90 {
-                    ItemTemplate::FireballScroll(3, 12)
-                } else {
-                    ItemTemplate::ConfusionScroll
-                };
-                item.create_on_position(ecs, (x, y));
+                ItemTemplate::create_random(ecs, (x,y));
             }
         }
     }

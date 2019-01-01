@@ -13,6 +13,7 @@ mod message;
 mod settings;
 mod savegame;
 mod engine;
+mod random_utils;
 
 use engine::Engine;
 use settings::Settings;

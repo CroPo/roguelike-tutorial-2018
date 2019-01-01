@@ -12,6 +12,8 @@ Contents of this Writeup:
     1. [Fixing some bugs](#fixing-some-bugs)
     2. [Monster Movement](#monster-movement)
     3. [Dungeon Generator](#dungeon-generator)
+2. [Monster and Item progression](#monster-and-item-progression)
+    1. [Updating the random generation](#updating-the-random-generation)
         
         
 ## Preparations
@@ -84,3 +86,50 @@ To address this problem, the loop needs to be controlled with a few new paramete
 these exceed a maximum, no ore rooms will be generated and the dungeon will be presented as-is. The counter is reset
 for each room generated
 3. The maximum number of rooms is still a break condition
+
+
+## Monster and Item progression
+
+The main topic of this tutorial part is rather easy to follow. I will modify a few functions slightly so they will fit
+better to my design.
+
+### Updating the random generation
+
+I'll start out with the method to select one random item from a weighted list:
+```rust
+pub fn random_choice_index(chances: Vec<i32>) -> usize {
+    let mut rng = thread_rng();
+    let random_chance = rng.gen_range(1, chances.iter().sum());
+
+    let mut running_sum = 0;
+    let mut choice = 0;
+
+    for chance in chances {
+        running_sum += chance;
+        if random_chance <= running_sum {
+            break
+        }
+        choice+=1;
+    }
+    choice
+}
+```
+I won't need the second method, because I'll handle creation of the actual `Entity` a bit different. For creatures,
+it looks like this:
+```rust
+pub fn create_random(ecs: &mut Ecs, game_map: &GameMap, pos: (i32, i32)) -> Option<EntityId>  {
+    let available_creatures = vec![
+        (CreatureTemplate::Orc, 80),
+        (CreatureTemplate::Troll, 20),
+    ];
+
+    let chances = available_creatures.iter().map(|(_,chance)|{
+        *chance
+    }).collect();
+
+    let ref selection: (CreatureTemplate, i32) = available_creatures[random_choice_index(chances)];
+    selection.0.create_on_position(ecs, game_map, pos)
+}
+
+```
+The method for creating a random item is pretty much the same.
