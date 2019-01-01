@@ -15,6 +15,7 @@ Contents of this Writeup:
 2. [Monster and Item progression](#monster-and-item-progression)
     1. [Updating the random generation](#updating-the-random-generation)
     2. [Dungeon Level Scaling](#dungeon-level-scaling)
+3. [Conclusion](#conclusion)
         
         
 ## Preparations
@@ -154,3 +155,14 @@ pub fn by_dungeon_level(chance_table: Vec<(i32, i32)>, level: i32) -> i32 {
 
 The rest of this is just a bit fiddling around with the numbers to increase difficulty. Because, as of right now, 
 you only need to invest one point into defense to be invulnerable to orc attacks. 
+
+## Conclusion
+
+The tutorial part was rather easy and short this time. It was literally only changing a few numbers and parameters so far.
+The real problems this time were all the (needed) bugfixes, since I can't use the debugger with tcod. I had to debug
+through the code by only using console outputs, which was a bit, well, meh. But in the end, I completed every task
+I wanted to. I learned a lot about lifetime parameters in Rust, too. And also I learned that I can't use tcod (for said reason)
+for a bigger project. This game is still rather small, so debugging with console output _works_ (not that I would say
+it is best or even a good practice), but on a large-scale project I really see an issue here.
+
+So, onto the next (and final) part, then.
