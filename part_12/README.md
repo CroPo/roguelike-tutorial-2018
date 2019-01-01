@@ -11,6 +11,8 @@ Contents of this Writeup:
 1. [Preparations](#preparations)
     1. [Fixing some bugs](#fixing-some-bugs)
     2. [Monster Movement](#monster-movement)
+    3. [Dungeon Generator](#dungeon-generator)
+        
         
 ## Preparations
 
@@ -67,3 +69,18 @@ Secondly, I want monsters to only do _anything_ (including looking for the playe
 distance to the player. This should help to increase performance, since the fov doesnt need to be updated for every
 entity in every turn.
 
+I ran into bigger mutability-caused problems here, and it took some time to solve it all. To be fully honest at this 
+point, the whole architecture at this point is quite a mess.
+
+### Dungeon Generator
+
+Also, there is one major flaw with the dungeon generator at this moment: It can easily become an endless loop if the
+generator fails to find space for new rooms. This leads to the game not continuing either on start or when the player
+goes down one level.
+
+To address this problem, the loop needs to be controlled with a few new parameters:
+1. A minimum of rooms which need to be generated
+2. Once these are generated, another counter will be running which counts the failed attempts to create a room, too. If
+these exceed a maximum, no ore rooms will be generated and the dungeon will be presented as-is. The counter is reset
+for each room generated
+3. The maximum number of rooms is still a break condition

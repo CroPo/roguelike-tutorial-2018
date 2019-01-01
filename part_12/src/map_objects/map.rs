@@ -62,14 +62,33 @@ impl GameMap {
         false
     }
 
+    /// Try to create a new dungeon map and place entities.
+    /// Returns true if successful, false if failed
     pub fn make_map(&mut self,
-                    ecs: &mut Ecs, settings: &Settings, floor_number: u8) {
+                    ecs: &mut Ecs, settings: &Settings, floor_number: u8) -> bool{
 
         self.reset_tiles();
         let mut rooms: Vec<Rect> = Vec::new();
         let mut rng = thread_rng();
 
-        'roomloop: while settings.max_rooms() > rooms.len() as i32 {
+        let mut failed_attempts = 0;
+        let mut failed_attempts_room = 0;
+
+        'roomloop: loop {
+
+            if (rooms.len() as i32) == settings.max_rooms() {
+                break 'roomloop
+            }
+
+            if (rooms.len() as i32) >= settings.min_rooms() && failed_attempts_room == settings.max_attempts_room() {
+                break 'roomloop
+            }
+
+            if (rooms.len() as i32) < settings.min_rooms() && failed_attempts == settings.max_attempts_min_rooms() {
+                return false
+            }
+
+
             let w = rng.gen_range(settings.room_min_size(), settings.room_max_size());
             let h = rng.gen_range(settings.room_min_size(), settings.room_max_size());
 
@@ -80,9 +99,13 @@ impl GameMap {
 
             for other_room in &rooms {
                 if new_room.intersect(&other_room) {
+                    failed_attempts+=1;
+                    failed_attempts_room+=1;
                     continue 'roomloop;
                 }
             }
+
+            failed_attempts_room = 0;
 
             self.create_room(&new_room);
             let center = new_room.center();
@@ -107,6 +130,7 @@ impl GameMap {
         }
 
         self.add_stair(ecs, &rooms[rooms.len()-1]);
+        true
     }
 
     fn create_or_update_player(&self, ecs: &mut Ecs, position: (i32, i32)) {

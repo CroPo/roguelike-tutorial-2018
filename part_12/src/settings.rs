@@ -24,6 +24,13 @@ pub struct Settings {
     room_max_size: i32,
     room_min_size: i32,
     max_rooms: i32,
+    min_rooms: i32,
+
+    /// Maximum number of attempts to generate another room after the min room number is met
+    max_attempts_room: i32,
+
+    /// Maximum number of attempts to generate the minimum room number
+    max_attempts_min_rooms: i32,
 
     fov_algorithm: FovAlgorithm,
     fov_light_walls: bool,
@@ -53,6 +60,9 @@ impl Settings {
             room_max_size: 10,
             room_min_size: 6,
             max_rooms: 30,
+            min_rooms: 10,
+            max_attempts_room: 10,
+            max_attempts_min_rooms: 300,
             fov_algorithm: FovAlgorithm::Basic,
             fov_light_walls: true,
             fov_radius: 10,
@@ -141,6 +151,16 @@ impl Settings {
     pub fn max_rooms(&self) -> i32 {
         self.max_rooms
     }
+    pub fn min_rooms(&self) -> i32 {
+        self.min_rooms
+    }
+    pub fn max_attempts_min_rooms(&self) -> i32 {
+        self.max_attempts_min_rooms
+    }
+    pub fn max_attempts_room(&self) -> i32 {
+        self.max_attempts_room
+    }
+
 
     pub fn fov_algorithm(&self) -> FovAlgorithm {
         self.fov_algorithm

@@ -55,9 +55,17 @@ impl<'game> Game<'game> {
 
     pub fn start_new(&mut self) {
 
+        let mut map_generated = false;
+
         let mut ecs = Ecs::initialize();
         let mut map = GameMap::new(self.settings.map_width(), self.settings.map_height());
-        map.make_map(&mut ecs, self.settings, self.floor_number);
+
+        while !map_generated {
+            ecs = Ecs::initialize();
+            map = GameMap::new(self.settings.map_width(), self.settings.map_height());
+            map_generated = map.make_map(&mut ecs, self.settings, self.floor_number);
+        }
+
         let log = MessageLog::new();
         let fov_map = fov::initialize_fov(&map);
 
@@ -97,13 +105,18 @@ impl<'game> Game<'game> {
         self.floor_number+=1;
         let mut ecs = self.ecs.borrow_mut();
 
-        ecs.get_all_ids::<Position>().iter().for_each(|id|{
-            if *id != ecs.player_entity_id {
-                ecs.destroy_entity(id);
-            }
-        });
 
-        self.map.borrow_mut().make_map(ecs.deref_mut(), self.settings, self.floor_number);
+        let mut map_generated = false;
+
+        while !map_generated {
+            ecs.get_all_ids::<Position>().iter().for_each(|id| {
+                if *id != ecs.player_entity_id {
+                    ecs.destroy_entity(id);
+                }
+            });
+
+            map_generated = self.map.borrow_mut().make_map(ecs.deref_mut(), self.settings, self.floor_number);
+        }
         self.fov_map = RefCell::new(fov::initialize_fov(&self.map.borrow()));
 
         self.init_entities(ecs.deref_mut());
