@@ -704,3 +704,78 @@ impl Deserialize for Level {
 }
 
 impl Component for Level {}
+
+enum EquipmentSlot {
+    MainHand(EntityId),
+    OffHand(EntityId),
+    None
+}
+
+impl Serialize for EquipmentSlot {
+    fn serialize(&self) -> JsonValue {
+
+        match *self {
+            EquipmentSlot::MainHand(equipped_id) => object!("type" => "MainHand", "data" => array![equipped_id]),
+            EquipmentSlot::OffHand(equipped_id) => object!("type" => "OffHand", "data" => array![equipped_id]),
+            _ => object!("type" => "", "data" => array![])
+        }
+    }
+}
+
+impl Deserialize for EquipmentSlot {
+    fn deserialize(json: &JsonValue) -> Self {
+
+        match json["type"].as_str().unwrap() {
+            "MainHand" =>  EquipmentSlot::MainHand(json["data"][0].as_u16().unwrap()),
+            "OffHand" =>  EquipmentSlot::OffHand(json["data"][0].as_u16().unwrap()),
+            _ => EquipmentSlot::None
+        }
+    }
+}
+
+
+
+pub struct Equippable {
+    entity_id: EntityId,
+    bonus_power: i32,
+    bonus_defense: i32,
+    bonus_max_hp: i32,
+    slot: EquipmentSlot
+}
+
+impl Equippable {
+    pub fn new(entity_id: EntityId, bonus_power: i32, bonus_defense: i32, bonus_max_hp: i32, slot: EquipmentSlot) -> Self {
+        Equippable {
+            entity_id, bonus_power, bonus_defense, bonus_max_hp, slot
+        }
+    }
+}
+
+impl Component for Equippable {}
+
+impl Serialize for Equippable {
+    fn serialize(&self) -> JsonValue {
+        object!(
+        "type" => "Equippable",
+            "data" => object!(
+                "id" => self.entity_id,
+                "bonus_power" => self.bonus_power,
+                "bonus_defense" => self.bonus_defense,
+                "bonus_max_hp" => self.bonus_max_hp,
+                "slot" => self.slot.serialize(),
+            )
+        )
+    }
+}
+
+impl Deserialize for Equippable {
+    fn deserialize(json: &JsonValue) -> Self {
+        Equippable {
+            entity_id: json["id"].as_u16().unwrap(),
+            bonus_power: json["bonus_power"].as_i32().unwrap(),
+            bonus_defense: json["bonus_power"].as_i32().unwrap(),
+            bonus_max_hp: json["bonus_power"].as_i32().unwrap(),
+            slot: EquipmentSlot::deserialize(&json["slot"]),
+        }
+    }
+}
