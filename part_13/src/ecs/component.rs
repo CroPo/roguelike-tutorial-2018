@@ -1,4 +1,8 @@
 use std::any::Any;
+use std::cmp::Eq;
+use std::cmp::PartialEq;
+use std::hash::Hash;
+
 use ecs::id::EntityId;
 use ecs::Ecs;
 
@@ -19,6 +23,7 @@ use savegame::{Serialize, Deserialize};
 use map_objects::fov::initialize_fov;
 use map_objects::fov::recompute_fov;
 use settings::Settings;
+use std::collections::HashMap;
 
 /// Used to indentify an Component
 pub trait Component: Any + Serialize {}
@@ -705,9 +710,10 @@ impl Deserialize for Level {
 
 impl Component for Level {}
 
-enum EquipmentSlot {
-    MainHand(EntityId),
-    OffHand(EntityId),
+#[derive(PartialEq, Eq, Hash)]
+pub enum EquipmentSlot {
+    MainHand,
+    OffHand,
     None
 }
 
@@ -715,8 +721,8 @@ impl Serialize for EquipmentSlot {
     fn serialize(&self) -> JsonValue {
 
         match *self {
-            EquipmentSlot::MainHand(equipped_id) => object!("type" => "MainHand", "data" => array![equipped_id]),
-            EquipmentSlot::OffHand(equipped_id) => object!("type" => "OffHand", "data" => array![equipped_id]),
+            EquipmentSlot::MainHand => object!("type" => "MainHand"),
+            EquipmentSlot::OffHand => object!("type" => "OffHand"),
             _ => object!("type" => "", "data" => array![])
         }
     }
@@ -726,8 +732,8 @@ impl Deserialize for EquipmentSlot {
     fn deserialize(json: &JsonValue) -> Self {
 
         match json["type"].as_str().unwrap() {
-            "MainHand" =>  EquipmentSlot::MainHand(json["data"][0].as_u16().unwrap()),
-            "OffHand" =>  EquipmentSlot::OffHand(json["data"][0].as_u16().unwrap()),
+            "MainHand" =>  EquipmentSlot::MainHand,
+            "OffHand" =>  EquipmentSlot::OffHand,
             _ => EquipmentSlot::None
         }
     }
@@ -779,3 +785,54 @@ impl Deserialize for Equippable {
         }
     }
 }
+
+pub struct Equipment {
+    entity_id: EntityId,
+    slots: HashMap<EquipmentSlot, EntityId>
+}
+
+impl Component for Equipment {}
+
+impl Serialize for Equipment {
+
+    fn serialize(&self) -> JsonValue {
+        let mut slots = JsonValue::new_array();
+        self.slots.iter().for_each(|(slot, entity_id)| {
+            slots.push(object!(
+                "slot" => slot.serialize(),
+                "id" => *entity_id
+            ));
+        });
+
+        object!(
+        "type" => "Equipment",
+            "data" => object!(
+                "id" => self.entity_id,
+                "slots" => slots
+            )
+        )
+    }
+}
+
+impl Deserialize for Equipment {
+    fn deserialize(json: &JsonValue) -> Self {
+
+        let mut slots : HashMap<EquipmentSlot, EntityId> = HashMap::new();
+
+        for entity_json in json["slots"].members() {
+
+            let slot = EquipmentSlot::deserialize(&json["slot"]);
+            let id = entity_json["id"].as_u16().unwrap();
+
+            slots.insert(slot, id);
+        }
+
+        Equipment {
+            entity_id: json["id"].as_u16().unwrap(),
+            slots,
+        }
+
+    }
+}
+
+
