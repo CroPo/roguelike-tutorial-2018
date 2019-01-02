@@ -92,3 +92,6 @@ impl Deserialize for Equipment {
     }
 }
 ```
+
+Of course, both components need to be saved and loaded correctly, which means I have to adapt the `Serialize` and
+`Deserialize` implementation of `Ecs`, which is just copypasting some already existing lines.

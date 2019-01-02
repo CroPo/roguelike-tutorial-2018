@@ -106,6 +106,12 @@ impl Serialize for EcsStorage {
         if let Some(c) = self.get::<Level>() {
             components.push(c.serialize());
         }
+        if let Some(c) = self.get::<Equippable>() {
+            components.push(c.serialize());
+        }
+        if let Some(c) = self.get::<Equipment>() {
+            components.push(c.serialize());
+        }
         components
     }
 }
@@ -127,6 +133,8 @@ impl Deserialize for EcsStorage {
                 "Inventory" => storage.register(Inventory::deserialize(&component_json["data"])),
                 "Stair" => storage.register(Stairs::deserialize(&component_json["data"])),
                 "Level" => storage.register(Level::deserialize(&component_json["data"])),
+                "Equippable" => storage.register(Equippable::deserialize(&component_json["data"])),
+                "Equipment" => storage.register(Equipment::deserialize(&component_json["data"])),
                 _ => ()
             }
         }
