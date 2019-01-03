@@ -19,5 +19,8 @@ Every part of the tutorial is a separate workspace member. You can run each part
 - [Part 10: Saving and Loading](part_10/)
 - [Part 11: Leveling Up](part_11/)
 - [Part 12: Monster and Item Progression](part_12/)
+- [Part 13: Adventure gear](part_13/)
 
 Feel free to comment any piece of code you see. I appreciate any kind of feedback here, especially if it helps to get a better understanding of Rust itself.
+
+_This tutorial is finished. It may have some bugs, feel free to report them, and I will probably fix them. But I probably won't continue development of this game any further_
