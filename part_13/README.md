@@ -12,7 +12,8 @@ Contents of this Writeup:
     2. [Placing equipment in the dungeon](#placing-equipment-in-the-dungeon)
     3. [Equipping an item](#equipping-an-item)
     4. [Making equipment work](#making-equipment-work)
-   
+2. [(Final) Conclusion](#final-conclusion)
+
 ## Making stuff equippable
 
 ### Building the components
@@ -184,7 +185,7 @@ item from the list, it will be equipped. If the item is already equipped, it wil
 
 The hotkey for opening the menu will be `e`.
 
-## Making equipment work
+### Making equipment work
 
 Well, now we can pick up, drop and equip armor and weapons. They just don't do much until now. Time to change that! 
 First of all I will disable direct access to the values `max_hp`, `power` and `defense` of the `Actor` component, and
@@ -194,6 +195,21 @@ Also, since the level up needs to still be working I need methods to increase th
 
 After that, I just have to get the Equipment and add all stat bonuses together.
 
+## (Final) Conclusion
 
+Well, that's it. The tutorial is done, with a, let's say, usual delay in software dev business ;-)
+
+All I can say at this point is that, even if it was a very big struggle from start to end, I learned incredibly much.
+My main intention with following the tutorial was to learn Rust. And I think I really gained some useful skills, since
+I pretty much made every possible mistake you can make in a language like Rust at least once while following the 
+tutorial.
+
+But that's not all. I learned about game development, about game architecture. 
+
+And, probably most important for me: I finally _finished_ a hobby project.
+
+Maybe I will occasionally continue developing this game, but it will be more experimenting around and stuff. But one
+thing I can say for sure: I _will_ develop my own, new game. A roguelike. And maybe you will see even a release this
+year.
 
 
