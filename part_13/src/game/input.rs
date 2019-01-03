@@ -16,6 +16,7 @@ pub enum InputAction {
     UseStairs,
     ShowInventory,
     ShowInventoryDrop,
+    ShowEquip,
     ShowCharacterScreen,
     StartNewGame,
     LoadGame,
@@ -30,7 +31,7 @@ pub fn handle_input(state: &GameState, event: Option<(EventFlags, Event)>) -> Op
             (KEY_PRESS, Event::Key(key)) => {
                 match state {
                     GameState::PlayersTurn => handle_keys_player_turn(key),
-                    GameState::ShowInventoryUse | GameState::ShowInventoryDrop
+                    GameState::ShowInventoryUse | GameState::ShowInventoryDrop | GameState::ShowInventoryEquip
                     | GameState::MainMenu | GameState::ShowQuitGameMenu
                     | GameState::ShowLeveUpMenu => handle_keys_selection_menu(key),
                     _ => handle_keys_default(key),
@@ -74,6 +75,7 @@ fn handle_keys_player_turn(key: Key) -> Option<InputAction> {
         Key { printable: 'd', .. } => Some(InputAction::ShowInventoryDrop),
         Key { printable: 'c', .. } => Some(InputAction::ShowCharacterScreen),
         Key { printable: 'g', .. } => Some(InputAction::PickUp),
+        Key { printable: 'e', .. } => Some(InputAction::ShowEquip),
         Key { printable: '>', .. } => Some(InputAction::UseStairs),
         Key { code: KeyCode::Escape, .. } => Some(InputAction::Exit),
         Key { code: KeyCode::Enter, alt: true, .. } => Some(InputAction::Fullscreen),

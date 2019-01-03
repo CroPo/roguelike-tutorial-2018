@@ -30,6 +30,9 @@ use tcod::image::Image;
 use ecs::component::Stairs;
 use ecs::component::Corpse;
 use ecs::component::Level;
+use ecs::component::Equipment;
+use ecs::component::Equippable;
+use ecs::component::EquipmentSlot;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum RenderOrder {
@@ -134,6 +137,8 @@ fn render_game(engine: &Engine, game: &RefMut<Game>) {
         GameState::ShowInventoryUse => inventory_menu(root_console.deref_mut(), &ecs, "Press the key next to an item to use it, or Esc to cancel.",
                                                       50, console.width(), console.height()),
         GameState::ShowInventoryDrop => inventory_menu(root_console.deref_mut(), &ecs, "Press the key next to an item to drop it, or Esc to cancel.",
+                                                       50, console.width(), console.height()),
+        GameState::ShowInventoryEquip => equipment_menu(root_console.deref_mut(), &ecs, "Press the key next to an item to equip or unequip it, or Esc to cancel.",
                                                        50, console.width(), console.height()),
         GameState::ShowLeveUpMenu => level_up_menu(root_console.deref_mut(), &ecs,console.width(), console.height()),
         GameState::ShowQuitGameMenu => selection_menu(root_console.deref_mut(), "",
@@ -266,6 +271,46 @@ pub fn selection_menu(console: &mut Root, title: &str, options: Vec<String>, wid
          (width, height),
          console, (x, y),
          1.0, 1.0);
+}
+
+
+pub fn equipment_menu(console: &mut Root, ecs: &Ecs, title: &str, width: i32, screen_width: i32, screen_height: i32) {
+    if let Some(inventory) = ecs.get_component::<Inventory>(ecs.player_entity_id) {
+        if let Some(equipment) = ecs.get_component::<Equipment>(ecs.player_entity_id) {
+
+            let equippable : Vec<&EntityId> = inventory.items.iter().filter(|item_id| {
+                ecs.has_component::<Equippable>(**item_id)
+            }).collect();
+
+            let items = if equippable.len() == 0 {
+                vec!["No equippable items in inventory".to_string()]
+            } else {
+                equippable.iter().filter(|item_id| {
+                    ecs.has_component::<Name>(***item_id)
+                }).map(|item_id| {
+                    let mut item_name = ecs.get_component::<Name>(**item_id).unwrap().name.clone();
+
+                    let equippable = ecs.get_component::<Equippable>(**item_id).unwrap();
+
+                    match equippable.slot {
+                        EquipmentSlot::Armor => item_name += &format!(" [+{} HP]", equippable.bonus_max_hp),
+                        EquipmentSlot::OffHand => item_name += &format!(" [+{} DEF]", equippable.bonus_defense),
+                        EquipmentSlot::MainHand => item_name += &format!(" [+{} PWR]", equippable.bonus_power),
+                        _ => ()
+                    }
+
+                    if let Some(slot) = equipment.is_equipped(**item_id) {
+                        item_name += " (equipped)"
+                    }
+
+                    item_name
+
+                }).collect()
+            };
+
+            selection_menu(console, title, items, width, screen_width, screen_height);
+        }
+    }
 }
 
 pub fn inventory_menu(console: &mut Root, ecs: &Ecs, title: &str, width: i32, screen_width: i32, screen_height: i32) {

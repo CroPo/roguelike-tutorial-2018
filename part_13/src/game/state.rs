@@ -38,6 +38,7 @@ pub enum GameState {
     PlayerDead,
     ShowInventoryUse,
     ShowInventoryDrop,
+    ShowInventoryEquip,
     ShowQuitGameMenu,
     ShowLeveUpMenu,
     ShowCharacterScreen,
@@ -62,7 +63,7 @@ impl GameState {
             GameState::ShowQuitGameMenu => self.quit_game_menu(input_action),
             GameState::ShowLeveUpMenu => self.level_up_menu(&mut ecs, input_action),
             GameState::ShowCharacterScreen => self.show_character_screen(input_action),
-            GameState::ShowInventoryUse | GameState::ShowInventoryDrop => self.show_inventory(&mut ecs, &fov_map, game.settings, input_action, log),
+            GameState::ShowInventoryUse | GameState::ShowInventoryDrop | GameState::ShowInventoryEquip => self.show_inventory(&mut ecs, &fov_map, game.settings, input_action, log),
             GameState::Targeting(spell, caster_id) => self.targeting(&mut ecs, &fov_map, game.settings, input_action, log, spell, caster_id),
         }
     }
@@ -136,6 +137,7 @@ impl GameState {
                     let next_state = if let Some(state) = match *self {
                         GameState::ShowInventoryDrop => EntityAction::DropItem(ecs.player_entity_id, item_number as u8),
                         GameState::ShowInventoryUse => EntityAction::UseItem(ecs.player_entity_id, item_number as u8),
+                        GameState::ShowInventoryEquip => EntityAction::ToggleEquipment(ecs.player_entity_id, item_number as u8),
                         _ => EntityAction::Idle
                     }.execute(ecs, fov_map, log, settings) {
                         state
@@ -326,6 +328,12 @@ impl GameState {
             Some(InputAction::ShowInventory) => {
                 GameStateResult {
                     next_state: GameState::ShowInventoryUse,
+                    engine_action: None,
+                }
+            }
+            Some(InputAction::ShowEquip) => {
+                GameStateResult {
+                    next_state: GameState::ShowInventoryEquip,
                     engine_action: None,
                 }
             }

@@ -62,7 +62,7 @@ impl ItemTemplate {
             (ItemTemplate::LightningScroll(5,40), by_dungeon_level(Cow::Owned(vec![(10, 2)]), floor_number)),
             (ItemTemplate::Armor("Leather Armor".to_string(), 20), by_dungeon_level(Cow::Owned(vec![(10, 1),(0, 4)]), floor_number)),
             (ItemTemplate::Armor("Iron Armor".to_string(), 40), by_dungeon_level(Cow::Owned(vec![(5, 4),(0, 7)]), floor_number)),
-            (ItemTemplate::Armor("Mithril Armor".to_string(), 40), by_dungeon_level(Cow::Owned(vec![(1, 7)]), floor_number)),
+            (ItemTemplate::Armor("Mithril Armor".to_string(), 60), by_dungeon_level(Cow::Owned(vec![(1, 7)]), floor_number)),
             (ItemTemplate::Weapon("Copper Dagger".to_string(), 1), by_dungeon_level(Cow::Owned(vec![(10, 1),(0, 4)]), floor_number)),
             (ItemTemplate::Weapon("Iron Axe".to_string(), 2), by_dungeon_level(Cow::Owned(vec![(5, 4),(0, 7)]), floor_number)),
             (ItemTemplate::Weapon("Mithril Sword".to_string(), 4), by_dungeon_level(Cow::Owned(vec![(1, 7)]), floor_number)),

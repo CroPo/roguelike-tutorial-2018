@@ -18,6 +18,9 @@ use ecs::spell::SpellStatus;
 use tcod::Map;
 use ecs::component::Level;
 use settings::Settings;
+use ecs::component::Equipment;
+use ecs::component::Equippable;
+use ecs::component::EquipmentSlot;
 
 /// This struct defines the Result of one single action. A message can be created, and also
 /// a reaction can happen.
@@ -49,6 +52,7 @@ pub enum EntityAction {
     PickUpItem(EntityId, EntityId),
     DropItem(EntityId, u8),
     UseItem(EntityId, u8),
+    ToggleEquipment(EntityId, u8),
     AddItemToInventory(EntityId, EntityId),
     RemoveItemFromInventory(EntityId, EntityId),
     SetAiTarget(EntityId, EntityId),
@@ -78,6 +82,7 @@ impl EntityAction {
             EntityAction::LevelUp(entity_id) => self.level_up(ecs, entity_id),
             EntityAction::LookForTarget(entity_id)  => self.look_for_target_action(ecs, entity_id, settings),
             EntityAction::UpdateFov(entity_id) => self.update_fov_action(ecs, entity_id, settings),
+            EntityAction::ToggleEquipment(entity_id, item_number) => self.toggle_item_action(ecs, entity_id, item_number),
             EntityAction::Idle => ActionResult::none() // Idle - do nothing
         };
 
@@ -212,6 +217,90 @@ impl EntityAction {
             };
         }
         ActionResult::none()
+    }
+
+    fn get_equippable_item_id_by_number(&self, ecs: &Ecs,entity_id: EntityId, item_number: u8) -> Option<EntityId>{
+        let inventory = ecs.get_component::<Inventory>(entity_id).unwrap();
+
+        let equippables : Vec<&EntityId> = inventory.items.iter().filter(|item_id| {
+            ecs.has_component::<Equippable>(**item_id)
+        }).collect();
+
+        if equippables.len() > ( item_number as usize ) {
+            Some(*equippables[item_number as usize])
+        } else {
+            None
+        }
+
+    }
+
+    fn get_equipment_slot_of_item(&self, ecs: &Ecs,item_id: EntityId) -> Option<EquipmentSlot> {
+        match ecs.get_component::<Equippable>(item_id) {
+            Some(equippable) => Some(equippable.slot),
+            None => None
+        }
+    }
+
+
+
+    fn toggle_item_action(&self, ecs: &mut Ecs, entity_id: EntityId, item_number: u8) -> ActionResult {
+
+        if !ecs.has_component::<Equipment>(entity_id) || !ecs.has_component::<Inventory>(entity_id){
+            return ActionResult {
+                message: None,
+                reactions: vec![],
+                state: Some(GameState::ShowInventoryUse),
+            }
+        }
+
+        let entity_name = EntityAction::get_entity_name(ecs, entity_id).to_uppercase();
+
+        let item = self.get_equippable_item_id_by_number(ecs, entity_id, item_number);
+
+        match item {
+            Some(item_id) => {
+
+
+                let slot = match self.get_equipment_slot_of_item(ecs, item_id){
+                    Some(s) => s,
+                    None => EquipmentSlot::None
+                };
+
+
+                let item_name = EntityAction::get_entity_name(ecs, item_id).to_uppercase();
+
+                if let Some(equipment) = ecs.get_component_mut::<Equipment>(entity_id) {
+
+                    let message = Message::new( if let Some(_) = equipment.is_equipped(item_id) {
+                        equipment.unequip(item_id);
+                        format!("{} unequipped {}", entity_name, item_name)
+                    } else {
+                        equipment.equip(slot, item_id);
+                        format!("{} equipped {}", entity_name, item_name)
+                    }, colors::LIGHT_FUCHSIA);
+
+                    ActionResult {
+                        message: Some(vec![message]),
+                        reactions: vec![],
+                        state: Some(GameState::ShowInventoryEquip),
+                    }
+                } else {
+                    ActionResult {
+                        message: None,
+                        reactions: vec![],
+                        state: Some(GameState::ShowInventoryEquip),
+                    }
+                }
+
+            },
+            _ => {
+                ActionResult {
+                    message: None,
+                    reactions: vec![],
+                    state: Some(GameState::ShowInventoryEquip),
+                }
+            }
+        }
     }
 
     fn use_item_action(&self, ecs: &mut Ecs, fov_map: &Map, entity_id: EntityId, item_number: u8) -> ActionResult {

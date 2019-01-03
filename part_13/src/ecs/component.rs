@@ -750,19 +750,23 @@ impl Deserialize for EquipmentSlot {
     }
 }
 
-
+#[derive(Debug)]
 pub struct Equippable {
     entity_id: EntityId,
-    bonus_power: i32,
-    bonus_defense: i32,
-    bonus_max_hp: i32,
-    slot: EquipmentSlot
+    pub bonus_power: i32,
+    pub bonus_defense: i32,
+    pub bonus_max_hp: i32,
+    pub slot: EquipmentSlot
 }
 
 impl Equippable {
     pub fn new(entity_id: EntityId, bonus_power: i32, bonus_defense: i32, bonus_max_hp: i32, slot: EquipmentSlot) -> Self {
         Equippable {
-            entity_id, bonus_power, bonus_defense, bonus_max_hp, slot
+            entity_id,
+            bonus_power,
+            bonus_defense,
+            bonus_max_hp,
+            slot
         }
     }
 }
@@ -789,8 +793,8 @@ impl Deserialize for Equippable {
         Equippable {
             entity_id: json["id"].as_u16().unwrap(),
             bonus_power: json["bonus_power"].as_i32().unwrap(),
-            bonus_defense: json["bonus_power"].as_i32().unwrap(),
-            bonus_max_hp: json["bonus_power"].as_i32().unwrap(),
+            bonus_defense: json["bonus_defense"].as_i32().unwrap(),
+            bonus_max_hp: json["bonus_max_hp"].as_i32().unwrap(),
             slot: EquipmentSlot::deserialize(&json["slot"]),
         }
     }
@@ -809,14 +813,13 @@ impl Equipment {
         }
     }
 
-    pub fn equip(&mut self, ecs: &Ecs, item_id: EntityId) {
-        match ecs.get_component::<Equippable>(item_id) {
-            Some(equippable) => { self.slots.insert(equippable.slot, item_id); },
-            None => ()
-        };
+    pub fn equip(&mut self, slot: EquipmentSlot, item_id: EntityId) {
+        if slot != EquipmentSlot::None {
+            self.slots.insert(slot, item_id);
+        }
     }
 
-    pub fn unequip(&mut self, ecs: &Ecs, item_id: EntityId) {
+    pub fn unequip(&mut self, item_id: EntityId) {
         if let Some(slot) = self.is_equipped(item_id) {
             self.slots.remove(&slot);
         }
@@ -848,10 +851,10 @@ impl Serialize for Equipment {
 
         object!(
         "type" => "Equipment",
-            "data" => object!(
-                "id" => self.entity_id,
-                "slots" => slots
-            )
+        "data" => object!(
+            "id" => self.entity_id,
+            "slots" => slots
+        )
         )
     }
 }
@@ -863,11 +866,12 @@ impl Deserialize for Equipment {
 
         for entity_json in json["slots"].members() {
 
-            let slot = EquipmentSlot::deserialize(&json["slot"]);
+            let slot = EquipmentSlot::deserialize(&entity_json["slot"]);
             let id = entity_json["id"].as_u16().unwrap();
 
             slots.insert(slot, id);
         }
+
 
         Equipment {
             entity_id: json["id"].as_u16().unwrap(),

@@ -10,7 +10,8 @@ Contents of this Writeup:
 1. [Making stuff equippable](#making-stuff-equippable)
     1. [Building the components](#building-the-components)
     2. [Placing equipment in the dungeon](#placing-equipment-in-the-dungeon)
-
+    3. [Equipping an item](#equipping-an-item)
+   
 ## Making stuff equippable
 
 ### Building the components
@@ -176,3 +177,8 @@ Equipping an item will simply override the equipped status of any previously equ
 
 For unequipping, I simply iterate over all slots and see if the `EntityId` of the item in this slot matches. If the item
 was found `Some` slot will be returned, otherwise `None`.
+
+With that feature being fully functional now, the equip menu is next on the list. If the player selects an not equipped
+item from the list, it will be equipped. If the item is already equipped, it will be unequipped.
+
+The hotkey for opening the menu will be `e`.
