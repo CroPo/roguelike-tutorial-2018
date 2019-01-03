@@ -267,6 +267,7 @@ impl EntityAction {
                 state,
             };
         } else {
+
             ActionResult {
                 message: None,
                 reactions: vec![],

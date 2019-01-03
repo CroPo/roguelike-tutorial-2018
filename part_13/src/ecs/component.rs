@@ -511,29 +511,39 @@ impl Deserialize for Corpse {
 impl Component for Corpse {}
 
 pub struct Item {
-    spell: Spell
+    spell: Option<Spell>,
 }
 
 impl Item {
-    pub fn new(spell: Spell) -> Item {
+    pub fn consumable(spell: Spell) -> Self {
         Item {
-            spell
+            spell: Some(spell)
+        }
+    }
+
+    pub fn equippable() -> Self {
+        Item {
+            spell: None
         }
     }
 
     pub fn use_item(&self) -> Option<Spell> {
-        Some(self.spell.clone())
+        self.spell.clone()
     }
 }
 
 impl Serialize for Item {
     fn serialize(&self) -> JsonValue {
 
+        let data = match self.spell {
+            Some(spell) => object!("spell" => spell.serialize()),
+            _ => JsonValue::Null
+        };
+
+
         object!(
         "type" => "Item",
-        "data" => object!(
-                "spell" => self.spell.serialize(),
-            )
+        "data" => data
         )
     }
 }
@@ -541,7 +551,11 @@ impl Serialize for Item {
 impl Deserialize for Item {
     fn deserialize(json: &JsonValue) -> Self {
         Item {
-            spell: Spell::deserialize(&json["spell"]),
+            spell: if json["spell"].is_null() {
+                None
+            }  else {
+                Some(Spell::deserialize(&json["spell"]))
+            }
         }
     }
 }
@@ -710,21 +724,17 @@ impl Deserialize for Level {
 
 impl Component for Level {}
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub enum EquipmentSlot {
     MainHand,
     OffHand,
+    Armor,
     None
 }
 
 impl Serialize for EquipmentSlot {
     fn serialize(&self) -> JsonValue {
-
-        match *self {
-            EquipmentSlot::MainHand => object!("type" => "MainHand"),
-            EquipmentSlot::OffHand => object!("type" => "OffHand"),
-            _ => object!("type" => "", "data" => array![])
-        }
+        object!("type" => format!("{:?}",self))
     }
 }
 
@@ -734,6 +744,7 @@ impl Deserialize for EquipmentSlot {
         match json["type"].as_str().unwrap() {
             "MainHand" =>  EquipmentSlot::MainHand,
             "OffHand" =>  EquipmentSlot::OffHand,
+            "Armor" =>  EquipmentSlot::Armor,
             _ => EquipmentSlot::None
         }
     }
