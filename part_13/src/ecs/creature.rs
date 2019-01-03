@@ -7,6 +7,7 @@ use render::RenderOrder;
 use map_objects::map::GameMap;
 use random_utils::random_choice_index;
 use random_utils::by_dungeon_level;
+use ecs::component::Equipment;
 
 /// Templates for common Creature types
 pub enum CreatureTemplate {
@@ -59,6 +60,7 @@ impl CreatureTemplate {
         let id = ecs.create_entity();
         ecs.player_entity_id = id;
         ecs.register_component(id, Inventory::new(26));
+        ecs.register_component(id, Equipment::new(id));
         ecs.register_component(id, Position::new(id, true));
         ecs.register_component(id, Render::new(id, '@', colors::WHITE, RenderOrder::Actor));
         ecs.register_component(id, Name { name: "Player".to_string()});

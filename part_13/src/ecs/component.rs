@@ -724,7 +724,7 @@ impl Deserialize for Level {
 
 impl Component for Level {}
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Copy, Clone)]
 pub enum EquipmentSlot {
     MainHand,
     OffHand,
@@ -749,7 +749,6 @@ impl Deserialize for EquipmentSlot {
         }
     }
 }
-
 
 
 pub struct Equippable {
@@ -799,7 +798,39 @@ impl Deserialize for Equippable {
 
 pub struct Equipment {
     entity_id: EntityId,
-    slots: HashMap<EquipmentSlot, EntityId>
+    pub slots: HashMap<EquipmentSlot, EntityId>
+}
+
+impl Equipment {
+    pub fn new(entity_id: EntityId) -> Self {
+        Equipment {
+            entity_id,
+            slots: HashMap::new()
+        }
+    }
+
+    pub fn equip(&mut self, ecs: &Ecs, item_id: EntityId) {
+        match ecs.get_component::<Equippable>(item_id) {
+            Some(equippable) => { self.slots.insert(equippable.slot, item_id); },
+            None => ()
+        };
+    }
+
+    pub fn unequip(&mut self, ecs: &Ecs, item_id: EntityId) {
+        if let Some(slot) = self.is_equipped(item_id) {
+            self.slots.remove(&slot);
+        }
+    }
+
+    pub fn is_equipped(&self, item_id: EntityId) -> Option<EquipmentSlot>{
+        for (slot, item_in_slot) in &self.slots {
+            if item_id == *item_in_slot {
+                return Some(*slot);
+            }
+        }
+        None
+    }
+
 }
 
 impl Component for Equipment {}

@@ -133,3 +133,46 @@ Side note: The numbers are _already_ extremely unbalanced at the moment, since t
 get pretty much immortal. So I won't really mess up anything hear, just want to try out stuff.
 
 Picking up seems to work fine, so on to the next part: Equipping an item.
+
+
+### Equipping an item
+
+First of all, the `Equipment` component needs to be extended a bit. Right now, it can't do anything at all. Also,
+the player `Entity` needs an `Equipment` component, too. In order to do this, a `new` method will be added which serves
+as default constructor, as usual.
+
+Other than that, I need a bunch of methods:
+- equip an item
+- unequip an item
+- check if an item is equipped
+
+```rust
+pub fn equip(&mut self, ecs: &Ecs, item_id: EntityId) {
+    match ecs.get_component::<Equippable>(item_id) {
+        Some(equippable) => { self.slots.insert(equippable.slot, item_id); },
+        None => ()
+    };
+}
+```
+
+Equipping an item will simply override the equipped status of any previously equipped item.
+
+```rust
+    pub fn unequip(&mut self, ecs: &Ecs, item_id: EntityId) {
+        if let Some(slot) = self.is_equipped(item_id) {
+            self.slots.remove(&slot);
+        }
+    }
+
+    pub fn is_equipped(&self, item_id: EntityId) -> Option<EquipmentSlot>{
+        for (slot, item_in_slot) in &self.slots {
+            if item_id == *item_in_slot {
+                return Some(*slot);
+            }
+        }
+        None
+    }
+```
+
+For unequipping, I simply iterate over all slots and see if the `EntityId` of the item in this slot matches. If the item
+was found `Some` slot will be returned, otherwise `None`.
