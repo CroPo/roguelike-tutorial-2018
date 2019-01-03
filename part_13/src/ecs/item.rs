@@ -22,7 +22,7 @@ pub enum ItemTemplate {
     ConfusionScroll,
     Weapon(String, i32,),
     Shield(String, i32,),
-    Armor(String, i32, )
+    Armor(String, u32, )
 }
 
 impl ItemTemplate {
@@ -115,7 +115,7 @@ impl ItemTemplate {
         Some(id)
     }
 
-    fn create_equippable(ecs: &mut Ecs, name: String, glyph: char, color: Color, power: i32, defense: i32, hp: i32, slot: EquipmentSlot ) -> Option<EntityId> {
+    fn create_equippable(ecs: &mut Ecs, name: String, glyph: char, color: Color, power: i32, defense: i32, hp: u32, slot: EquipmentSlot ) -> Option<EntityId> {
         let id = ecs.create_entity();
         ecs.register_component(id, Item::equippable());
         ecs.register_component(id, Position::new(id, false));
@@ -134,7 +134,7 @@ impl ItemTemplate {
         ItemTemplate::create_equippable(ecs, name, '[', colors::DARKER_ORANGE, 0, defense, 0, EquipmentSlot::OffHand)
     }
 
-    fn create_armor_from_template(ecs: &mut Ecs, name: String, hp: i32) -> Option<EntityId> {
+    fn create_armor_from_template(ecs: &mut Ecs, name: String, hp: u32) -> Option<EntityId> {
         ItemTemplate::create_equippable(ecs, name, ')', colors::LIGHTER_CRIMSON, 0,0 , hp, EquipmentSlot::Armor)
     }
 }

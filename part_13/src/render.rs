@@ -119,7 +119,7 @@ fn render_game(engine: &Engine, game: &RefMut<Game>) {
     if let Some(p) = ecs.get_component::<Actor>(ecs.player_entity_id) {
         panel.set_default_background(colors::BLACK);
         render_bar(&mut panel, (1, 1), engine.settings.bar_width(),
-                   "HP", p.hp, p.max_hp,
+                   "HP", p.hp, p.max_hp(&ecs),
                    colors::RED, colors::DARK_RED);
     }
 
@@ -352,11 +352,11 @@ pub fn character_screen(console: &mut Root, ecs: &Ecs, width: i32, height: i32, 
 
     if let Some(a) = ecs.get_component::<Actor>(ecs.player_entity_id) {
         panel.print_rect_ex(0, text_row, width, height, BackgroundFlag::None, TextAlignment::Left,
-                            format!("Maximum HP:       {}", a.max_hp));
+                            format!("MaxHP:       {}", a.max_hp(ecs)));
         panel.print_rect_ex(0, text_row+1, width, height, BackgroundFlag::None, TextAlignment::Left,
-                            format!("Attack Power:     {}", a.power));
+                            format!("PWR:         {}", a.power(ecs)));
         panel.print_rect_ex(0, text_row+2, width, height, BackgroundFlag::None, TextAlignment::Left,
-                            format!("Defense:          {}", a.defense));
+                            format!("DEF:         {}", a.defense(ecs)));
     }
 
     let x = screen_width / 2 - width / 2;
@@ -373,9 +373,9 @@ pub fn level_up_menu(console: &mut Root, ecs: &Ecs, screen_width: i32, screen_he
     if let Some(actor) = ecs.get_component::<Actor>(ecs.player_entity_id) {
         let items =
             vec![
-                format!("+20 Maximum Health (currently: {})", actor.max_hp),
-                format!("+1 Attack Power    (currently: {})", actor.power),
-                format!("+1 Defense         (currently: {})", actor.defense),
+                format!("+20 Maximum Health (currently: {})", actor.max_hp(ecs)),
+                format!("+1 Attack Power    (currently: {})", actor.power(ecs)),
+                format!("+1 Defense         (currently: {})", actor.defense(ecs)),
             ];
 
         selection_menu(console, "Level Up! Select a stat to raise:", items, 40, screen_width, screen_height);

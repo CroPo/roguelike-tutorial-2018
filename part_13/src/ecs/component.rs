@@ -264,10 +264,10 @@ impl Component for Name {}
 /// Basic stats for any creature
 pub struct Actor {
     entity_id: EntityId,
-    pub max_hp: u32,
+    max_hp: u32,
     pub hp: u32,
-    pub power: i32,
-    pub defense: i32,
+    power: i32,
+    defense: i32,
     pub xp_reward: u32,
 }
 
@@ -295,7 +295,7 @@ impl Actor {
     /// Calculate the Attack and return the amount of damage which will be dealt
     pub fn calculate_attack(&self, ecs: &Ecs, target_id: EntityId) -> Option<u32> {
         if let Some(target) = ecs.get_component::<Actor>(target_id) {
-            let mut damage = self.power - target.defense;
+            let mut damage = self.power(ecs) - target.defense(ecs);
             if damage < 0 {
                 damage = 0;
             }
@@ -305,6 +305,72 @@ impl Actor {
             None
         }
     }
+
+    pub fn power(&self, ecs: &Ecs) -> i32 {
+        match ecs.get_component::<Equipment>(self.entity_id) {
+            Some(equipment) => {
+                let mut additional_power = 0;
+
+                for (_, item_id) in &equipment.slots {
+                    if let Some(item) = ecs.get_component::<Equippable>(*item_id) {
+                        additional_power += item.bonus_power;   
+                    }
+                }
+                
+                self.power + additional_power
+            },
+            None => self.power
+        }
+    }
+
+    pub fn defense(&self, ecs: &Ecs) -> i32 {
+        match ecs.get_component::<Equipment>(self.entity_id) {
+            Some(equipment) => {
+
+                let mut additional_defense = 0;
+
+                for (_, item_id) in &equipment.slots {
+                    if let Some(item) = ecs.get_component::<Equippable>(*item_id) {
+                        additional_defense += item.bonus_defense;
+                    }
+                }
+
+                self.defense + additional_defense
+            },
+            None => self.defense
+        }
+    }
+
+    pub fn max_hp(&self, ecs: &Ecs) -> u32 {
+        match ecs.get_component::<Equipment>(self.entity_id) {
+            Some(equipment) => {
+
+                let mut additional_max_hp = 0;
+
+                for (_, item_id) in &equipment.slots {
+                    if let Some(item) = ecs.get_component::<Equippable>(*item_id) {
+                        additional_max_hp += item.bonus_max_hp;
+                    }
+                }
+
+                self.max_hp + additional_max_hp
+            },
+            None => self.max_hp
+        }
+    }
+
+    pub fn mod_power(&mut self, val: i32) {
+        self.power+=val;
+    }
+
+    pub fn mod_defense(&mut self, val: i32) {
+        self.defense+=val;
+    }
+
+    pub fn mod_max_hp(&mut self, val: u32) {
+        self.max_hp+=val;
+    }
+
 
     pub fn is_dead(&self) -> bool{
         self.hp == 0
@@ -755,12 +821,12 @@ pub struct Equippable {
     entity_id: EntityId,
     pub bonus_power: i32,
     pub bonus_defense: i32,
-    pub bonus_max_hp: i32,
+    pub bonus_max_hp: u32,
     pub slot: EquipmentSlot
 }
 
 impl Equippable {
-    pub fn new(entity_id: EntityId, bonus_power: i32, bonus_defense: i32, bonus_max_hp: i32, slot: EquipmentSlot) -> Self {
+    pub fn new(entity_id: EntityId, bonus_power: i32, bonus_defense: i32, bonus_max_hp: u32, slot: EquipmentSlot) -> Self {
         Equippable {
             entity_id,
             bonus_power,
@@ -794,7 +860,7 @@ impl Deserialize for Equippable {
             entity_id: json["id"].as_u16().unwrap(),
             bonus_power: json["bonus_power"].as_i32().unwrap(),
             bonus_defense: json["bonus_defense"].as_i32().unwrap(),
-            bonus_max_hp: json["bonus_max_hp"].as_i32().unwrap(),
+            bonus_max_hp: json["bonus_max_hp"].as_u32().unwrap(),
             slot: EquipmentSlot::deserialize(&json["slot"]),
         }
     }

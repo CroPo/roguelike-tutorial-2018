@@ -11,6 +11,7 @@ Contents of this Writeup:
     1. [Building the components](#building-the-components)
     2. [Placing equipment in the dungeon](#placing-equipment-in-the-dungeon)
     3. [Equipping an item](#equipping-an-item)
+    4. [Making equipment work](#making-equipment-work)
    
 ## Making stuff equippable
 
@@ -182,3 +183,17 @@ With that feature being fully functional now, the equip menu is next on the list
 item from the list, it will be equipped. If the item is already equipped, it will be unequipped.
 
 The hotkey for opening the menu will be `e`.
+
+## Making equipment work
+
+Well, now we can pick up, drop and equip armor and weapons. They just don't do much until now. Time to change that! 
+First of all I will disable direct access to the values `max_hp`, `power` and `defense` of the `Actor` component, and
+replace them with functions of the same name, which calculate the total, including equipment.
+
+Also, since the level up needs to still be working I need methods to increase these three values.
+
+After that, I just have to get the Equipment and add all stat bonuses together.
+
+
+
+

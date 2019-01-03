@@ -250,16 +250,24 @@ impl GameState {
         }
     }
 
+    fn get_actor_max_hp(ecs: &Ecs, entity_id: EntityId) -> u32 {
+        match ecs.get_component::<Actor>(entity_id) {
+            Some(actor) => actor.max_hp(ecs),
+            _ => 0
+        }
+    }
+
     fn level_up_menu(&self, ecs: &mut Ecs, action: Option<InputAction>) -> GameStateResult {
 
         let id = ecs.player_entity_id;
+        let actor_max_hp = Self::get_actor_max_hp(ecs, id);
 
         if let Some(actor) = ecs.get_component_mut::<Actor>(id) {
             match action {
                 Some(InputAction::SelectOption('a')) => {
 
-                    actor.max_hp += 20;
-                    actor.hp = actor.max_hp;
+                    actor.mod_max_hp(20);
+                    actor.hp = actor_max_hp;
 
                     GameStateResult {
                         next_state: GameState::EnemyTurn,
@@ -268,8 +276,8 @@ impl GameState {
                 }
                 Some(InputAction::SelectOption('b')) => {
 
-                    actor.power += 1;
-                    actor.hp = actor.max_hp;
+                    actor.mod_power(1);
+                    actor.hp = actor_max_hp;
 
                     GameStateResult {
                         next_state: GameState::EnemyTurn,
@@ -278,8 +286,8 @@ impl GameState {
                 }
                 Some(InputAction::SelectOption('c')) => {
 
-                    actor.defense += 1;
-                    actor.hp = actor.max_hp;
+                    actor.mod_defense(1);
+                    actor.hp = actor_max_hp;
 
                     GameStateResult {
                         next_state: GameState::EnemyTurn,

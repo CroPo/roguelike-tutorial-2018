@@ -89,16 +89,25 @@ impl Spell {
         }
     }
 
+    fn get_actor_max_hp(ecs: &Ecs, entity_id: EntityId) -> u32 {
+        match ecs.get_component::<Actor>(entity_id) {
+            Some(actor) => actor.max_hp(ecs),
+            _ => 0
+        }
+    }
+
+
     fn heal(&self, ecs: &mut Ecs, caster_id: EntityId, item_id: EntityId, amount : u32) -> SpellResult {
         let entity_name = Self::get_entity_name(ecs, caster_id);
+        let actor_max_hp = Self::get_actor_max_hp(ecs, caster_id);
 
         if let Some(actor) = ecs.get_component_mut::<Actor>(caster_id) {
-            if actor.hp == actor.max_hp {
+            if actor.hp == actor_max_hp {
                 SpellResult::fail(Some(Message::new(format!("{} is already at full health", entity_name), colors::YELLOW)))
             } else {
 
-                let amount_healed = if actor.hp + amount > actor.max_hp {
-                    actor.max_hp - actor.hp
+                let amount_healed = if actor.hp + amount > actor_max_hp {
+                    actor_max_hp - actor.hp
                 } else {
                     amount
                 };
